@@ -1,4 +1,4 @@
-#include "WireCellNav/ZSEndedTrace.h"
+#include "WireCellGen/ZSEndedTrace.h"
 
 using namespace std;
 using namespace WireCell;

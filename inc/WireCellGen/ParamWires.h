@@ -1,5 +1,5 @@
-#ifndef WIRECELLNAV_PARAMWIRES_H
-#define WIRECELLNAV_PARAMWIRES_H
+#ifndef WIRECELLGEN_PARAMWIRES_H
+#define WIRECELLGEN_PARAMWIRES_H
 
 #include "WireCellIface/IWireGenerator.h"
 #include "WireCellIface/IWire.h"

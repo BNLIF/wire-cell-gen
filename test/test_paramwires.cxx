@@ -1,6 +1,6 @@
 #include "WireCellIface/IWireSelectors.h"
-#include "WireCellNav/ParamWires.h"
-#include "WireCellNav/WireParams.h"
+#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireParams.h"
 #include "WireCellUtil/Testing.h"
 
 #include "TApplication.h"

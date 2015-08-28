@@ -4,11 +4,11 @@
 #include "WireCellIface/IWireSelectors.h"
 
 
-#include "WireCellNav/ParamWires.h"
-#include "WireCellNav/WireParams.h"
-#include "WireCellNav/WireSummary.h"
-#include "WireCellNav/BoundCells.h"
-#include "WireCellNav/Tiling.h"
+#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireParams.h"
+#include "WireCellGen/WireSummary.h"
+#include "WireCellGen/BoundCells.h"
+#include "WireCellGen/Tiling.h"
 
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/NamedFactory.h"

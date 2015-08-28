@@ -1,4 +1,4 @@
-#include "WireCellNav/WireSummary.h"
+#include "WireCellGen/WireSummary.h"
 #include "WireCellIface/IWireSelectors.h"
 
 #include "WireCellUtil/NamedFactory.h"

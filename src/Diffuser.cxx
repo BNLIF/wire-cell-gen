@@ -1,4 +1,4 @@
-#include "WireCellNav/Diffuser.h"
+#include "WireCellGen/Diffuser.h"
 
 #include <cmath>
 

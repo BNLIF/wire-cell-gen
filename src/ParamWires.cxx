@@ -1,4 +1,4 @@
-#include "WireCellNav/ParamWires.h"
+#include "WireCellGen/ParamWires.h"
 #include "WireCellUtil/Intersection.h"
 #include "WireCellUtil/NamedFactory.h"
 

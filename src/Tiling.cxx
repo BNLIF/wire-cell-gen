@@ -1,4 +1,4 @@
-#include "WireCellNav/Tiling.h"
+#include "WireCellGen/Tiling.h"
 #include "WireCellUtil/NamedFactory.h"
 
 #include "TilingGraph.h"

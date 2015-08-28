@@ -1,5 +1,5 @@
 #include "WireCellIface/IDepo.h"
-#include "WireCellNav/DepoBuffer.h"
+#include "WireCellGen/DepoBuffer.h"
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Testing.h"
 

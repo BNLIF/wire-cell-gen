@@ -1,4 +1,4 @@
-#include "WireCellNav/Digitizer.h"
+#include "WireCellGen/Digitizer.h"
 
 #include "WireCellIface/IWireSelectors.h"
 
@@ -53,7 +53,7 @@ IChannelSlice::pointer Digitizer::operator()()
     for (int iplane = 0; iplane<psvec.size(); ++iplane) {
 	IPlaneSlice::pointer ps = psvec[iplane];
 	if (!ps) {
-	    cerr << "No plane slice at " << iplane << " out of " << psvec.size() << endl;
+	    //cerr << "No plane slice at " << iplane << " out of " << psvec.size() << endl;
 	    return nullptr;
 	}
 	WirePlaneId wpid = ps->planeid();

@@ -1,6 +1,6 @@
 #include "WireCellIface/IWireSelectors.h"
 
-#include "WireCellNav/BoundCells.h"
+#include "WireCellGen/BoundCells.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/BoundingBox.h"

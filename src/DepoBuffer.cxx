@@ -1,4 +1,4 @@
-#include "WireCellNav/DepoBuffer.h"
+#include "WireCellGen/DepoBuffer.h"
 
 #include <iostream>
 using namespace std;

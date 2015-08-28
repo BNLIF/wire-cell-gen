@@ -1,5 +1,5 @@
-#include "WireCellNav/PlaneDuctor.h"
-#include "WireCellNav/Diffuser.h"
+#include "WireCellGen/PlaneDuctor.h"
+#include "WireCellGen/Diffuser.h"
 
 #include "WireCellUtil/BufferedHistogram2D.h"
 

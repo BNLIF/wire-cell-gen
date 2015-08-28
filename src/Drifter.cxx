@@ -1,4 +1,4 @@
-#include "WireCellNav/Drifter.h"
+#include "WireCellGen/Drifter.h"
 #include "TransportedDepo.h"
 
 #include <boost/range.hpp>

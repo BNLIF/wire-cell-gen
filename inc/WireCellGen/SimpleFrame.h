@@ -13,7 +13,7 @@ namespace WireCell {
     class SimpleFrame : public IFrame {
     public:
 
-	SimpleFrame(int ident, double time, ITraceSequence& traces);
+	SimpleFrame(int ident, double time, const ITraceVector& traces);
 	~SimpleFrame();
 	virtual int ident() const;
 	virtual double time() const;
@@ -23,7 +23,7 @@ namespace WireCell {
     private:
 	int m_ident;
 	double m_time;
-	std::vector<ITrace::pointer> m_traces;
+	ITraceVector m_traces;
     };
 
 }

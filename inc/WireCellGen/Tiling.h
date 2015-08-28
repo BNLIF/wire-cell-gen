@@ -1,5 +1,5 @@
-#ifndef WIRECELLNAV_WIRECELL_H
-#define WIRECELLNAV_WIRECELL_H
+#ifndef WIRECELLGEN_WIRECELL_H
+#define WIRECELLGEN_WIRECELL_H
 
 #include "WireCellIface/ICell.h"
 #include "WireCellIface/ITiling.h"

@@ -1,4 +1,4 @@
-#include "WireCellNav/SimpleDepo.h"
+#include "WireCellGen/SimpleDepo.h"
 
 using namespace WireCell;
 

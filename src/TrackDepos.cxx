@@ -1,6 +1,10 @@
-#include "WireCellNav/TrackDepos.h"
-#include "WireCellNav/SimpleDepo.h"
+#include "WireCellGen/TrackDepos.h"
+#include "WireCellGen/SimpleDepo.h"
 
+#include "WireCellUtil/Units.h"
+
+#include <iostream>		// debug
+using namespace std;
 using namespace WireCell;
     
 TrackDepos::TrackDepos(double stepsize, double clight)
@@ -14,6 +18,9 @@ TrackDepos::TrackDepos(double stepsize, double clight)
 
 void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
 {
+    cerr << "TrackDepos.add_track(" << time / units::microsecond << "us "
+	 << ray.first << " -->  " << ray.second << ")" << endl;
+
     const WireCell::Vector dir = WireCell::ray_unit(ray);
     const double length = WireCell::ray_length(ray);
     double step = 0;

@@ -1,14 +1,14 @@
-#include "WireCellNav/SimpleFrame.h"
+#include "WireCellGen/SimpleFrame.h"
+
+#include <iostream>
 
 using namespace WireCell;
+using namespace std;
 
-
-SimpleFrame::SimpleFrame(int ident, double time, ITraceSequence& traces)
-    : m_ident(ident), m_time(time)
+SimpleFrame::SimpleFrame(int ident, double time, const ITraceVector& traces)
+    : m_ident(ident), m_time(time), m_traces(traces)
 {
-    for (auto trace : traces) {
-	m_traces.push_back(trace);
-    }
+//    cerr << "SimpleFrame(" << ident << " , " << time << " , " << traces.size() << ")" << endl;
 }
 SimpleFrame::~SimpleFrame() {
 

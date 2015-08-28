@@ -2,9 +2,9 @@
 // use Interfaces in real applications.
 
 #include "WireCellIface/IWireSelectors.h"
-#include "WireCellNav/ParamWires.h"
-#include "WireCellNav/WireParams.h"
-#include "WireCellNav/BoundCells.h"
+#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireParams.h"
+#include "WireCellGen/BoundCells.h"
 
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/TimeKeeper.h"

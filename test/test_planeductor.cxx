@@ -1,6 +1,6 @@
-#include "WireCellNav/PlaneDuctor.h"
-#include "WireCellNav/Drifter.h"
-#include "WireCellNav/TrackDepos.h"
+#include "WireCellGen/PlaneDuctor.h"
+#include "WireCellGen/Drifter.h"
+#include "WireCellGen/TrackDepos.h"
 
 #include "WireCellIface/WirePlaneId.h"
 

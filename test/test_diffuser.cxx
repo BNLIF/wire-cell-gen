@@ -1,6 +1,6 @@
 #include "WireCellUtil/BufferedHistogram2D.h"
 #include "WireCellUtil/Testing.h"
-#include "WireCellNav/Diffuser.h"
+#include "WireCellGen/Diffuser.h"
 
 #include <iostream>
 

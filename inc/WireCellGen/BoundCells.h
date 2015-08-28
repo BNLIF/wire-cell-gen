@@ -1,5 +1,5 @@
-#ifndef WIRECELLNAV_BOUNDCELLS
-#define WIRECELLNAV_BOUNDCELLS
+#ifndef WIRECELLGEN_BOUNDCELLS
+#define WIRECELLGEN_BOUNDCELLS
 
 #include "WireCellIface/IWire.h"
 #include "WireCellIface/ICell.h"

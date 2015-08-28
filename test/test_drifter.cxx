@@ -1,5 +1,5 @@
-#include "WireCellNav/Drifter.h"
-#include "WireCellNav/TrackDepos.h"
+#include "WireCellGen/Drifter.h"
+#include "WireCellGen/TrackDepos.h"
 
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/TimeKeeper.h"

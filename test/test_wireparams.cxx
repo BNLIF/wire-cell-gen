@@ -1,4 +1,4 @@
-#include "WireCellNav/WireParams.h"
+#include "WireCellGen/WireParams.h"
 #include "WireCellUtil/Testing.h"
 
 #include "TApplication.h"

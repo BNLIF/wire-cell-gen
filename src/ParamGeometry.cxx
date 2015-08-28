@@ -1,4 +1,4 @@
-#include "WireCellNav/ParamGeometry.h"
+#include "WireCellGen/ParamGeometry.h"
 #include "WireCellIface/IWire.h"
 #include "WireCellIface/ICell.h"
 #include "WireCellIface/IWireSummary.h"
