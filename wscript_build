@@ -1,4 +1,4 @@
 # -*- python -*-
-bld.make_package('WireCellNav', use='WireCellIface WireCellUtil', test_use='ROOTSYS')
+bld.smplpkg('WireCellGen', use='WireCellIface WireCellUtil', test_use='ROOTSYS')
 
 
