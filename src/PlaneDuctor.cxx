@@ -62,42 +62,6 @@ double PlaneDuctor::pitch_dist(const Point& p)
 }
 
 
-void PlaneDuctor::buffer()
-{
-    int count = 0;
-    double charge_buffered = 0;
-
-    // consume depositions until tbuffer amount of time past "now".
-    while (m_high_water_tau < clock() + m_tbuffer) {
-	IDepo::pointer depo = *m_input();
-	if (!depo) {
-	    return;
-	}
-
-	++count;
-	charge_buffered += depo->charge();
-
-	// the time it will show up
-	double tau = proper_tau(depo->time(), depo->pos().x());
-	// allow for any arbitrary offset 
-	tau += m_toffset;
-
-	// how long the center will have drifted for calculating diffusion sigmas.
-	IDepo::pointer initial_depo = *depo_chain(depo).rbegin();
-	double drift_time = proper_tau(0, initial_depo->pos().x());
-	double tmpcm2 = 2*m_DL*drift_time/units::centimeter2;
-	double sigmaL = sqrt(tmpcm2)*units::centimeter / m_drift_velocity;
-	double sigmaT = sqrt(2*m_DT*drift_time/units::centimeter2)*units::centimeter2;
-	double trans = pitch_dist(depo->pos());
-	m_diff->diffuse(tau, trans, sigmaL, sigmaT, depo->charge());
-
-	if (tau > m_high_water_tau) {
-	    m_high_water_tau = tau;
-	}
-    }
-}
-
-
 class PDPS : public IPlaneSlice {
     WirePlaneId m_wpid;
     double m_time;
@@ -148,15 +112,88 @@ public:
 };
 
 
-IPlaneSlice::pointer PlaneDuctor::operator()()
-{
-    if (!buffer_size()) {
-	return nullptr;
-    }
-    double t = clock();		// call first
-    return IPlaneSlice::pointer(new PDPS(m_wpid, t, latch()));
 
+bool process()
+{
+    // drain input queue
+    while (!m_input.empty()) {
+	IDepo::pointer depo = *m_input.front();
+	m_input.pop_front();
+
+	// the time it will show up
+	double tau = proper_tau(depo->time(), depo->pos().x());
+	// allow for any arbitrary offset 
+	tau += m_toffset;
+
+	// how long the center will have drifted for calculating diffusion sigmas.
+	IDepo::pointer initial_depo = *depo_chain(depo).rbegin();
+	double drift_time = proper_tau(0, initial_depo->pos().x());
+	double tmpcm2 = 2*m_DL*drift_time/units::centimeter2;
+	double sigmaL = sqrt(tmpcm2)*units::centimeter / m_drift_velocity;
+	double sigmaT = sqrt(2*m_DT*drift_time/units::centimeter2)*units::centimeter2;
+	double trans = pitch_dist(depo->pos());
+	m_diff->diffuse(tau, trans, sigmaL, sigmaT, depo->charge());
+
+	if (tau > m_high_water_tau) {
+	    m_high_water_tau = tau;
+	}
+    }	
+    
+    // fill output queue but drain only up to high water mark and while full
+    while (buffer_size() && clock() < m_high_water_tau - m_tbuffer) {
+	double t = clock();		// call first
+	IPlaneSlice::pointer ps(new PDPS(m_wpid, t, latch()));
+	m_output.push_back(ps);
+    }
+    return true;
 }
+
+
+// void PlaneDuctor::buffer()
+// {
+//     int count = 0;
+//     double charge_buffered = 0;
+
+//     // consume depositions until tbuffer amount of time past "now".
+//     while (m_high_water_tau < clock() + m_tbuffer) {
+// 	IDepo::pointer depo = *m_input();
+// 	if (!depo) {
+// 	    return;
+// 	}
+
+// 	++count;
+// 	charge_buffered += depo->charge();
+
+// 	// the time it will show up
+// 	double tau = proper_tau(depo->time(), depo->pos().x());
+// 	// allow for any arbitrary offset 
+// 	tau += m_toffset;
+
+// 	// how long the center will have drifted for calculating diffusion sigmas.
+// 	IDepo::pointer initial_depo = *depo_chain(depo).rbegin();
+// 	double drift_time = proper_tau(0, initial_depo->pos().x());
+// 	double tmpcm2 = 2*m_DL*drift_time/units::centimeter2;
+// 	double sigmaL = sqrt(tmpcm2)*units::centimeter / m_drift_velocity;
+// 	double sigmaT = sqrt(2*m_DT*drift_time/units::centimeter2)*units::centimeter2;
+// 	double trans = pitch_dist(depo->pos());
+// 	m_diff->diffuse(tau, trans, sigmaL, sigmaT, depo->charge());
+
+// 	if (tau > m_high_water_tau) {
+// 	    m_high_water_tau = tau;
+// 	}
+//     }
+// }
+
+
+
+// IPlaneSlice::pointer PlaneDuctor::operator()()
+// {
+//     if (!buffer_size()) {
+// 	return nullptr;
+//     }
+//     double t = clock();		// call first
+//     return IPlaneSlice::pointer(new PDPS(m_wpid, t, latch()));
+// }
 
 double PlaneDuctor::clock()
 {

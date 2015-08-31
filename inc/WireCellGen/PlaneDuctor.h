@@ -10,8 +10,12 @@
 #ifndef WIRECELL_PLANEDUCTOR
 #define WIRECELL_PLANEDUCTOR
 
+#include "WireCellIface/IPlaneDuctor.h"
+
 #include "WireCellIface/IDepo.h"
 #include "WireCellIface/IPlaneSlice.h"
+
+#include <deque>
 
 namespace WireCell {
 
@@ -33,11 +37,27 @@ namespace WireCell {
 		    double DT=12.8*units::centimeter2/units::second, /// trans. diffusion coefficient
 		    int nsigma=3); /// number of sigma of diffusion to keep
 
-	~PlaneDuctor();
+	virtual ~PlaneDuctor();
 
-	bool sink(const IDepo::pointer& depo);
-	bool source(IPlaneSlide::pointer& plane_slice);
-	bool process();
+	/// Accept depositions.
+	virtual bool sink(const IDepo::pointer& depo) {
+	    m_input.push_back(depo);
+	    return true;
+	}
+	/// Return the next available plane slice.
+	virtual bool source(IPlaneSlice::pointer& plane_slice) {
+	    if (m_output.empty()) {
+		return false;
+	    }
+	    plane_slice = m_output.front();
+	    m_output.pop_front();
+	    return true;
+	}
+	
+	/// This will drain the internal input queue and fill the
+	/// internal output queue subject to the internal diffusion
+	/// buffer remaining full and the high-water mark not reached.
+	virtual bool process();
 
 	// internal methods below.
 
@@ -81,6 +101,10 @@ namespace WireCell {
 
 	// read-ahead enough depositions to surpass the <tbuffer> time from the current "now".
 	void buffer();
+
+	// internal buffering
+	std::deque<IDepo::pointer> m_input;
+	std::deque<IPlaneSlice::pointer> m_output;
     };
 
 }
