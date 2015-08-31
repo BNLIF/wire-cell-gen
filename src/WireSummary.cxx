@@ -1,24 +1,11 @@
 #include "WireCellGen/WireSummary.h"
 #include "WireCellIface/IWireSelectors.h"
 
-#include "WireCellUtil/NamedFactory.h"
-
 #include <iterator>
 
 using namespace WireCell;
 using namespace std;
 
-
-WIRECELL_NAMEDFACTORY(WireSummary);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(WireSummary, IWireSummary);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(WireSummary, IWireSink);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(WireSummary, IWireSequence);
-
-
-WireSummary::WireSummary()
-    : m_cache(0)
-{
-}
 
 // Return a Ray going from the center point of wires[0] to a point on
 // wire[1] and perpendicular to both.
@@ -44,10 +31,11 @@ struct WirePlaneCache {
     Vector pitch_unit;
     double pitch_mag;
 
-    WirePlaneCache(WirePlaneId wpid, IWire::iterator_range wr)
+    WirePlaneCache(WirePlaneId wpid, const IWireVector& all_wires)
 	: wpid(wpid)		// maybe one day support more then one face/apa
     {
-	copy_if(boost::begin(wr), boost::end(wr), back_inserter(wires), select_uvw_wires[wpid.index()]);
+	copy_if(all_wires.begin(), all_wires.end(),
+		back_inserter(wires), select_uvw_wires[wpid.index()]);
 	pitch_ray = pitch2(wires);
 	pitch_vector = ray_vector(pitch_ray); // cache
 	pitch_unit = pitch_vector.norm();     // the
@@ -73,16 +61,16 @@ struct WireSummary::WireSummaryCache {
     BoundingBox bb;
     WirePlaneCache *plane_cache[3];
 
-    WireSummaryCache(IWire::iterator_range wr)
-	: wires(boost::begin(wr), boost::end(wr))
+    WireSummaryCache(const IWireVector& wires)
+	: wires(wires)
    {
-       for (auto it : wr) {
-	   bb(it->ray());
+       for (auto wire : wires) {
+	   bb(wire->ray());
        }
 
-       plane_cache[0] = new WirePlaneCache(WirePlaneId(kUlayer), wr);
-       plane_cache[1] = new WirePlaneCache(WirePlaneId(kVlayer), wr);
-       plane_cache[2] = new WirePlaneCache(WirePlaneId(kWlayer), wr);
+       plane_cache[0] = new WirePlaneCache(WirePlaneId(kUlayer), wires);
+       plane_cache[1] = new WirePlaneCache(WirePlaneId(kVlayer), wires);
+       plane_cache[2] = new WirePlaneCache(WirePlaneId(kWlayer), wires);
    }
 
     ~WireSummaryCache() {
@@ -101,32 +89,23 @@ struct WireSummary::WireSummaryCache {
     
 };
 
-//typedef IteratorAdapter< IWireVector::const_iterator, WireCell::wire_base_iterator > adapted_iterator;
-
-
-void WireSummary::sink(const IWire::iterator_range& wires)
-{
-    if (m_cache) delete m_cache;
-    m_cache = new WireSummaryCache(wires);    
-}
-
 static IWireVector dummy_vector;
 
-IWireSequence::wire_iterator WireSummary::wires_begin() 
-{
-    if (!m_cache) {
-	return wire_iterator(adapt(dummy_vector.end()));
-    }
-    return wire_iterator(adapt(m_cache->wires.begin()));
-}
+// IWireSequence::wire_iterator WireSummary::wires_begin() 
+// {
+//     if (!m_cache) {
+// 	return wire_iterator(adapt(dummy_vector.end()));
+//     }
+//     return wire_iterator(adapt(m_cache->wires.begin()));
+// }
 
-IWireSequence::wire_iterator WireSummary::wires_end() 
-{
-    if (!m_cache) {
-	return wire_iterator(adapt(dummy_vector.end()));
-    }
-    return wire_iterator(adapt(m_cache->wires.end()));	
-}
+// IWireSequence::wire_iterator WireSummary::wires_end() 
+// {
+//     if (!m_cache) {
+// 	return wire_iterator(adapt(dummy_vector.end()));
+//     }
+//     return wire_iterator(adapt(m_cache->wires.end()));	
+// }
 
 const BoundingBox& WireSummary::box() const
 {
@@ -205,3 +184,17 @@ const Vector& WireSummary::pitch_direction(WirePlaneId wpid) const
     }
     return wpc->pitch_unit;
 }
+
+WireSummary::WireSummary(const IWireVector& wires)
+    : m_cache(0)
+{
+    m_cache = new WireSummaryCache(wires);    
+}
+WireSummary::~WireSummary()
+{
+}
+
+
+
+
+

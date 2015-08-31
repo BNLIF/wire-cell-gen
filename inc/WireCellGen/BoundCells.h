@@ -1,36 +1,46 @@
 #ifndef WIRECELLGEN_BOUNDCELLS
 #define WIRECELLGEN_BOUNDCELLS
 
-#include "WireCellIface/IWire.h"
-#include "WireCellIface/ICell.h"
+#include "WireCellIface/ICellMaker.h"
 
 namespace WireCell {
 
-    /** A provider of cells using the bounded wire algorithm. */
-    class BoundCells :
-	public IWireSink,
-	public ICellSequence
+    /** 
+     * A provider of cells using the bounded wire pair algorithm.
+     */
+    class BoundCells : public ICellMaker
     {
-
     public:
 	
 	BoundCells();
 	virtual ~BoundCells();
 
-	/// Generate my cells (IWireSink interface).
-	void sink(const IWire::iterator_range& wires);
+	/** Process input, make output (IProcessor).
+	 *
+	 * This is actually a no-op (all work is done in sink()).
+	 */
+	virtual bool process() { return false; }
 
-	/// Return iterator to first cell provided.
-	cell_iterator cells_begin();
+	/** Accept input wires (ISink).
+	 *
+	 * The input queue is zero length, adding new wires will
+	 * invalidate any existing output and regenerate it.
+	 */ 
+	virtual bool sink(const IWireVector& wires);
 
-	/// Return iterator to one past last cell provided.
-	cell_iterator cells_end();
-
-	size_t cells_size() const { return m_store.size(); }
+	/** Produce any output cells (ISource).
+	 *
+	 * Repeated calls will return the same cells.  If no input
+	 * wires have yet been given then an empty cell vector will be
+	 * set.
+	 */
+	virtual bool source(ICellVector& cells) {
+	    cells = m_cells;
+	    return true;
+	}
 
     private:
-	typedef std::vector<ICell::pointer> BoundCellStore;
-	BoundCellStore m_store;
+	ICellVector m_cells;
     };
 }
 

@@ -1,4 +1,4 @@
-#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireGenerator.h"
 #include "WireCellUtil/Intersection.h"
 #include "WireCellUtil/NamedFactory.h"
 
@@ -9,27 +9,22 @@
 using namespace WireCell;
 using namespace std;
 
-WIRECELL_NAMEDFACTORY(ParamWires);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(ParamWires, IWireGenerator);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(ParamWires, IWireSequence);
-
-static int number_of_wires = 0;
+WIRECELL_NAMEDFACTORY(WireGenerator);
+WIRECELL_NAMEDFACTORY_ASSOCIATE(WireGenerator, IWireGenerator);
 
 namespace WireCell {
-class ParamWire : public IWire {
+class GenWire : public IWire {
     WirePlaneId m_wpid;
     int m_index;
     Ray m_ray;
 
 public:
-    ParamWire(WirePlaneId wpid, int index, const Ray& ray)
+    GenWire(WirePlaneId wpid, int index, const Ray& ray)
 	: m_wpid(wpid), m_index(index), m_ray(ray)
     {
-	++number_of_wires;
     }
-    virtual ~ParamWire()
+    virtual ~GenWire()
     {
-	--number_of_wires;
     }
 
     int ident() const {
@@ -57,7 +52,7 @@ public:
 };
 }
 
-static ParamWire* make_wire(int index, const Point& point,
+static GenWire* make_wire(int index, const Point& point,
 			    const Point& proto, const Ray& bounds)
 {
     double number = index;
@@ -74,29 +69,30 @@ static ParamWire* make_wire(int index, const Point& point,
     if (hits.first.y() > hits.second.y()) {
 	hits = Ray(hits.second, hits.first);
     }
-    return new ParamWire(WirePlaneId(kUnknownLayer), index, hits);
+    return new GenWire(WirePlaneId(kUnknownLayer), index, hits);
 }
 
 struct SortByIndex {
-    inline bool operator()(const ParamWire* lhs, const ParamWire* rhs) {
+    inline bool operator()(const GenWire* lhs, const GenWire* rhs) {
 	return lhs->index() < rhs->index();
     }
 };    
 
 
-void ParamWires::make_one_plane(WirePlaneId wpid, const Ray& bounds, const Ray& step)
+static void make_one_plane(IWireVector& returned_wires,
+			   WirePlaneId wpid, const Ray& bounds, const Ray& step)
 {
     const Vector xaxis(1,0,0);
     const Point starting_point = step.first;
     const Vector pitch = step.second - starting_point;
     const Vector proto = pitch.cross(xaxis).norm();
     
-    std::vector<ParamWire*> these_wires;
+    std::vector<GenWire*> these_wires;
 
     int pos_index = 0;
     Point offset = starting_point;
     while (true) {		// go in positive pitch direction
-	ParamWire* wire = make_wire(pos_index, offset, proto, bounds);
+	GenWire* wire = make_wire(pos_index, offset, proto, bounds);
 	if (! wire) { break; }
 	these_wires.push_back(wire);
 	offset = wire->center() + pitch;
@@ -107,7 +103,7 @@ void ParamWires::make_one_plane(WirePlaneId wpid, const Ray& bounds, const Ray& 
     const Vector neg_pitch = -1.0 * pitch;
     offset = these_wires[0]->center() + neg_pitch; // start one below first upward going one
     while (true) {		// go in negative pitch direction
-	ParamWire* wire = make_wire(neg_index, offset, proto, bounds);
+	GenWire* wire = make_wire(neg_index, offset, proto, bounds);
 	if (! wire) { break; }
 	these_wires.push_back(wire);
 	offset = wire->center() + neg_pitch;
@@ -119,10 +115,10 @@ void ParamWires::make_one_plane(WirePlaneId wpid, const Ray& bounds, const Ray& 
 
     // load in to store and fix up index and plane
     for (int ind=0; ind<these_wires.size(); ++ind) {
-	ParamWire* pwire = these_wires[ind];
+	GenWire* pwire = these_wires[ind];
 	pwire->set_index(ind);
 	pwire->set_planeid(wpid);
-	m_wire_store.push_back(IWire::pointer(pwire));
+	returned_wires.push_back(IWire::pointer(pwire));
     }
 
     //std::cerr << "Made "<<store.size()<<" wires for plane " << plane << std::endl;
@@ -131,35 +127,19 @@ void ParamWires::make_one_plane(WirePlaneId wpid, const Ray& bounds, const Ray& 
 }
 
 
-void ParamWires::generate(IWireParameters::pointer params)
 
+bool WireGenerator::sink(const IWireParameters::pointer& wp)
 {
-    this->clear();
-
-    make_one_plane(WirePlaneId(kUlayer), params->bounds(), params->pitchU());
-    make_one_plane(WirePlaneId(kVlayer), params->bounds(), params->pitchV());
-    make_one_plane(WirePlaneId(kWlayer), params->bounds(), params->pitchW());
+    m_wires.clear();
+    make_one_plane(m_wires, WirePlaneId(kUlayer), wp->bounds(), wp->pitchU());
+    make_one_plane(m_wires, WirePlaneId(kVlayer), wp->bounds(), wp->pitchV());
+    make_one_plane(m_wires, WirePlaneId(kWlayer), wp->bounds(), wp->pitchW());
 }
 
-
-IWireSequence::wire_iterator ParamWires::wires_begin() 
-{
-    return wire_iterator(adapt(m_wire_store.cbegin()));
-}
-IWireSequence::wire_iterator ParamWires::wires_end() 
-{
-    return wire_iterator(adapt(m_wire_store.cend()));
-}
-
-void ParamWires::clear() {
-    m_wire_store.clear();
-}
-
-ParamWires::ParamWires()
+WireGenerator::WireGenerator()
 {
 }
 
-ParamWires::~ParamWires()
+WireGenerator::~WireGenerator()
 {
-    this->clear();
 }

@@ -18,7 +18,7 @@ namespace WireCell {
     class BufferedHistogram2D;
     class Diffuser;
 
-    class PlaneDuctor  { // fixme make into interface
+    class PlaneDuctor : public IPlaneDuctor {
     public:
 
 
@@ -35,13 +35,9 @@ namespace WireCell {
 
 	~PlaneDuctor();
 
-
-	/// Return the next plane slice.
-	IPlaneSlice::pointer operator()();
-
-
-	void connect(const IDepo::source_slot& s) { m_input.connect(s); }
-
+	bool sink(const IDepo::pointer& depo);
+	bool source(IPlaneSlide::pointer& plane_slice);
+	bool process();
 
 	// internal methods below.
 
@@ -82,8 +78,6 @@ namespace WireCell {
 	BufferedHistogram2D* m_hist;
 	Diffuser* m_diff;
 	double m_high_water_tau;
-
-	IDepo::source_signal m_input;
 
 	// read-ahead enough depositions to surpass the <tbuffer> time from the current "now".
 	void buffer();

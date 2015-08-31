@@ -1,10 +1,10 @@
-//#include "WireCellNav/Digitizer.h"
-#include "WireCellNav/PlaneDuctor.h"
-#include "WireCellNav/Drifter.h"
-#include "WireCellNav/Digitizer.h"
-#include "WireCellNav/TrackDepos.h"
-#include "WireCellNav/WireParams.h"
-#include "WireCellNav/ParamWires.h"
+//#include "WireCellGen/Digitizer.h"
+#include "WireCellGen/PlaneDuctor.h"
+#include "WireCellGen/Drifter.h"
+#include "WireCellGen/Digitizer.h"
+#include "WireCellGen/TrackDepos.h"
+#include "WireCellGen/WireParams.h"
+#include "WireCellGen/WireGenerator.h"
 
 #include "WireCellIface/WirePlaneId.h"
 
@@ -29,66 +29,75 @@ TrackDepos make_tracks() {
 }
 
 
-int main()
+void test_manual_execution()
 {
     const double tick = 2.0*units::microsecond;
     double now = 0.0*units::microsecond;
 
     IWireParameters::pointer iwp(new WireParams);
-    ParamWires pw;
-    pw.generate(iwp);
+
+    WireGenerator wiregen;
+    wiregen.sink(iwp);
+    IWireVector wires;
+    wiregen.source(wires);
+
 
     TrackDepos td = make_tracks();
-    Fanout<IDepo::pointer> depofan;
-    depofan.address(0);
-    depofan.address(1);
-    depofan.address(2);
 
-    Addresser<IDepo::pointer> depoU(0), depoV(1), depoW(2);
+    // Fanout<IDepo::pointer> depofan;
+    // depofan.address(0);
+    // depofan.address(1);
+    // depofan.address(2);
 
-    PlaneDuctor pdU(WirePlaneId(kUlayer), iwp->pitchU(), tick, now);
-    PlaneDuctor pdV(WirePlaneId(kVlayer), iwp->pitchV(), tick, now);
-    PlaneDuctor pdW(WirePlaneId(kWlayer), iwp->pitchW(), tick, now);
+    // Addresser<IDepo::pointer> depoU(0), depoV(1), depoW(2);
 
-    WireCell::Drifter driftU(iwp->pitchU().first.x());
-    WireCell::Drifter driftV(iwp->pitchV().first.x());
-    WireCell::Drifter driftW(iwp->pitchW().first.x());
+    // PlaneDuctor pdU(WirePlaneId(kUlayer), iwp->pitchU(), tick, now);
+    // PlaneDuctor pdV(WirePlaneId(kVlayer), iwp->pitchV(), tick, now);
+    // PlaneDuctor pdW(WirePlaneId(kWlayer), iwp->pitchW(), tick, now);
 
-    Digitizer digitizer;
-    digitizer.sink(pw.wires_range());
+    // WireCell::Drifter driftU(iwp->pitchU().first.x());
+    // WireCell::Drifter driftV(iwp->pitchV().first.x());
+    // WireCell::Drifter driftW(iwp->pitchW().first.x());
 
-    // Now connect up the nodes
+    // Digitizer digitizer;
+    // digitizer.sink(wires)
 
-    // fan out the depositions
-    depofan.connect(td);
+    // // Now connect up the nodes
 
-    // address the fan-out
-    depoU.connect(boost::ref(depofan));
-    depoV.connect(boost::ref(depofan));
-    depoW.connect(boost::ref(depofan));
+    // // fan out the depositions
+    // depofan.connect(td);
 
-    // drift each to the plane
-    driftU.connect(boost::ref(depoU));
-    driftV.connect(boost::ref(depoV));
-    driftW.connect(boost::ref(depoW));
+    // // address the fan-out
+    // depoU.connect(boost::ref(depofan));
+    // depoV.connect(boost::ref(depofan));
+    // depoW.connect(boost::ref(depofan));
 
-    // diffuse and digitize
-    pdU.connect(boost::ref(driftU));
-    pdV.connect(boost::ref(driftV));
-    pdW.connect(boost::ref(driftW));
+    // // drift each to the plane
+    // driftU.connect(boost::ref(depoU));
+    // driftV.connect(boost::ref(depoV));
+    // driftW.connect(boost::ref(depoW));
 
-    // aggregate and digitize
-    digitizer.connect(boost::ref(pdU));
-    digitizer.connect(boost::ref(pdV));
-    digitizer.connect(boost::ref(pdW));
+    // // diffuse and digitize
+    // pdU.connect(boost::ref(driftU));
+    // pdV.connect(boost::ref(driftV));
+    // pdW.connect(boost::ref(driftW));
 
-    // process
-    while (true) {
-	auto slice = digitizer();
-	if (!slice) { break; }
-	IChannelSlice::ChannelCharge cc = slice->charge();
-	cout << "Digitized t=" << slice->time() << " #ch=" << cc.size() << endl;
-    }
+    // // aggregate and digitize
+    // digitizer.connect(boost::ref(pdU));
+    // digitizer.connect(boost::ref(pdV));
+    // digitizer.connect(boost::ref(pdW));
 
+    // // process
+    // while (true) {
+    // 	auto slice = digitizer();
+    // 	if (!slice) { break; }
+    // 	IChannelSlice::ChannelCharge cc = slice->charge();
+    // 	cout << "Digitized t=" << slice->time() << " #ch=" << cc.size() << endl;
+    // }
+
+}
+int main()
+{
+    test_manual_execution();
     return 0;
 }

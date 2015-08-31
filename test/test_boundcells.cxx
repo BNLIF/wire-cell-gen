@@ -1,8 +1,7 @@
-// Note, this test directly links to Nav classes.  You should instead
+// Note, this test directly links to Gen classes.  You should instead
 // use Interfaces in real applications.
 
-#include "WireCellIface/IWireSelectors.h"
-#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/WireParams.h"
 #include "WireCellGen/BoundCells.h"
 
@@ -24,15 +23,13 @@
 using namespace WireCell;
 using namespace std;
 
-void draw_wires(ParamWires& pw)
+void draw_wires(const IWireVector& wires)
 {
     int colors[3] = {2, 4, 1};
 
-    vector<IWire::pointer> wires(pw.wires_begin(), pw.wires_end());
     int nwires = wires.size();
     cerr << "nwires = " << nwires << endl;
-    for (int wind=0; wind < nwires; ++wind) {
-	IWire::pointer wire = wires[wind];
+    for (auto wire : wires) {
 	int iplane = wire->planeid().index();
 	int index = wire->index();
 
@@ -45,12 +42,10 @@ void draw_wires(ParamWires& pw)
     }
 }
 
-void draw_cells(BoundCells& bc)
+void draw_cells(const ICellVector& cells)
 {
     const int ncolors= 4;
     int colors[ncolors] = {2, 4, 6, 8};
-
-    vector<ICell::pointer> cells(bc.cells_begin(), bc.cells_end());
 
     const double reduce = 0.8;
     int ncells = cells.size();
@@ -117,14 +112,17 @@ int main(int argc, char** argv)
     cfg.put("size_mm.z", full_width);
     params->configure(cfg);
 
-    ParamWires pw;
+    WireGenerator wiregen;
     IWireParameters::pointer iparams(params);
-    pw.generate(iparams);
+    wiregen.sink(iparams);
+    IWireVector wires;
+    wiregen.source(wires);
     cout << tk("generated wires") << endl;
 
     BoundCells bc;
-    bc.sink(pw.wires_range());
-
+    bc.sink(wires);
+    ICellVector cells;
+    bc.source(cells);
     cout << tk("generated cells") << endl;
 
     const Ray& bbox = params->bounds();
@@ -143,9 +141,9 @@ int main(int argc, char** argv)
     			 bbox.second.z(), bbox.second.y());
     box->Draw();
     cout << tk("set up canvas") << endl;
-    draw_cells(bc);
+    draw_cells(cells);
     cout << tk("drew cells") << endl;
-    draw_wires(pw);
+    draw_wires(wires);
     cout << tk("drew wires") << endl;
 
     if (theApp) {

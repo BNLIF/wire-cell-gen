@@ -1,35 +1,67 @@
 #ifndef WIRECELL_DIGITIZER
 #define WIRECELL_DIGITIZER
 
-#include "WireCellUtil/Faninout.h"
 
-#include "WireCellIface/IChannelSlice.h"
-#include "WireCellIface/IPlaneSlice.h"
-#include "WireCellIface/IWire.h"
+#include "WireCellIface/IDigitizer.h"
 
 namespace WireCell {
 
-    class Digitizer : public IWireSink {
+    /** This simple digitizer takes plane slices and reorganizes their
+     * contents into channel slices.  Charges on wires going to the
+     * same channel are simply summed.
+     *
+     * Internal buffering of inputs and outputs is of depth 1.
+     */
+    class Digitizer : public IDigitizer {
     public:
 	Digitizer();       
 	virtual ~Digitizer();       
 
-	/// Set the wires to use. (IWireSink)
-	virtual void sink(const IWire::iterator_range& wires);
-	// fixme: I really should get rid of the IWireSink interface
+	/** Feed new wires to use.  
+	 *
+	 * This must be called once and before any output can be expected.
+	 *
+	 * Calling it does not invalidate a previously sunk plane
+	 * slice vector but will invalidate any previously sunk wires.
+	 */
+	virtual bool sink(const IWireVector& wires);
 
-	/// Return the next channel slice
-	IChannelSlice::pointer operator()();
+	/** Feed plane slices.  
+	 *
+	 * Ordering of vector is not important.  
+	 *
+	 * Only one input is buffered and it invalidates any
+	 * previously cached channel slice.
+	 */
+	virtual bool sink(const IPlaneSliceVector& plane_slices);
 
-	/// Call once on each U, V and W plane ductor.
-	void connect(const IPlaneSlice::source_slot& s) { m_input.connect(s); }
+	/** Prepare next channel slice from current set of wires and
+	 * plane_slices.
+	 *
+	 * Since there is no deep buffering this always returns false.
+	 */
+	virtual bool process();
+
+	/** Return the next channel slice.
+	 *
+	 * Only one (current) output is buffered.  Subsequent calls
+	 * will return the same.
+	 */
+	virtual bool source(IChannelSlice::pointer& returned_channel_slice) {
+	    returned_channel_slice = m_chslice;
+	}
+
 
     private:
 
-	typedef boost::signals2::signal<IPlaneSlice::pointer (), Fanin< IPlaneSliceVector > > signal_type;
-	signal_type m_input;
-
+	// wires, organized by plane
 	IWireVector m_wires[3];
+
+	// Current plane slices
+	IPlaneSliceVector m_plane_slices;
+
+	// Current channel slice.
+	IChannelSlice::pointer m_chslice;
     };
 
 }

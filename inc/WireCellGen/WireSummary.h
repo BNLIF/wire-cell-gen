@@ -2,26 +2,19 @@
 #define WIRECELL_WIRESUMMARY
 
 #include "WireCellIface/IWireSummary.h"
-#include "WireCellUtil/BoundingBox.h"
 
 namespace WireCell {
 
     /** Default WireSummary which is also a wire sink and a wire sequence.
      */
-    class WireSummary : public IWireSummary, public IWireSink, public IWireSequence {
+    class WireSummary : public IWireSummary
+    {
     public:
-	WireSummary();
-	virtual ~WireSummary() {}
-
-	/// Set the wires to use. (IWireSink)
-	virtual void sink(const IWire::iterator_range& wires);
-
-	/// Access the sequence of wires. (IWireSequence)
-	virtual wire_iterator wires_begin();
-	virtual wire_iterator wires_end();
+	WireSummary(const IWireVector& wires);
+        virtual ~WireSummary();
 
 	/// Return the bounding box of the wire planes.
-	virtual const WireCell::BoundingBox& box() const;
+	virtual const BoundingBox& box() const;
 
 	/// Return the closest wire along the pitch direction to the
 	/// given point in the given wire plane.  It is assumed the

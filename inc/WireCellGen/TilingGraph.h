@@ -4,7 +4,7 @@
 #define WIRECELL_TILINGGRAPH
 
 #include "WireCellIface/IWire.h"
-#include "WireCellIface/ICell.h"
+#include "WireCellIface/ICellSummary.h"
 #include "WireCellUtil/IndexedSet.h"
 
 #include <boost/graph/adjacency_list.hpp>
@@ -14,9 +14,30 @@ namespace WireCell {
 
 
 
-    class TilingGraph {
-    
+    class TilingGraph : public ICellSummary {
     public:
+	TilingGraph(const ICellVector& the_cells);
+	virtual ~TilingGraph();
+
+
+	/// ICellSummary
+
+	// return wires associated with cell.  This should be
+	// identical to cell->wires() but does query the graph.
+	virtual IWireVector wires(ICell::pointer cell) const;
+
+	/// Return cells associated with the wires.
+	virtual ICellVector cells(IWire::pointer wire) const;
+
+	/// Return a single cell if it is associated with all wires.
+	virtual ICell::pointer cell(const IWireVector& wires) const;
+    
+	/// Return collection of nearest neighbor cells.
+	virtual ICellVector neighbors(ICell::pointer cell) const;
+
+    private:
+
+	void record(ICell::pointer thecell);
 
 	/// Each vertex of the graph has a "type" and an index into a
 	/// vector of objects of corresponding type.:
@@ -53,16 +74,18 @@ namespace WireCell {
 
 
 	typedef std::pair<float,float> Point2D;
-
-	TilingGraph() {}
+	Point2D threetotwo(const WireCell::Point& p3);
 
 	/// BGL does not appear to support lookups by property, so
 	/// DIY.  Note, these are actually TilingGraphCell and
 	/// TilingGraphWire
-	Vertex cell_vertex(ICell::pointer cell);
-	Vertex wire_vertex(IWire::pointer wire);
-	Vertex point_vertex(const Point2D& p2d);
+	Vertex cell_vertex_make(ICell::pointer cell);
+	Vertex wire_vertex_make(IWire::pointer wire);
+	Vertex point_vertex_make(const Point2D& p2d);
     
+	bool cell_vertex_lookup(ICell::pointer cell, Vertex& vtx) const;
+	bool wire_vertex_lookup(IWire::pointer wire, Vertex& vtx) const;
+
 	/// A graph vertex may be a wire a cell or a point.  The graph
 	/// stores this as a type and a key into an index for that type.
 	/// For Wire and Cell, they also carry a unique ident() but that
@@ -72,23 +95,12 @@ namespace WireCell {
 	WireCell::IndexedSet<IWire::pointer> wire_index;
     
 	Property point_property(const Point2D& point);
+	Property point_property(const Point2D& point) const;
 	Property cell_property(ICell::pointer cell);
+	Property cell_property(ICell::pointer cell) const;
 	Property wire_property(IWire::pointer wire);
+	Property wire_property(IWire::pointer wire) const;
 
-
-	void record(ICell::pointer thecell);
-
-	/// ITiling helpers
-
-	// return wires associated with cell.  This should be
-	// identical to cell->wires() but does query the graph.
-	IWireVector wires(ICell::pointer cell);
-
-	/// Return cells associated with the wires.
-	ICellVector cells(IWire::pointer wire);
-
-	/// Return a single cell if it is associated with all wires.
-	ICell::pointer cell(const IWireVector& wires);
     private:
 	BoostTilingGraph m_graph;
 	mutable std::map<Property, Vertex> m_cellVertex, m_wireVertex, m_pointVertex;
