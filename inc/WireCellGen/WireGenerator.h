@@ -27,6 +27,7 @@ namespace WireCell {
 	// Return the most recently produced wires.
 	bool source(IWireVector& ret) {
 	    ret = m_wires;
+	    return true;
 	}
 
 

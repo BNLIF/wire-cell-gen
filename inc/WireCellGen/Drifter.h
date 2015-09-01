@@ -37,9 +37,9 @@ namespace WireCell {
 
     private:
 	double m_location, m_drift_velocity;
+	bool m_eoi;		// end of input
 	DepoTauSortedSet m_input;
 	std::deque<IDepo::pointer> m_output;
-
 	double proper_time(IDepo::pointer depo);
     };
 

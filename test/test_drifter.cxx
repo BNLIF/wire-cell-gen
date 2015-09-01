@@ -83,6 +83,8 @@ void test_feed()
 IDepoVector test_drifted()
 {
     IDepoVector activity = get_depos(), result;
+    activity.push_back(IDepo::pointer(nullptr));
+
     WireCell::Drifter drifter;
     for (auto depo : activity) {
 	bool accepted_depo = drifter.sink(depo);
@@ -97,7 +99,12 @@ IDepoVector test_drifted()
 	    WireCell::IDepoVector vec = depo_chain(p);
 	    AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
 	}
+	else {
+//	    cerr << "no drifted from " << depo->time() << " " << depo->pos() << endl;
+	}
     }
+    cerr << "test_drifter: start with: " << activity.size()
+	 << ", after drifting have: " << result.size() << endl;
     AssertMsg(activity.size() == result.size(), "Lost some points drifting"); 
     return result;
 }
