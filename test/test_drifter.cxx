@@ -86,21 +86,27 @@ IDepoVector test_drifted()
     activity.push_back(IDepo::pointer(nullptr));
 
     WireCell::Drifter drifter;
-    for (auto depo : activity) {
-	bool accepted_depo = drifter.sink(depo);
-	Assert(accepted_depo);
-
+    int count = 0;
+    while (true) {
+	if (count < activity.size()) {
+	    WireCell::IDepo::pointer depo = activity[count++];
+	    bool accepted_depo = drifter.sink(depo);
+	    Assert(accepted_depo);
+	    if (depo) {
+		cerr << "Pushed: " << depo->time() << " " << depo->pos() << endl;
+	    }
+	    else {
+		cerr << "Pushed EOI" << endl;
+	    }
+	}
 	bool can_continue = drifter.process();
-	
 	WireCell::IDepo::pointer p;
 	bool produced_depo = drifter.source(p);
 	if (produced_depo) {
 	    result.push_back(p);
+	    if (!p) { break; }
 	    WireCell::IDepoVector vec = depo_chain(p);
 	    AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
-	}
-	else {
-//	    cerr << "no drifted from " << depo->time() << " " << depo->pos() << endl;
 	}
     }
     cerr << "test_drifter: start with: " << activity.size()
@@ -121,7 +127,7 @@ int main(int argc, char* argv[])
     IDepoVector drifted = test_drifted();
     cout << tk("transport") << endl;
     cout << tk.summary() << endl;
-
+    return 1;
     
     Ray bb = make_bbox();
 
