@@ -1,5 +1,5 @@
 #include "WireCellIface/IWireSelectors.h"
-#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/WireParams.h"
 #include "WireCellUtil/Testing.h"
 
@@ -28,9 +28,14 @@ void test3D(bool interactive)
     cfg.put("pitch_mm.w", pitch);
     params->configure(cfg);
 
-    ParamWires pw;
     IWireParameters::pointer iwp(params);
-    pw.generate(iwp);
+
+    WireGenerator wg;
+    Assert(wg.sink(iwp));
+    wg.process();
+    IWireVector wires;
+    Assert(wg.source(wires));
+    AssertMsg(wires.size(), "Got no wires");
 
     const Ray& bbox = params->bounds();
 
@@ -48,8 +53,6 @@ void test3D(bool interactive)
 
     int colors[3] = {2, 4, 1};
 
-    std::vector<IWire::pointer> wires(pw.wires_begin(), pw.wires_end());
-    AssertMsg(wires.size(), "Got no wires");
 
     vector<IWire::pointer> u_wires, v_wires, w_wires;
     copy_if(wires.begin(), wires.end(), back_inserter(u_wires), select_u_wires);

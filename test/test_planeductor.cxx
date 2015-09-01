@@ -56,33 +56,34 @@ int main()
     }
 
     WireCell::Drifter drifter(plane_x, drift_velocity);
-    drifter.connect(td);
+    AssertMsg(false, "Need to update this test");
+    // drifter.connect(td);
 
 
-    pd.connect(boost::ref(drifter));
+    // pd.connect(boost::ref(drifter));
 
-    while (now < 10*units::microsecond) {
-	IPlaneSlice::pointer ps = pd();
-	if (!ps) {
-	    cerr << "\nNo more data.\n";
-	    break;
-	}
+    // while (now < 10*units::microsecond) {
+    // 	IPlaneSlice::pointer ps = pd();
+    // 	if (!ps) {
+    // 	    cerr << "\nNo more data.\n";
+    // 	    break;
+    // 	}
 
-	double clock = ps->time();
-	WirePlaneId wpid = ps->planeid();
-	IPlaneSlice::ChargeGrouping cg = ps->charge_groups();
+    // 	double clock = ps->time();
+    // 	WirePlaneId wpid = ps->planeid();
+    // 	IPlaneSlice::ChargeGrouping cg = ps->charge_groups();
 
-	if (!cg.size()) { continue; }
+    // 	if (!cg.size()) { continue; }
 
-	cerr << "Clock: " << clock << " plane: " << wpid << " got " << cg.size() << " groups" << endl;
+    // 	cerr << "Clock: " << clock << " plane: " << wpid << " got " << cg.size() << " groups" << endl;
 
-	for (auto group : cg) {
-	    cerr << "\t[@" << group.first <<"/"<<group.second.size() <<"]";
-	    for (auto q : group.second) {
-		cerr << " " << q;
-	    }
-	    cerr << endl;
-	}
-    }
-
+    // 	for (auto group : cg) {
+    // 	    cerr << "\t[@" << group.first <<"/"<<group.second.size() <<"]";
+    // 	    for (auto q : group.second) {
+    // 		cerr << " " << q;
+    // 	    }
+    // 	    cerr << endl;
+    // 	}
+    // }
+    return 1;
 }

@@ -4,7 +4,7 @@
 #include "WireCellIface/IWireGenerator.h"
 
 #include "WireCellIface/ICell.h"
-#include "WireCellIface/ITiling.h"
+#include "WireCellIface/ICellMaker.h"
 
 #include "WireCellUtil/BoundingBox.h"
 #include "WireCellUtil/Testing.h"
@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
     // These are here to force the linker to give us the symbols
     WIRECELL_NAMEDFACTORY_USE(WireParams);
-    WIRECELL_NAMEDFACTORY_USE(ParamWires);
+    WIRECELL_NAMEDFACTORY_USE(WireGenerator);
     WIRECELL_NAMEDFACTORY_USE(BoundCells);
 
     cout << tk("factories made") << endl;
@@ -58,46 +58,40 @@ int main(int argc, char* argv[])
     AssertMsg(wp_wps, "Failed to get IWireParameters from default WireParams");
     cout << "Got WireParams IWireParameters interface @ " << wp_wps << endl;
     
-    auto pw_gen = WireCell::Factory::lookup<IWireGenerator>("ParamWires");
-    AssertMsg(pw_gen, "Failed to get IWireGenerator from default ParamWires");
-    cout << "Got ParamWires IWireGenerator interface @ " << pw_gen << endl;
-    pw_gen->generate(wp_wps);
+    auto pw_gen = WireCell::Factory::lookup<IWireGenerator>("WireGenerator");
+    AssertMsg(pw_gen, "Failed to get IWireGenerator from default WireGenerator");
+    cout << "Got WireGenerator IWireGenerator interface @ " << pw_gen << endl;
+    Assert(pw_gen->sink(wp_wps));
 
-    auto pw_seq = WireCell::Factory::lookup<IWireSequence>("ParamWires");
-    AssertMsg(pw_seq, "Failed to get IWireSequence from default ParamWires");
-    cout << "Got ParamWires IWireSequence interface @ " << pw_seq << endl;
+    pw_gen->process();
 
-    std::vector<IWire::pointer> wires(pw_seq->wires_begin(), pw_seq->wires_end());
+    IWireVector wires;
+    Assert(pw_gen->source(wires));
+
     int nwires = wires.size();
     cout << "Got " << nwires << " wires" << endl;
     //Assert(747 == nwires);
     cout << tk("Got ParamWires to local collection") << endl;
 
 
-    auto bc_sink = WireCell::Factory::lookup<IWireSink>("BoundCells");
-    AssertMsg(bc_sink, "Failed to get IWireSink from default BoundCells");
-    cout << "Got BoundCells IWireSink interface @ " << bc_sink << endl;
-    bc_sink->sink(pw_seq->wires_range());
+    auto bc = WireCell::Factory::lookup<ICellMaker>("BoundCells");
+    AssertMsg(bc, "Failed to get ICellMaker from default BoundCells");
+    cout << "Got BoundCells ICellMaker interface @ " << bc << endl;
+
+    Assert(bc->sink(wires));
+    bc->process();
+    ICellVector cells;
+    Assert(bc->source(cells));
     cout << tk("BoundCells generated") << endl;
 
-    auto bc_seq = WireCell::Factory::lookup<ICellSequence>("BoundCells");
-    AssertMsg(bc_seq, "Failed to get ICellSequence from default BoundCells");
-    cout << "Got BoundCells ICellSequence interface @ " << bc_seq << endl;
-
-    std::vector<ICell::pointer> cells(bc_seq->cells_begin(),
-				    bc_seq->cells_end() );
     int ncells = cells.size();
     cout << "Got " << ncells << " cells" << endl;
     cout << tk("Got BoundCells to local collection") << endl;
     AssertMsg(ncells, "Got no cells");
 
     WireCell::BoundingBox boundingbox;
-    for (int ind = 0; ind < cells.size(); ++ind) {
-	// it would be more efficient to find the BB of the wires, but
-	// here we just use the center as a test.  This also means the
-	// BB does not contain the corners of the cells at the borders
-	// of the planes
-	boundingbox(cells[ind]->center());
+    for (auto cell : cells) {
+	boundingbox(cell->center());
     }
     const Ray& bbox = boundingbox.bounds();
     cout << tk("Made bounding box") << endl;

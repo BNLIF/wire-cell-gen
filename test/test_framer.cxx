@@ -4,7 +4,7 @@
 #include "WireCellGen/Digitizer.h"
 #include "WireCellGen/TrackDepos.h"
 #include "WireCellGen/WireParams.h"
-#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/Framer.h"
 
 #include "WireCellIface/WirePlaneId.h"
@@ -43,75 +43,97 @@ int main()
     double now = 0.0*units::microsecond;
 
     IWireParameters::pointer iwp(new WireParams);
-    ParamWires pw;
-    pw.generate(iwp);
+
+    WireGenerator wg;
+    Assert(wg.sink(iwp));
+    wg.process();
+    IWireVector wires;
+    Assert(wg.source(wires));
 
     TrackDepos td = make_tracks();
-    Fanout<IDepo::pointer> depofan;
-    depofan.address(0);
-    depofan.address(1);
-    depofan.address(2);
 
-    Addresser<IDepo::pointer> depoU(0), depoV(1), depoW(2);
+    WireCell::Drifter drift[3] = {
+	WireCell::Drifter(iwp->pitchU().first.x()),
+	WireCell::Drifter(iwp->pitchV().first.x()),
+	WireCell::Drifter(iwp->pitchW().first.x())
+    };
 
-    PlaneDuctor pdU(WirePlaneId(kUlayer), iwp->pitchU(), tick, now);
-    PlaneDuctor pdV(WirePlaneId(kVlayer), iwp->pitchV(), tick, now);
-    PlaneDuctor pdW(WirePlaneId(kWlayer), iwp->pitchW(), tick, now);
-
-    WireCell::Drifter driftU(iwp->pitchU().first.x());
-    WireCell::Drifter driftV(iwp->pitchV().first.x());
-    WireCell::Drifter driftW(iwp->pitchW().first.x());
-
+    PlaneDuctor pds[3] = {
+	PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
+	PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
+	PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
+    };
+    
     Digitizer digitizer;
-    digitizer.sink(pw.wires_range());
+    digitizer.sink(wires);
 
     Framer framer(nticks_per_frame);
 
-    // Now connect up the nodes
+    AssertMsg(false, "Need to update this test");
 
-    // fan out the depositions
-    depofan.connect(td);
+    // while (true) {
+    // 	auto depo = td();
+    // 	if (!depo) { break; }
+    // 	IDepoVector drifted_to_plane;
+    // 	for (int iplane=0; iplane<3; ++iplane) {
+    // 	    .......
 
-    // address the fan-out
-    depoU.connect(boost::ref(depofan));
-    depoV.connect(boost::ref(depofan));
-    depoW.connect(boost::ref(depofan));
+    // 	    drift[iplane].sink(depo);
+    // 	    drift[iplane].process();
+    // 	    IDepo::pointer drifted;
+    // 	    drift[iplane].process();
+    // 	}
+	
 
-    // drift each to the plane
-    driftU.connect(boost::ref(depoU));
-    driftV.connect(boost::ref(depoV));
-    driftW.connect(boost::ref(depoW));
+	
 
-    // diffuse and digitize
-    pdU.connect(boost::ref(driftU));
-    pdV.connect(boost::ref(driftV));
-    pdW.connect(boost::ref(driftW));
+    // }
 
-    // aggregate and digitize
-    digitizer.connect(boost::ref(pdU));
-    digitizer.connect(boost::ref(pdV));
-    digitizer.connect(boost::ref(pdW));
+    // // Now connect up the nodes
 
-    framer.connect(boost::ref(digitizer));
+    // // fan out the depositions
+    // depofan.connect(td);
 
-    // process
-    while (true) {
-	auto frame = framer();
-	if (!frame) { break; }
+    // // address the fan-out
+    // depoU.connect(boost::ref(depofan));
+    // depoV.connect(boost::ref(depofan));
+    // depoW.connect(boost::ref(depofan));
 
-	int ntraces = boost::distance(frame->range());
-	cerr << "Frame: #" << frame->ident()
-	     << " at t=" << frame->time()/units::microsecond << " usec"
-	     << " with " << ntraces << " traces"
-	     << endl;
-	for (auto trace : *frame) {
-	    cerr << "\ttrace ch:" << trace->channel()
-		 << " start tbin=" << trace->tbin()
-		 << " #time bins=" << trace->charge().size()
-		 << endl;
-	}
+    // // drift each to the plane
+    // driftU.connect(boost::ref(depoU));
+    // driftV.connect(boost::ref(depoV));
+    // driftW.connect(boost::ref(depoW));
 
-    }
+    // // diffuse and digitize
+    // pdU.connect(boost::ref(driftU));
+    // pdV.connect(boost::ref(driftV));
+    // pdW.connect(boost::ref(driftW));
+
+    // // aggregate and digitize
+    // digitizer.connect(boost::ref(pdU));
+    // digitizer.connect(boost::ref(pdV));
+    // digitizer.connect(boost::ref(pdW));
+
+    // framer.connect(boost::ref(digitizer));
+
+    // // process
+    // while (true) {
+    // 	auto frame = framer();
+    // 	if (!frame) { break; }
+
+    // 	int ntraces = boost::distance(frame->range());
+    // 	cerr << "Frame: #" << frame->ident()
+    // 	     << " at t=" << frame->time()/units::microsecond << " usec"
+    // 	     << " with " << ntraces << " traces"
+    // 	     << endl;
+    // 	for (auto trace : *frame) {
+    // 	    cerr << "\ttrace ch:" << trace->channel()
+    // 		 << " start tbin=" << trace->tbin()
+    // 		 << " #time bins=" << trace->charge().size()
+    // 		 << endl;
+    // 	}
+
+    // }
 
     return 0;
 }

@@ -1,8 +1,9 @@
 #ifndef WIRECELL_FRAMER
 #define WIRECELL_FRAMER
 
-#include "WireCellIface/IFrame.h"
-#include "WireCellIface/IChannelSlice.h"
+#include "WireCellIface/IFramer.h"
+
+#include <deque>
 
 namespace WireCell {
 
@@ -11,19 +12,21 @@ namespace WireCell {
      * It consumes up to a fixed number of ticks of IChannelSlices and
      * packages them into an IFrame.
      */
-    class Framer {
+    class Framer : public IFramer {
     public:
+	Framer();
 	Framer(int nticks);
 	virtual ~Framer();
 
-	/// Return the next frame at most nticks long.
-	IFrame::pointer operator()();
-
-	void connect(const IChannelSlice::source_slot& s) { m_input.connect(s); }
+	virtual bool sink(const IChannelSlice::pointer& channel_slice);
+	virtual bool process();
+	virtual bool source(IFrame::pointer& frame);
 
     private:
 
-	IChannelSlice::source_signal m_input;
+	std::deque<IChannelSlice::pointer> m_input;
+	std::deque<IFrame::pointer> m_output;
+
 	int m_nticks;
 	int m_count;
     };

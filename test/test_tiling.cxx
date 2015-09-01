@@ -4,8 +4,9 @@
 #include "WireCellIface/IWireSelectors.h"
 
 
-#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/WireParams.h"
+#include "WireCellGen/WireSummarizer.h"
 #include "WireCellGen/WireSummary.h"
 #include "WireCellGen/BoundCells.h"
 #include "WireCellGen/Tiling.h"
@@ -51,39 +52,56 @@ int main()
     cfg.put("pitch_mm.w", pitch);
     params->configure(cfg);
 
-    ParamWires* pw = new ParamWires;
     IWireParameters::pointer iwp(params);
-    pw->generate(iwp);
+    WireGenerator wg;
+    Assert(wg.sink(iwp));
+    wg.process();
+    IWireVector wires;
+    Assert(wg.source(wires));
 
     IWireVector u_wires, v_wires, w_wires;
 
-    auto wires = pw->wires_range();
-    copy_if(boost::begin(wires), boost::end(wires), back_inserter(u_wires), select_u_wires);
-    copy_if(boost::begin(wires), boost::end(wires), back_inserter(v_wires), select_v_wires);
-    copy_if(boost::begin(wires), boost::end(wires), back_inserter(w_wires), select_w_wires);
+    copy_if(boost::begin(wires), boost::end(wires), 
+	    back_inserter(u_wires), select_u_wires);
+    copy_if(boost::begin(wires), boost::end(wires), 
+	    back_inserter(v_wires), select_v_wires);
+    copy_if(boost::begin(wires), boost::end(wires), 
+	    back_inserter(w_wires), select_w_wires);
     
     IWireVector* uvw_wires[3] = { &u_wires, &v_wires, &w_wires };
 
-    WireSummary* ws = new WireSummary;
-    ws->sink(pw->wires_range());
+    WireSummarizer wser;
+    Assert(wser.sink(wires));
+    wser.process();
+    WireSummary::pointer ws;
+    Assert(wser.source(ws));
+
     BoundCells bc;
-    bc.sink(pw->wires_range());
+    Assert(bc.sink(wires));
+    bc.process();
+    ICellVector cells;
+    Assert(bc.source(cells));
 
     tk("made cells"); mu("made cells");
 
     Tiling til;
-    til.sink(bc.cells_range());
+    Assert(til.sink(cells));
+    til.process();
+    ICellSummary::pointer csum;
+    Assert(til.source(csum));
+
 
     TFile* tfile = TFile::Open("test_tiling.root","RECREATE");
 
     TCanvas *canvas = new TCanvas;
 
-    for (auto cell : bc.cells_range() ) {
+    for (auto cell : cells) {
 	AssertMsg(cell, "Got null cell.");
 	//cerr << "Checking cell #" << cell->ident() << " center=" << cell->center() << endl;
-	auto assoc_wires = til.wires(cell);
+	auto assoc_wires = csum->wires(cell);
 	if (3 != assoc_wires.size()) {
-	    cerr << "Cell #" << cell->ident() << " with " << assoc_wires.size() << " wires:" ;
+	    cerr << "Cell #" << cell->ident()
+		 << " with " << assoc_wires.size() << " wires:" ;
 	    for (auto w : assoc_wires) {
 		cerr << " " << w->ident();
 	    }
@@ -92,7 +110,7 @@ int main()
 	}
 	AssertMsg(3 == assoc_wires.size(), "Got wrong number of wires");
 	
-	auto samecell = til.cell(assoc_wires);
+	auto samecell = csum->cell(assoc_wires);
 	AssertMsg(samecell, "Failed to get get a round trip cell->wires->cell pointer");
 	AssertMsg(samecell->ident() == cell->ident(), "Cell->wires->cell round trip failed.");
 
@@ -163,10 +181,10 @@ int main()
 
     }
 
-    for (auto wire : pw->wires_range()) {
+    for (auto wire : wires) {
 	AssertMsg(wire, "Got null wire.");
 
-	auto cells = til.cells(wire);
+	auto cells = csum->cells(wire);
 	//cerr << "Wire #" << wire->ident() << " with " << cells.size() << " cells" <<  endl;
     }
 

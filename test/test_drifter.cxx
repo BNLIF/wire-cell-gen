@@ -83,20 +83,22 @@ void test_feed()
 IDepoVector test_drifted()
 {
     IDepoVector activity = get_depos(), result;
-    int count=0, norig = activity.size();
-    WireCell::RangeFeed<IDepoVector::iterator> feed(activity.begin(), activity.end());
     WireCell::Drifter drifter;
-    drifter.connect(feed);
+    for (auto depo : activity) {
+	bool accepted_depo = drifter.sink(depo);
+	Assert(accepted_depo);
 
-    WireCell::IDepo::pointer p;
-    while ((p=drifter())) {
-	WireCell::IDepoVector vec = depo_chain(p);
-	AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
-
-	result.push_back(p);
-	++count;
+	bool can_continue = drifter.process();
+	
+	WireCell::IDepo::pointer p;
+	bool produced_depo = drifter.source(p);
+	if (produced_depo) {
+	    result.push_back(p);
+	    WireCell::IDepoVector vec = depo_chain(p);
+	    AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
+	}
     }
-    AssertMsg(count == norig , "Lost some points drifting"); 
+    AssertMsg(activity.size() == result.size(), "Lost some points drifting"); 
     return result;
 }
 

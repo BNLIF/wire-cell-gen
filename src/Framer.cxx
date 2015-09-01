@@ -2,9 +2,21 @@
 #include "WireCellGen/SimpleFrame.h"
 #include "WireCellGen/ZSEndedTrace.h"
 
+#include "WireCellUtil/NamedFactory.h"
+
 #include <iostream>
 using namespace std;
 using namespace WireCell;
+
+
+WIRECELL_NAMEDFACTORY(Framer);
+WIRECELL_NAMEDFACTORY_ASSOCIATE(Framer, IFramer);
+
+Framer::Framer()		// fixme: needed for factory
+    : m_nticks(100)
+    , m_count(0)
+{
+}
 
 Framer::Framer(int nticks)
     : m_nticks(nticks)
@@ -15,21 +27,24 @@ Framer::~Framer()
 {
 }
 
-
-
-IFrame::pointer Framer::operator()()
+bool Framer::sink(const IChannelSlice::pointer& channel_slice)
 {
-    std::map<int, ZSEndedTrace*> ch2trace;
+    m_input.push_back(channel_slice);
+    return true;
+}
+bool Framer::process()
+{
+    if (m_input.size() < m_nticks) {
+	return false;
+    }
 
+    std::map<int, ZSEndedTrace*> ch2trace;
     double time = -1;
     for (int itick=0; itick < m_nticks; ++itick) {
-	IChannelSlice::pointer chslice = *m_input();
-	if (!chslice) {
-	    cerr << "Out of channel slices at tick " << itick << " in frame " << m_count << endl;
-	    break;
-	}
+	IChannelSlice::pointer chslice = m_input.front();
+	m_input.pop_front();
 
-	if (!itick) {
+	if (!itick) {		// first time through
 	    time = chslice->time();
 	}
 
@@ -54,5 +69,18 @@ IFrame::pointer Framer::operator()()
 	ZSEndedTrace* trace = ct.second;
 	traces.push_back(ITrace::pointer(trace));
     }
-    return IFrame::pointer(new SimpleFrame(m_count++, time, traces));
+    IFrame::pointer newframe(new SimpleFrame(m_count++, time, traces));
+    m_output.push_back(newframe);
+    return m_input.size() >= m_nticks;
 }
+
+bool Framer::source(IFrame::pointer& frame)
+{
+    if (m_output.empty()) {
+	return false;
+    }
+    frame = m_output.front();
+    m_output.pop_front();
+    return true;
+}
+

@@ -14,7 +14,7 @@ Drifter::Drifter(double location,
 		 double drift_velocity)
     : m_location(location)
     , m_drift_velocity(drift_velocity)
-    , m_buffer(IDepoDriftCompare(drift_velocity))
+    , m_input(IDepoDriftCompare(drift_velocity))
 {
 }
 
@@ -22,58 +22,41 @@ double Drifter::proper_time(IDepo::pointer depo) {
     return depo->time() + depo->pos().x()/m_drift_velocity;
 }
 
-bool Drifter::buffer()
+bool Drifter::sink(const IDepo::pointer& depo)
 {
-    if (!m_buffer.size()) {	// empty buffer, prime.
-	IDepo::pointer depo = *m_input();
-	if (!depo) {
-	    return false;	// no buffer, no input, done.
+    m_input.insert(depo);
+    return true;		// we always accept
+}
+
+bool Drifter::process()
+{
+    while (!m_input.empty()) {
+	IDepo::pointer top = *m_input.begin();
+	double tau = proper_time(top);
+
+	IDepo::pointer bot = *m_input.rbegin();
+	if (bot->time() < tau) { // haven't yet buffered enough to
+	    break;		 // guarantee proper output ordering.
 	}
-	m_buffer.insert(depo);
+	IDepo::pointer ret(new TransportedDepo(top, m_location,
+					       m_drift_velocity));
+	m_input.erase(top);
+	m_output.push_back(ret);
     }
+    return false;		// we always exhaust all we can. 
+}
 
-    while (true) {
-	double tau = proper_time(top());
-	IDepo::pointer latest = bot();
-	if (latest->time() >= tau) {
-	    return true;
-	}
-	latest = *m_input();
-	if (!latest) {
-	    break;
-	}
-	m_buffer.insert(latest);
+bool Drifter::source(IDepo::pointer& depo)
+{
+    if (m_output.empty()) {
+	return false;		// no blood from a stone
     }
-
-    return m_buffer.size() > 0;
+    depo = m_output.front();
+    m_output.pop_front();
+    return true;
 }
 
-// return value and increment
-IDepo::pointer Drifter::operator()()
-{
-    if ( !buffer() ) {
-	return 0;
-    }
-    IDepo::pointer before = pop();
-    IDepo::pointer ret(new TransportedDepo(before, m_location, m_drift_velocity));
-    //cerr << "Drifter: buffered: " << m_buffer.size() << endl;
-    return ret;
-}
 
-IDepo::pointer Drifter::pop()
-{
-    IDepo::pointer ret = top();
-    m_buffer.erase(ret);
-    return ret;
-}
 
-IDepo::pointer Drifter::top()
-{
-    return *m_buffer.begin();
-}
-IDepo::pointer Drifter::bot()
-{
-    return *m_buffer.rbegin();
-}
 
 

@@ -2,6 +2,7 @@
 #include "WireCellIface/IWire.h"
 #include "WireCellIface/IWireGenerator.h"
 #include "WireCellIface/IWireSelectors.h"
+#include "WireCellIface/IWireSummarizer.h"
 #include "WireCellIface/IWireSummary.h"
 
 #include "WireCellUtil/Testing.h"
@@ -33,8 +34,8 @@ int main(int argc, char* argv[])
     // These are here to force the linker to give us the symbols.  We
     // do not compile against this code!
     WIRECELL_NAMEDFACTORY_USE(WireParams);
-    WIRECELL_NAMEDFACTORY_USE(ParamWires);
-    WIRECELL_NAMEDFACTORY_USE(WireSummary);
+    WIRECELL_NAMEDFACTORY_USE(WireGenerator);
+    WIRECELL_NAMEDFACTORY_USE(WireSummarizer);
 
     cout << tk("factories made") << endl;
     cout << mu("factories made") << endl;
@@ -53,34 +54,33 @@ int main(int argc, char* argv[])
     cfg.put("pitch_mm.w", pitch);
     wp_cfg->configure(cfg);
 
-    auto wp_wps = WireCell::Factory::lookup<IWireParameters>("WireParams");
-    AssertMsg(wp_wps, "Failed to get IWireParameters from default WireParams");
-    cout << "Got WireParams IWireParameters interface @ " << wp_wps << endl;
+    auto wp = WireCell::Factory::lookup<IWireParameters>("WireParams");
+    AssertMsg(wp, "Failed to get IWireParameters from default WireParams");
+    cout << "Got WireParams IWireParameters interface @ " << wp << endl;
     
     cout << tk("Configured WireParams") << endl;
     cout << mu("Configured WireParams") << endl;
 
     cout << "Wire Parameters:\n"
-	 << "Bounds: " << wp_wps->bounds() << "\n"
-	 << "Upitch: " << wp_wps->pitchU() << "\n"
-	 << "Vpitch: " << wp_wps->pitchV() << "\n"
-	 << "Wpitch: " << wp_wps->pitchW() << "\n"
+	 << "Bounds: " << wp->bounds() << "\n"
+	 << "Upitch: " << wp->pitchU() << "\n"
+	 << "Vpitch: " << wp->pitchV() << "\n"
+	 << "Wpitch: " << wp->pitchW() << "\n"
 	 << endl;
 
 
-    auto pw_gen = WireCell::Factory::lookup<IWireGenerator>("ParamWires");
-    AssertMsg(pw_gen, "Failed to get IWireGenerator from default ParamWires");
-    cout << "Got ParamWires IWireGenerator interface @ " << pw_gen << endl;
-    pw_gen->generate(wp_wps);
+    auto wg = WireCell::Factory::lookup<IWireGenerator>("WireGenerator");
+    AssertMsg(wg, "Failed to get IWireGenerator from default WireGenerator");
+    cout << "Got WireGenerator IWireGenerator interface @ " << wg << endl;
+
+    Assert(wg->sink(wp));
+    wg->process();
+    IWireVector wires;
+    Assert(wg->source(wires));
 
     cout << tk("Generated ParamWires") << endl;
     cout << mu("Generated ParamWires") << endl;
 
-    auto pw_seq = WireCell::Factory::lookup<IWireSequence>("ParamWires");
-    AssertMsg(pw_seq, "Failed to get IWireSequence from default ParamWires");
-    cout << "Got ParamWires IWireSequence interface @ " << pw_seq << endl;
-
-    std::vector<IWire::pointer> wires(pw_seq->wires_begin(), pw_seq->wires_end());
     int nwires = wires.size();
     cout << "Got " << nwires << " wires" << endl;
     //Assert(1103 == nwires);
@@ -88,12 +88,14 @@ int main(int argc, char* argv[])
     cout << tk("Made local wire collection") << endl;
     cout << mu("Made local wire collection") << endl;
 
+    auto wser = WireCell::Factory::lookup<IWireSummarizer>("WireSummarizer");
 
-    auto ws_sink = WireCell::Factory::lookup<IWireSink>("WireSummary");
-    ws_sink->sink(pw_seq->wires_range());
+    Assert(wser->sink(wires));
+    wser->process();
+    IWireSummary::pointer ws;
+    Assert(wser->source(ws));
 
-    auto ws_ws = WireCell::Factory::lookup<IWireSummary>("WireSummary");
-    WireCell::BoundingBox bb2 = ws_ws->box();
+    WireCell::BoundingBox bb2 = ws->box();
 
     cout << tk("Made wire summary") << endl;
     cout << mu("Made wire summary") << endl;

@@ -1,5 +1,5 @@
 #include "WireCellIface/IWireSelectors.h"
-#include "WireCellGen/ParamWires.h"
+#include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/WireParams.h"
 #include "WireCellUtil/Testing.h"
 
@@ -20,11 +20,13 @@ using namespace std;
 void test1()
 {
     WireParams *params = new WireParams;
-    ParamWires pw;
     IWireParameters::pointer iwp(params);
-    pw.generate(iwp);
 
-    std::vector<IWire::pointer> wires(pw.wires_begin(), pw.wires_end());
+    WireGenerator wg;
+    Assert(wg.sink(iwp));
+    wg.process();
+    IWireVector wires;
+    Assert(wg.source(wires));
 
     cerr << "Got " << wires.size() << " wires" <<endl;
     Assert(wires.size());
@@ -59,10 +61,13 @@ void test2()
 	cfg.put("pitch_mm.v", pitches[ind]);
 	cfg.put("pitch_mm.w", pitches[ind]);
 	params->configure(cfg);
-	ParamWires pw;
 	IWireParameters::pointer iwp(params);
-	pw.generate(iwp);
-	std::vector<IWire::pointer> wires(pw.wires_begin(), pw.wires_end());
+	WireGenerator wg;
+	Assert(wg.sink(iwp));
+	wg.process();
+	IWireVector wires;
+	Assert(wg.source(wires));
+
 	int nwires = wires.size();
 	cout << ind << ": pitch=" << pitches[ind] << " nwires=" << nwires << " (want=" << want[ind] << ")" << endl;
 	AssertMsg(nwires == want[ind], "Wrong number of wires");
@@ -73,9 +78,13 @@ void test2()
 void test3D(bool interactive)
 {
     WireParams* params = new WireParams;
-    ParamWires pw;
     IWireParameters::pointer iwp(params);
-    pw.generate(iwp);
+    WireGenerator wg;
+    Assert(wg.sink(iwp));
+    wg.process();
+    IWireVector wires;
+    Assert(wg.source(wires));
+    AssertMsg(wires.size(), "Got no wires");
 
     const Ray& bbox = params->bounds();
 
@@ -93,10 +102,7 @@ void test3D(bool interactive)
     int colors[3] = {2, 4, 1};
 
 
-    std::vector<IWire::pointer> wires(pw.wires_begin(), pw.wires_end());
-    AssertMsg(wires.size(), "Got no wires");
-
-    vector<IWire::pointer> u_wires, v_wires, w_wires;
+    IWireVector u_wires, v_wires, w_wires;
     copy_if(wires.begin(), wires.end(), back_inserter(u_wires), select_u_wires);
     copy_if(wires.begin(), wires.end(), back_inserter(v_wires), select_v_wires);
     copy_if(wires.begin(), wires.end(), back_inserter(w_wires), select_w_wires);

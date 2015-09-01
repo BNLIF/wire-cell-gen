@@ -26,6 +26,7 @@ namespace WireCell {
     public:
 
 
+	/// This giant constructor needs help.
 	PlaneDuctor(WirePlaneId wpid, // the plane ID to stamp on the slices
 		    const Ray& pitch, /// location, pitch and angle of wires
 		    double tick = 0.5*units::microsecond, /// digitized time bin size
@@ -61,18 +62,6 @@ namespace WireCell {
 
 	// internal methods below.
 
-	// Return the current buffer depth.  When zero, there is no more data.
-	int buffer_size();
-
-	// Return the time of the internal clock.  Calling latch()
-	// will advance this internal clock.
-	double clock();
-	
-	// Return a vector filled with per wire (segment) charge
-	// indexed by wire index.  Trailing wires with zero charge are
-	// suppressed.  This advances the internal clock.
-	std::vector<double> latch();
-
 	// Internal method for calculating the "proper time" of an
 	// event.  This is the time for a point like event occurring
 	// at t,x to drift to the location of our wire plane (as
@@ -99,8 +88,6 @@ namespace WireCell {
 	Diffuser* m_diff;
 	double m_high_water_tau;
 
-	// read-ahead enough depositions to surpass the <tbuffer> time from the current "now".
-	void buffer();
 
 	// internal buffering
 	std::deque<IDepo::pointer> m_input;
