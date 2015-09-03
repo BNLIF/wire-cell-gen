@@ -41,25 +41,11 @@ namespace WireCell {
 	virtual ~PlaneDuctor();
 
 	/// Accept depositions.
-	virtual bool sink(const IDepo::pointer& depo) {
-	    m_input.push_back(depo);
-	    return true;
-	}
-	/// Return the next available plane slice.
-	virtual bool source(IPlaneSlice::pointer& plane_slice) {
-	    if (m_output.empty()) {
-		return false;
-	    }
-	    plane_slice = m_output.front();
-	    m_output.pop_front();
-	    return true;
-	}
-	
-	/// This will drain the internal input queue and fill the
-	/// internal output queue subject to the internal diffusion
-	/// buffer remaining full and the high-water mark not reached.
-	virtual bool process();
+	virtual bool sink(const IDepo::pointer& depo);
 
+	/// Return the next available plane slice.
+	virtual bool source(IPlaneSlice::pointer& plane_slice);
+	
 	// internal methods below.
 
 	// Internal method for calculating the "proper time" of an
@@ -87,6 +73,7 @@ namespace WireCell {
 	BufferedHistogram2D* m_hist;
 	Diffuser* m_diff;
 	double m_high_water_tau;
+	bool m_eoi;
 
 
 	// internal buffering

@@ -29,49 +29,54 @@ Framer::~Framer()
 
 bool Framer::sink(const IChannelSlice::pointer& channel_slice)
 {
-    m_input.push_back(channel_slice);
-    return true;
-}
-bool Framer::process()
-{
-    if (m_input.size() < m_nticks) {
-	return false;
+    bool eoi = true;
+    if (channel_slice) {
+	m_input.push_back(channel_slice);
+	eoi = false;
     }
 
-    std::map<int, ZSEndedTrace*> ch2trace;
-    double time = -1;
-    for (int itick=0; itick < m_nticks; ++itick) {
-	IChannelSlice::pointer chslice = m_input.front();
-	m_input.pop_front();
+    // make as many frames as we can, including final drain
+    while (m_input.size() && (eoi || m_input.size() >= m_nticks)) {
 
-	if (!itick) {		// first time through
-	    time = chslice->time();
+	std::map<int, ZSEndedTrace*> ch2trace;
+	double time = -1;
+
+	// pick up at most nticks.
+	for (int itick=0; itick < m_nticks && m_input.size(); ++itick) {
+	    IChannelSlice::pointer chslice = m_input.front();
+	    m_input.pop_front();
+
+	    if (!itick) {		// first time through
+		time = chslice->time();
+	    }
+
+	    IChannelSlice::ChannelCharge cc = chslice->charge();
+	    for (auto chq : cc) {
+		int chn = chq.first;
+		double charge = chq.second;
+		ZSEndedTrace* zst = ch2trace[chn];
+		if (!zst) {
+		    zst = new ZSEndedTrace(chn);
+		    ch2trace[chn] = zst;
+		}
+		(*zst)(itick, charge);
+	    }	
+	}
+	if (time < 0) {		// failed to get any channel slices
+	    return nullptr;
 	}
 
-	IChannelSlice::ChannelCharge cc = chslice->charge();
-	for (auto chq : cc) {
-	    int chn = chq.first;
-	    double charge = chq.second;
-	    ZSEndedTrace* zst = ch2trace[chn];
-	    if (!zst) {
-		zst = new ZSEndedTrace(chn);
-		ch2trace[chn] = zst;
-	    }
-	    (*zst)(itick, charge);
-	}	
-    }
-    if (time < 0) {		// failed to get any channel slices
-	return nullptr;
+	ITraceVector traces;
+	for (auto ct : ch2trace) {
+	    ZSEndedTrace* trace = ct.second;
+	    traces.push_back(ITrace::pointer(trace));
+	}
+	IFrame::pointer newframe(new SimpleFrame(m_count++, time, traces));
+	m_output.push_back(newframe);
+
     }
 
-    ITraceVector traces;
-    for (auto ct : ch2trace) {
-	ZSEndedTrace* trace = ct.second;
-	traces.push_back(ITrace::pointer(trace));
-    }
-    IFrame::pointer newframe(new SimpleFrame(m_count++, time, traces));
-    m_output.push_back(newframe);
-    return m_input.size() >= m_nticks;
+    return true;
 }
 
 bool Framer::source(IFrame::pointer& frame)

@@ -134,6 +134,18 @@ bool WireGenerator::sink(const IWireParameters::pointer& wp)
     make_one_plane(m_wires, WirePlaneId(kUlayer), wp->bounds(), wp->pitchU());
     make_one_plane(m_wires, WirePlaneId(kVlayer), wp->bounds(), wp->pitchV());
     make_one_plane(m_wires, WirePlaneId(kWlayer), wp->bounds(), wp->pitchW());
+    //cerr << "WireGenerator: made " << m_wires.size() << " wires" << endl;
+    return true;
+}
+
+bool WireGenerator::source(IWireVector& ret)
+{
+    if (m_wires.empty()) {
+	return false;
+    }
+    //cerr << "WireGenerator: returning " << m_wires.size() << " wires" << endl;
+    ret = m_wires;
+    m_wires.clear();
     return true;
 }
 

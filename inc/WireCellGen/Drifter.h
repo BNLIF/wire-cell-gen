@@ -25,9 +25,6 @@ namespace WireCell {
 	/// This drifter internally buffers all input 
 	bool sink(const IDepo::pointer& depo);
 
-	/// Drift one deposition
-	bool process();
-
 	/// If the buffer is deep enough, this pops the next available
 	/// deposition.  The depth of the buffer is maintained such
 	/// that time at origin of the last expected (of all currently
@@ -41,6 +38,8 @@ namespace WireCell {
 	DepoTauSortedSet m_input;
 	std::deque<IDepo::pointer> m_output;
 	double proper_time(IDepo::pointer depo);
+
+	void process();
     };
 
 

@@ -55,7 +55,7 @@ int main()
     IWireParameters::pointer iwp(params);
     WireGenerator wg;
     Assert(wg.sink(iwp));
-    wg.process();
+
     IWireVector wires;
     Assert(wg.source(wires));
 
@@ -72,13 +72,13 @@ int main()
 
     WireSummarizer wser;
     Assert(wser.sink(wires));
-    wser.process();
+
     WireSummary::pointer ws;
     Assert(wser.source(ws));
 
     BoundCells bc;
     Assert(bc.sink(wires));
-    bc.process();
+
     ICellVector cells;
     Assert(bc.source(cells));
 
@@ -86,7 +86,7 @@ int main()
 
     Tiling til;
     Assert(til.sink(cells));
-    til.process();
+
     ICellSummary::pointer csum;
     Assert(til.source(csum));
 

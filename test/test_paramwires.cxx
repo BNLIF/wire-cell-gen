@@ -32,7 +32,7 @@ void test3D(bool interactive)
 
     WireGenerator wg;
     Assert(wg.sink(iwp));
-    wg.process();
+
     IWireVector wires;
     Assert(wg.source(wires));
     AssertMsg(wires.size(), "Got no wires");

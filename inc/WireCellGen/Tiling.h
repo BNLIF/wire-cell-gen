@@ -22,9 +22,6 @@ namespace WireCell {
 	 */
 	virtual bool sink(const ICellVector& cells);
 
-	/** A no-op, all construction is done inside sink(). */
-	virtual bool process() { return false; }
-
 	/** Return the most recent cell summary.
 	 */
 	virtual bool source(ICellSummary::pointer& summary) {

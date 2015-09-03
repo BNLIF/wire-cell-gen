@@ -14,7 +14,6 @@ WIRECELL_NAMEDFACTORY(Digitizer);
 WIRECELL_NAMEDFACTORY_ASSOCIATE(Digitizer, IDigitizer);
 
 Digitizer::Digitizer()
-    : m_chslice(nullptr)
 {
 }
 Digitizer::~Digitizer()
@@ -48,10 +47,8 @@ public:
     virtual ChannelCharge charge() const { return m_cc; }
 };
 
-bool Digitizer::process()
+bool Digitizer::source(IChannelSlice::pointer& returned_channel_slice) 
 {
-    m_chslice = nullptr;
-
     const size_t nplanes = m_plane_slices.size();
     if (! nplanes) {
 	return false;
@@ -81,7 +78,7 @@ bool Digitizer::process()
     // fixme: maybe add check for consistent times between planes....
 
     IChannelSlice::pointer next(new SimpleChannelSlice(the_times[0], cc));
-    m_chslice = next;
-
-    return false;		// always since we don't buffer 
+    returned_channel_slice = next;
+    return true;
 }
+

@@ -93,18 +93,22 @@ IDepoVector test_drifted()
 	    bool accepted_depo = drifter.sink(depo);
 	    Assert(accepted_depo);
 	    if (depo) {
-		cerr << "Pushed: " << depo->time() << " " << depo->pos() << endl;
+		cerr << "test_drifted: Pushed: " << depo->time()
+		     << " " << depo->pos() << endl;
 	    }
 	    else {
-		cerr << "Pushed EOI" << endl;
+		cerr << "test_drifted: Pushed EOI" << endl;
 	    }
 	}
-	bool can_continue = drifter.process();
+        
 	WireCell::IDepo::pointer p;
 	bool produced_depo = drifter.source(p);
 	if (produced_depo) {
 	    result.push_back(p);
-	    if (!p) { break; }
+	    if (!p) {
+		cerr << "test_drifted hit EOI" << endl;
+		break; 
+	    }
 	    WireCell::IDepoVector vec = depo_chain(p);
 	    AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
 	}
@@ -127,7 +131,6 @@ int main(int argc, char* argv[])
     IDepoVector drifted = test_drifted();
     cout << tk("transport") << endl;
     cout << tk.summary() << endl;
-    return 1;
     
     Ray bb = make_bbox();
 
@@ -158,6 +161,10 @@ int main(int argc, char* argv[])
     // draw drifted
     double tmin=-1, tmax=-1;
     for (auto depo : drifted) {
+	if (!depo) {
+	    cerr << "Reached EOI"<< endl;
+	    break;
+	}
 	auto history = depo_chain(depo);
 	Assert(history.size() > 1);
 
@@ -171,6 +178,11 @@ int main(int argc, char* argv[])
     cerr << "Time bounds: " << tmin << " < " << tmax << endl;
 
     for (auto depo : drifted) {
+	if (!depo) {
+	    cerr << "Reached EOI"<< endl;
+	    break;
+	}
+
 
 	TPolyMarker3D* pm = new TPolyMarker3D(1,8);
 	const Point& p = depo->pos();

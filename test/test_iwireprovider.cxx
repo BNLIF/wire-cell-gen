@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
     cout << "Got WireGenerator IWireGenerator interface @ " << wg << endl;
 
     Assert(wg->sink(wp));
-    wg->process();
+
     IWireVector wires;
     Assert(wg->source(wires));
 
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
     auto wser = WireCell::Factory::lookup<IWireSummarizer>("WireSummarizer");
 
     Assert(wser->sink(wires));
-    wser->process();
+
     IWireSummary::pointer ws;
     Assert(wser->source(ws));
 

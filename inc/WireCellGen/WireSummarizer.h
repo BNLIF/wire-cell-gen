@@ -11,11 +11,12 @@ namespace WireCell {
 	virtual ~WireSummarizer();
 	
 	bool sink(const IWireVector& wires);
+
 	bool source(IWireSummary::pointer& ws) {
 	    ws = m_ws;
 	    return true;
 	}
-	bool process() { return false; }
+
 
     private:
 	IWireSummary::pointer m_ws;

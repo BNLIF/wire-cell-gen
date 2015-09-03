@@ -13,22 +13,16 @@ namespace WireCell {
      * perpendicular to the drift direction.
      */
 
-    class WireGenerator :	public IWireGenerator {
+    class WireGenerator : public IWireGenerator {
     public:
 	WireGenerator();
 	virtual ~WireGenerator();
 
-	// No buffering, all the action is in sink().
-	bool process() { return false; }
-
 	// Feed the parameters, triggering the generation of wires.
-	bool sink(const IWireParameters::pointer& wp);
+	virtual bool sink(const IWireParameters::pointer& wp);
 
 	// Return the most recently produced wires.
-	bool source(IWireVector& ret) {
-	    ret = m_wires;
-	    return true;
-	}
+	virtual bool source(IWireVector& ret);
 
 
     private:

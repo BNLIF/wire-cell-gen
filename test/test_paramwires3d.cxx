@@ -24,7 +24,7 @@ void test1()
 
     WireGenerator wg;
     Assert(wg.sink(iwp));
-    wg.process();
+
     IWireVector wires;
     Assert(wg.source(wires));
 
@@ -64,7 +64,7 @@ void test2()
 	IWireParameters::pointer iwp(params);
 	WireGenerator wg;
 	Assert(wg.sink(iwp));
-	wg.process();
+
 	IWireVector wires;
 	Assert(wg.source(wires));
 
@@ -81,7 +81,7 @@ void test3D(bool interactive)
     IWireParameters::pointer iwp(params);
     WireGenerator wg;
     Assert(wg.sink(iwp));
-    wg.process();
+
     IWireVector wires;
     Assert(wg.source(wires));
     AssertMsg(wires.size(), "Got no wires");

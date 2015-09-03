@@ -63,8 +63,6 @@ int main(int argc, char* argv[])
     cout << "Got WireGenerator IWireGenerator interface @ " << pw_gen << endl;
     Assert(pw_gen->sink(wp_wps));
 
-    pw_gen->process();
-
     IWireVector wires;
     Assert(pw_gen->source(wires));
 
@@ -79,7 +77,7 @@ int main(int argc, char* argv[])
     cout << "Got BoundCells ICellMaker interface @ " << bc << endl;
 
     Assert(bc->sink(wires));
-    bc->process();
+
     ICellVector cells;
     Assert(bc->source(cells));
     cout << tk("BoundCells generated") << endl;

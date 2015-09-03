@@ -34,21 +34,20 @@ bool Drifter::sink(const IDepo::pointer& depo)
     }
     else {// can't just save the EOI nullptr into the input buffer due
 	  // to sorting.
+	m_eoi = true;
+	process();
+	m_output.push_back(nullptr);
+
 	cerr << "Drifter: got end of input with output size "
 	     << m_output.size()
 	     << endl;
-	m_eoi = true;
     }
 
     return true;		// otherwise, we always accept
 }
 
-bool Drifter::process()
+void Drifter::process()
 {
-    if (m_input.empty() && m_eoi) {
-	return false;
-    }
-
     // drain input
     while (!m_input.empty()) {	
 	IDepo::pointer top = *m_input.begin();
@@ -63,7 +62,7 @@ bool Drifter::process()
 	    // cerr << "Drifter: tau= " << tau << " time=" << bot->time()
 	    // 	 << " #in=" << m_input.size() << " #out=" << m_output.size()
 	    // 	 << endl;
-	    return false;
+	    return;
 	}
 	IDepo::pointer ret(new TransportedDepo(top, m_location,
 					       m_drift_velocity));
@@ -72,17 +71,13 @@ bool Drifter::process()
 	//      << " @ " << ret->time() << " " << ret->pos() << endl;
 	m_output.push_back(ret);
     }
-
-    if (m_input.empty() && m_eoi) {
-	cerr << "Drifter: setting EOI on output" << endl;
-	m_output.push_back(nullptr); // forward EOI
-    }
-
-    return false;		// we always exhaust all we can. 
+    return;
 }
 
 bool Drifter::source(IDepo::pointer& depo)
 {
+    process();
+
     if (m_output.empty()) {
 	//cerr << "Drifter: now empy " << endl;
 	return false;		// no blood from a stone

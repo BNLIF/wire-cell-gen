@@ -14,6 +14,7 @@
 #include "WireCellUtil/Testing.h"
 
 #include <iostream>
+#include <boost/signals2.hpp>
 
 using namespace WireCell;
 using namespace std;
@@ -35,6 +36,31 @@ TrackDepos make_tracks() {
     return td;
 }
 
+template<class ProcessorType, typename InputType, typename OutputType>
+class SignalExecutor {
+public:
+    typedef boost::signals2::signal<InputType ()> signal_type;
+    typedef typename signal_type::slot_type slot_type;
+
+    SignalExecutor(ProcessorType& proc) : m_proc(proc) {}
+    OutputType operator()() {
+	OutputType out;
+	while (!m_proc.source(out)) {
+	    InputType in = *m_sig();
+	    m_proc.sink(in);
+	}
+	return out;	
+    }
+
+    void connect(const slot_type& s) { m_sig.connect(s); }
+
+private:
+    ProcessorType& m_proc;
+    signal_type m_sig;
+};
+
+
+
 
 int main()
 {
@@ -45,95 +71,99 @@ int main()
     IWireParameters::pointer iwp(new WireParams);
 
     WireGenerator wg;
-    Assert(wg.sink(iwp));
-    wg.process();
-    IWireVector wires;
-    Assert(wg.source(wires));
+
+    // Build a "mini application" using a lambda to return the wire params.
+    SignalExecutor<WireGenerator, IWireParameters::pointer, IWireVector> wgse(wg);
+    auto blerg = [iwp]() {return iwp;};
+    wgse.connect(blerg);
+    IWireVector wires = wgse();
+    Assert(wires.size());
+
 
     TrackDepos td = make_tracks();
 
-    WireCell::Drifter drift[3] = {
-	WireCell::Drifter(iwp->pitchU().first.x()),
-	WireCell::Drifter(iwp->pitchV().first.x()),
-	WireCell::Drifter(iwp->pitchW().first.x())
-    };
+    // drift
+    WireCell::Drifter drifter0(iwp->pitchU().first.x());
+    WireCell::Drifter drifter1(iwp->pitchV().first.x());
+    WireCell::Drifter drifter2(iwp->pitchW().first.x());
 
-    PlaneDuctor pds[3] = {
-	PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
-	PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
-	PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
-    };
+    typedef SignalExecutor<Drifter, IDepo::pointer, IDepo::pointer>  DriftExecutor;
+    DriftExecutor driftse0(drifter0);
+    DriftExecutor driftse1(drifter1);
+    DriftExecutor driftse2(drifter2);
+
+    // fanout
+
+    Fanout<IDepo::pointer> fandepo;
+    fandepo.connect(td);
+    for (int addr = 0; addr < 3; ++addr) {
+	fandepo.address(addr);	// register
+    }
+
+    driftse0.connect([&fandepo]() { return fandepo(0); });
+    driftse1.connect([&fandepo]() { return fandepo(1); });
+    driftse2.connect([&fandepo]() { return fandepo(2); });
+
+    // diffuse + collect/induce
+
+    PlaneDuctor pd0(WirePlaneId(kUlayer), iwp->pitchU(), tick, now);
+    PlaneDuctor pd1(WirePlaneId(kVlayer), iwp->pitchV(), tick, now);
+    PlaneDuctor pd2(WirePlaneId(kWlayer), iwp->pitchW(), tick, now);
+
+    typedef IPlaneSlice::pointer IPSptr;
+    typedef SignalExecutor<PlaneDuctor, IDepo::pointer, IPSptr> PDExecutor;
+
+    PDExecutor pdse0(pd0);
+    PDExecutor pdse1(pd1);
+    PDExecutor pdse2(pd2);
+
+    pdse0.connect(boost::ref(driftse0));
+    pdse1.connect(boost::ref(driftse1));
+    pdse2.connect(boost::ref(driftse2));
+
+    // fanin 
+
+    typedef boost::signals2::signal<IPSptr (), Fanin< IPlaneSliceVector > > PlaneSliceFanin;
+    PlaneSliceFanin fanin;
+    fanin.connect(boost::ref(pdse0));
+    fanin.connect(boost::ref(pdse1));
+    fanin.connect(boost::ref(pdse2));
+    
+
+    // digitize
     
     Digitizer digitizer;
-    digitizer.sink(wires);
+    typedef SignalExecutor<Digitizer, IPlaneSliceVector, IChannelSlice::pointer> DigiExecutor;
+    DigiExecutor digise(digitizer);
+    digise.connect(boost::ref(fanin));
+    
 
-    Framer framer(nticks_per_frame);
+    // frame
 
-    AssertMsg(false, "Need to update this test");
+    Framer framer;
+    typedef SignalExecutor<Framer, IChannelSlice::pointer, IFrame::pointer> FrameExecutor;
+    FrameExecutor framese(framer);
+    framese.connect(boost::ref(digise));
 
-    // while (true) {
-    // 	auto depo = td();
-    // 	if (!depo) { break; }
-    // 	IDepoVector drifted_to_plane;
-    // 	for (int iplane=0; iplane<3; ++iplane) {
-    // 	    .......
 
-    // 	    drift[iplane].sink(depo);
-    // 	    drift[iplane].process();
-    // 	    IDepo::pointer drifted;
-    // 	    drift[iplane].process();
-    // 	}
-	
+    // process
+    while (true) {
+    	auto frame = framese();
+    	if (!frame) { break; }
 
-	
+    	int ntraces = boost::distance(frame->range());
+    	cerr << "Frame: #" << frame->ident()
+    	     << " at t=" << frame->time()/units::microsecond << " usec"
+    	     << " with " << ntraces << " traces"
+    	     << endl;
+    	for (auto trace : *frame) {
+    	    cerr << "\ttrace ch:" << trace->channel()
+    		 << " start tbin=" << trace->tbin()
+    		 << " #time bins=" << trace->charge().size()
+    		 << endl;
+    	}
 
-    // }
-
-    // // Now connect up the nodes
-
-    // // fan out the depositions
-    // depofan.connect(td);
-
-    // // address the fan-out
-    // depoU.connect(boost::ref(depofan));
-    // depoV.connect(boost::ref(depofan));
-    // depoW.connect(boost::ref(depofan));
-
-    // // drift each to the plane
-    // driftU.connect(boost::ref(depoU));
-    // driftV.connect(boost::ref(depoV));
-    // driftW.connect(boost::ref(depoW));
-
-    // // diffuse and digitize
-    // pdU.connect(boost::ref(driftU));
-    // pdV.connect(boost::ref(driftV));
-    // pdW.connect(boost::ref(driftW));
-
-    // // aggregate and digitize
-    // digitizer.connect(boost::ref(pdU));
-    // digitizer.connect(boost::ref(pdV));
-    // digitizer.connect(boost::ref(pdW));
-
-    // framer.connect(boost::ref(digitizer));
-
-    // // process
-    // while (true) {
-    // 	auto frame = framer();
-    // 	if (!frame) { break; }
-
-    // 	int ntraces = boost::distance(frame->range());
-    // 	cerr << "Frame: #" << frame->ident()
-    // 	     << " at t=" << frame->time()/units::microsecond << " usec"
-    // 	     << " with " << ntraces << " traces"
-    // 	     << endl;
-    // 	for (auto trace : *frame) {
-    // 	    cerr << "\ttrace ch:" << trace->channel()
-    // 		 << " start tbin=" << trace->tbin()
-    // 		 << " #time bins=" << trace->charge().size()
-    // 		 << endl;
-    // 	}
-
-    // }
+    }
 
     return 0;
 }

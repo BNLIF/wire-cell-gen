@@ -35,21 +35,12 @@ namespace WireCell {
 	 */
 	virtual bool sink(const IPlaneSliceVector& plane_slices);
 
-	/** Prepare next channel slice from current set of wires and
-	 * plane_slices.
-	 *
-	 * Since there is no deep buffering this always returns false.
-	 */
-	virtual bool process();
-
 	/** Return the next channel slice.
 	 *
 	 * Only one (current) output is buffered.  Subsequent calls
 	 * will return the same.
 	 */
-	virtual bool source(IChannelSlice::pointer& returned_channel_slice) {
-	    returned_channel_slice = m_chslice;
-	}
+	virtual bool source(IChannelSlice::pointer& returned_channel_slice);
 
 
     private:
@@ -59,9 +50,6 @@ namespace WireCell {
 
 	// Current plane slices
 	IPlaneSliceVector m_plane_slices;
-
-	// Current channel slice.
-	IChannelSlice::pointer m_chslice;
     };
 
 }

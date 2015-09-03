@@ -15,12 +15,6 @@ namespace WireCell {
 	BoundCells();
 	virtual ~BoundCells();
 
-	/** Process input, make output (IProcessor).
-	 *
-	 * This is actually a no-op (all work is done in sink()).
-	 */
-	virtual bool process() { return false; }
-
 	/** Accept input wires (ISink).
 	 *
 	 * The input queue is zero length, adding new wires will

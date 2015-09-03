@@ -32,6 +32,7 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_hist(new BufferedHistogram2D(tick, ray_length(pitch), tstart, 0))
     , m_diff(new Diffuser(*m_hist, nsigma))
     , m_high_water_tau(tstart)
+    , m_eoi(false)
 
 {
     // The histogram's X direction is in units of "proper time" (tau)
@@ -104,7 +105,7 @@ public:
     }
 	
 
-    virtual WirePlaneId planeid() const { return m_wpid; }
+    WirePlaneId planeid() const { return m_wpid; }
 
     virtual double time() const { return m_time; }
 
@@ -113,12 +114,23 @@ public:
 
 
 
-bool PlaneDuctor::process()
+
+bool PlaneDuctor::sink(const IDepo::pointer& depo) 
 {
-    // drain input queue
+    m_input.push_back(depo);
+    return true;
+}
+
+bool PlaneDuctor::source(IPlaneSlice::pointer& plane_slice) 
+{
+    // drain until empty or hit EOI
     while (!m_input.empty()) {
 	IDepo::pointer depo = m_input.front();
 	m_input.pop_front();
+	if (!depo) {
+	    m_eoi = true;
+	    break;
+	}
 
 	// the time it will show up
 	double tau = proper_tau(depo->time(), depo->pos().x());
@@ -132,6 +144,7 @@ bool PlaneDuctor::process()
 	double sigmaL = sqrt(tmpcm2)*units::centimeter / m_drift_velocity;
 	double sigmaT = sqrt(2*m_DT*drift_time/units::centimeter2)*units::centimeter2;
 	double trans = pitch_dist(depo->pos());
+
 	m_diff->diffuse(tau, trans, sigmaL, sigmaT, depo->charge());
 
 	if (tau > m_high_water_tau) {
@@ -145,5 +158,23 @@ bool PlaneDuctor::process()
 	IPlaneSlice::pointer ps(new PDPS(m_wpid, t, m_hist->popx()));
 	m_output.push_back(ps);
     }
+    // if at EOI, drain until hist is empty
+    if (m_eoi) {
+	if (m_hist->size()) {
+	    while (m_hist->size()) {
+		double t = m_hist->xmin();		// call first
+		IPlaneSlice::pointer ps(new PDPS(m_wpid, t, m_hist->popx()));
+		m_output.push_back(ps);
+	    }
+	    m_output.push_back(nullptr);
+	}
+    }
+
+    if (m_output.empty()) {
+	return false;
+    }
+    plane_slice = m_output.front();
+    m_output.pop_front();
     return true;
 }
+	
