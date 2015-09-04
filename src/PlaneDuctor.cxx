@@ -32,7 +32,6 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_hist(new BufferedHistogram2D(tick, ray_length(pitch), tstart, 0))
     , m_diff(new Diffuser(*m_hist, nsigma))
     , m_high_water_tau(tstart)
-    , m_eoi(false)
 
 {
     // The histogram's X direction is in units of "proper time" (tau)
@@ -113,24 +112,44 @@ public:
 };
 
 
+void PlaneDuctor::reset()
+{
+    m_input.clear();
+    m_output.clear();
+}
 
+void PlaneDuctor::flush() 
+{
+    process();
 
-bool PlaneDuctor::sink(const IDepo::pointer& depo) 
+    while (m_hist->size()) {
+	double t = m_hist->xmin();		// call first
+	IPlaneSlice::pointer ps(new PDPS(m_wpid, t, m_hist->popx()));
+	m_output.push_back(ps);
+    }
+}
+
+bool PlaneDuctor::insert(const input_type& depo) 
 {
     m_input.push_back(depo);
     return true;
 }
 
-bool PlaneDuctor::source(IPlaneSlice::pointer& plane_slice) 
+bool PlaneDuctor::extract(output_type& plane_slice) 
 {
-    // drain until empty or hit EOI
+    if (m_output.empty()) {
+	return false;
+    }
+    plane_slice = m_output.front();
+    m_output.pop_front();
+    return true;
+}
+void PlaneDuctor::process()
+{
+    // drain until empty
     while (!m_input.empty()) {
 	IDepo::pointer depo = m_input.front();
 	m_input.pop_front();
-	if (!depo) {
-	    m_eoi = true;
-	    break;
-	}
 
 	// the time it will show up
 	double tau = proper_tau(depo->time(), depo->pos().x());
@@ -151,30 +170,12 @@ bool PlaneDuctor::source(IPlaneSlice::pointer& plane_slice)
 	    m_high_water_tau = tau;
 	}
     }	
-    
+
     // fill output queue but drain only up to high water mark and while full
     while (m_hist->size() && m_hist->xmin() < m_high_water_tau - m_tbuffer) {
 	double t = m_hist->xmin();		// call first
 	IPlaneSlice::pointer ps(new PDPS(m_wpid, t, m_hist->popx()));
 	m_output.push_back(ps);
     }
-    // if at EOI, drain until hist is empty
-    if (m_eoi) {
-	if (m_hist->size()) {
-	    while (m_hist->size()) {
-		double t = m_hist->xmin();		// call first
-		IPlaneSlice::pointer ps(new PDPS(m_wpid, t, m_hist->popx()));
-		m_output.push_back(ps);
-	    }
-	    m_output.push_back(nullptr);
-	}
-    }
-
-    if (m_output.empty()) {
-	return false;
-    }
-    plane_slice = m_output.front();
-    m_output.pop_front();
-    return true;
 }
 	

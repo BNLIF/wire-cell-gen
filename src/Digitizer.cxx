@@ -20,20 +20,17 @@ Digitizer::~Digitizer()
 {
 }
 
-bool Digitizer::sink(const IWireVector& wires)
+bool Digitizer::set_wires(const IWireVector& wires)
 {
     for (int ind=0; ind<3; ++ind) {
 	m_wires[ind].clear();
-	copy_if(wires.begin(), wires.end(), back_inserter(m_wires[ind]), select_uvw_wires[ind]);
+	copy_if(wires.begin(), wires.end(),
+		back_inserter(m_wires[ind]), select_uvw_wires[ind]);
 	std::sort(m_wires[ind].begin(), m_wires[ind].end(), ascending_index);
     }
     return true;
 }
 
-bool Digitizer::sink(const IPlaneSliceVector& plane_slices)
-{
-    m_plane_slices = plane_slices;
-}
 
 class SimpleChannelSlice : public IChannelSlice {
     double m_time;
@@ -47,18 +44,22 @@ public:
     virtual ChannelCharge charge() const { return m_cc; }
 };
 
-bool Digitizer::source(IChannelSlice::pointer& returned_channel_slice) 
+void Digitizer::reset()
 {
-    const size_t nplanes = m_plane_slices.size();
-    if (! nplanes) {
-	return false;
-    }
-    
+    m_output.clear();
+}
+void Digitizer::flush()
+{
+    return;			// no input buffer
+}
+bool Digitizer::insert(const input_type& plane_slice_vector)
+{
     IChannelSlice::ChannelCharge cc;
     double the_times[3] = {0};
 
+    int nplanes = plane_slice_vector.size();
     for (int iplane = 0; iplane < nplanes; ++iplane) {
-	IPlaneSlice::pointer ps = m_plane_slices[iplane];
+	IPlaneSlice::pointer ps = plane_slice_vector[iplane];
 	if (!ps) {
 	    return false;
 	}
@@ -78,7 +79,16 @@ bool Digitizer::source(IChannelSlice::pointer& returned_channel_slice)
     // fixme: maybe add check for consistent times between planes....
 
     IChannelSlice::pointer next(new SimpleChannelSlice(the_times[0], cc));
-    returned_channel_slice = next;
+    m_output.push_back(next);
     return true;
 }
 
+bool Digitizer::extract(output_type& channel_slice)
+{
+    if (m_output.empty()) {
+	return false;
+    }
+    channel_slice = m_output.front();
+    m_output.pop_front();
+    return true;
+}

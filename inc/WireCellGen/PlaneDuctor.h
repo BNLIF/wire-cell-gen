@@ -40,12 +40,11 @@ namespace WireCell {
 
 	virtual ~PlaneDuctor();
 
-	/// Accept depositions.
-	virtual bool sink(const IDepo::pointer& depo);
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& depo);
+	virtual bool extract(output_type& plane_slice);
 
-	/// Return the next available plane slice.
-	virtual bool source(IPlaneSlice::pointer& plane_slice);
-	
 	// internal methods below.
 
 	// Internal method for calculating the "proper time" of an
@@ -73,12 +72,13 @@ namespace WireCell {
 	BufferedHistogram2D* m_hist;
 	Diffuser* m_diff;
 	double m_high_water_tau;
-	bool m_eoi;
-
 
 	// internal buffering
 	std::deque<IDepo::pointer> m_input;
 	std::deque<IPlaneSlice::pointer> m_output;
+
+	void process();
+
     };
 
 }

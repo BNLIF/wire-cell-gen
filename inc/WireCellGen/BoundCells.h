@@ -2,6 +2,7 @@
 #define WIRECELLGEN_BOUNDCELLS
 
 #include "WireCellIface/ICellMaker.h"
+#include <deque>
 
 namespace WireCell {
 
@@ -15,26 +16,15 @@ namespace WireCell {
 	BoundCells();
 	virtual ~BoundCells();
 
-	/** Accept input wires (ISink).
-	 *
-	 * The input queue is zero length, adding new wires will
-	 * invalidate any existing output and regenerate it.
-	 */ 
-	virtual bool sink(const IWireVector& wires);
-
-	/** Produce any output cells (ISource).
-	 *
-	 * Repeated calls will return the same cells.  If no input
-	 * wires have yet been given then an empty cell vector will be
-	 * set.
-	 */
-	virtual bool source(ICellVector& cells) {
-	    cells = m_cells;
-	    return true;
-	}
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& wire_vector);
+	virtual bool extract(output_type& cell_vector);
+	
 
     private:
-	ICellVector m_cells;
+	std::deque<ICellVector> m_output;
+
     };
 }
 

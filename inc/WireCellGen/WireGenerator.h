@@ -4,6 +4,8 @@
 #include "WireCellIface/IWireGenerator.h"
 #include "WireCellIface/IWire.h"
 
+#include <deque>
+
 namespace WireCell {
 
     /** A source of wire (segment) geometry as generated from parameters.
@@ -18,16 +20,14 @@ namespace WireCell {
 	WireGenerator();
 	virtual ~WireGenerator();
 
-	// Feed the parameters, triggering the generation of wires.
-	virtual bool sink(const IWireParameters::pointer& wp);
-
-	// Return the most recently produced wires.
-	virtual bool source(IWireVector& ret);
-
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& in);
+	virtual bool extract(output_type& out);
 
     private:
 
-	IWireVector m_wires;
+	std::deque<IWireVector> m_output;
     };
 
 

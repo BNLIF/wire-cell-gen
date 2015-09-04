@@ -15,28 +15,45 @@ WIRECELL_NAMEDFACTORY_ASSOCIATE(Framer, IFramer);
 Framer::Framer()		// fixme: needed for factory
     : m_nticks(100)
     , m_count(0)
+    , m_eoi(false)
 {
 }
 
 Framer::Framer(int nticks)
     : m_nticks(nticks)
     , m_count(0)
+    , m_eoi(false)
 {
 }
 Framer::~Framer()
 {
 }
 
-bool Framer::sink(const IChannelSlice::pointer& channel_slice)
+
+void Framer::reset()
 {
-    bool eoi = true;
+    m_input.clear();
+    m_output.clear();
+}
+
+void Framer::flush()
+{
+    process(true);
+}
+
+bool Framer::insert(const input_type& channel_slice)
+{
     if (channel_slice) {
 	m_input.push_back(channel_slice);
-	eoi = false;
     }
+    process(false);
+    return true;
+}
 
+void Framer::process(bool flush)
+{
     // make as many frames as we can, including final drain
-    while (m_input.size() && (eoi || m_input.size() >= m_nticks)) {
+    while (m_input.size() && (flush || m_input.size() >= m_nticks)) {
 
 	std::map<int, ZSEndedTrace*> ch2trace;
 	double time = -1;
@@ -63,7 +80,8 @@ bool Framer::sink(const IChannelSlice::pointer& channel_slice)
 	    }	
 	}
 	if (time < 0) {		// failed to get any channel slices
-	    return nullptr;
+	    cerr << "Framer: got bogus data" << endl;
+	    continue;
 	}
 
 	ITraceVector traces;
@@ -73,13 +91,10 @@ bool Framer::sink(const IChannelSlice::pointer& channel_slice)
 	}
 	IFrame::pointer newframe(new SimpleFrame(m_count++, time, traces));
 	m_output.push_back(newframe);
-
     }
-
-    return true;
 }
 
-bool Framer::source(IFrame::pointer& frame)
+bool Framer::extract(output_type& frame)
 {
     if (m_output.empty()) {
 	return false;

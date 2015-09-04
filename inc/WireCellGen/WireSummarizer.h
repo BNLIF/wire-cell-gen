@@ -2,6 +2,9 @@
 #define WIRECELL_WIRESUMMARIZER
 
 #include "WireCellIface/IWireSummarizer.h"
+#include "WireCellIface/IWireSummary.h"
+
+#include <deque>
 
 namespace WireCell {
 
@@ -9,17 +12,15 @@ namespace WireCell {
     public:
 	WireSummarizer();
 	virtual ~WireSummarizer();
-	
-	bool sink(const IWireVector& wires);
 
-	bool source(IWireSummary::pointer& ws) {
-	    ws = m_ws;
-	    return true;
-	}
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& in);
+	virtual bool extract(output_type& out);
 
 
     private:
-	IWireSummary::pointer m_ws;
+	std::deque<IWireSummary::pointer> m_output;
     };
 
 }

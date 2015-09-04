@@ -14,8 +14,8 @@ using namespace std;
 
 using namespace WireCell;
 
-WIRECELL_NAMEDFACTORY(BoundCells);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(BoundCells, ICellMaker);
+//WIRECELL_NAMEDFACTORY(BoundCells);
+//WIRECELL_NAMEDFACTORY_ASSOCIATE(BoundCells, ICellMaker);
 //WIRECELL_NAMEDFACTORY_ASSOCIATE(BoundCells, IWireSink);
 //WIRECELL_NAMEDFACTORY_ASSOCIATE(BoundCells, ICellSequence);
 
@@ -123,10 +123,20 @@ bool is_point_inside_w_lane(const Point& point, const double& w_lane_center, con
 }
 
 
-
-bool BoundCells::sink(const IWireVector& wires)
+void BoundCells::flush()
 {
-    m_cells.clear();
+    return;
+}
+void BoundCells::reset()
+{
+    m_output.clear();
+    return;
+}
+
+
+bool BoundCells::insert(const IWireVector& wires)
+{
+    ICellVector res_cells;
 
     /* This was originally Xin's cell algorithm but only the concept
        remains.
@@ -296,12 +306,23 @@ bool BoundCells::sink(const IWireVector& wires)
 		}
 			
 		// result
-		m_cells.push_back(ICell::pointer(new BoundCell(m_cells.size(), pcell, uvw_wires)));
+		res_cells.push_back(ICell::pointer(new BoundCell(res_cells.size(), pcell, uvw_wires)));
 
             } // W wires
         } // v wires
     } // u wires
 
+    m_output.push_back(res_cells);
+    return true;
+}
+
+bool BoundCells::extract(output_type& cell_vector)
+{
+    if (m_output.empty()) {
+	return false;
+    }
+    cell_vector = m_output.front();
+    m_output.pop_front();
     return true;
 }
 

@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <boost/signals2.hpp>
+#include <typeinfo>
 
 using namespace WireCell;
 using namespace std;
@@ -42,7 +43,9 @@ public:
     typedef boost::signals2::signal<InputType ()> signal_type;
     typedef typename signal_type::slot_type slot_type;
 
-    SignalExecutor(ProcessorType& proc) : m_proc(proc) {}
+    SignalExecutor(ProcessorType& proc) : m_proc(proc) {
+	cerr << "SignalExecutor " << typeid(proc).name() << endl;
+    }
     OutputType operator()() {
 	OutputType out;
 	while (!m_proc.source(out)) {
@@ -52,7 +55,10 @@ public:
 	return out;	
     }
 
-    void connect(const slot_type& s) { m_sig.connect(s); }
+    void connect(const slot_type& s) {
+	cerr << "Connect " << typeid(s).name() << endl;
+	m_sig.connect(s);
+    }
 
 private:
     ProcessorType& m_proc;
@@ -152,16 +158,18 @@ int main()
     	if (!frame) { break; }
 
     	int ntraces = boost::distance(frame->range());
-    	cerr << "Frame: #" << frame->ident()
-    	     << " at t=" << frame->time()/units::microsecond << " usec"
-    	     << " with " << ntraces << " traces"
-    	     << endl;
-    	for (auto trace : *frame) {
-    	    cerr << "\ttrace ch:" << trace->channel()
-    		 << " start tbin=" << trace->tbin()
-    		 << " #time bins=" << trace->charge().size()
-    		 << endl;
-    	}
+	if (ntraces > 0) {
+	    cerr << "test_framer: Frame: #" << frame->ident()
+		 << " at t=" << frame->time()/units::microsecond << " usec"
+		 << " with " << ntraces << " traces"
+		 << endl;
+	    for (auto trace : *frame) {
+		cerr << "\ttrace ch:" << trace->channel()
+		     << " start tbin=" << trace->tbin()
+		     << " #time bins=" << trace->charge().size()
+		     << endl;
+	    }
+	}
 
     }
 

@@ -13,7 +13,6 @@ WIRECELL_NAMEDFACTORY_ASSOCIATE(Tiling, ITiling);
 
 
 Tiling::Tiling()
-    : m_summary(nullptr)
 {
 }
 
@@ -21,9 +20,27 @@ Tiling::~Tiling()
 {
 }
 
-bool Tiling::sink(const ICellVector& cells)
+void Tiling::reset()
 {
-    m_summary = ICellSummary::pointer(new TilingGraph(cells));
+    m_output.clear();
+}
+void Tiling::flush()
+{
+}
+
+bool Tiling::insert(const input_type& cell_vector)
+{
+    auto summary = ICellSummary::pointer(new TilingGraph(cell_vector));
+    m_output.push_back(summary);
     return true;
 }
 
+bool Tiling::extract(output_type& cell_summary) 
+{
+    if (m_output.empty()) {
+	return false;
+    }
+    cell_summary = m_output.front();
+    m_output.pop_front();
+    return true;
+}

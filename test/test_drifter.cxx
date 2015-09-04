@@ -83,35 +83,24 @@ void test_feed()
 IDepoVector test_drifted()
 {
     IDepoVector activity = get_depos(), result;
-    activity.push_back(IDepo::pointer(nullptr));
 
     WireCell::Drifter drifter;
     int count = 0;
+
+    for (auto depo : activity) {
+	bool accepted_depo = drifter.insert(depo);
+	Assert(accepted_depo);
+    }
+    drifter.flush();
     while (true) {
-	if (count < activity.size()) {
-	    WireCell::IDepo::pointer depo = activity[count++];
-	    bool accepted_depo = drifter.sink(depo);
-	    Assert(accepted_depo);
-	    if (depo) {
-		cerr << "test_drifted: Pushed: " << depo->time()
-		     << " " << depo->pos() << endl;
-	    }
-	    else {
-		cerr << "test_drifted: Pushed EOI" << endl;
-	    }
+	WireCell::IDepo::pointer depo;
+	bool produced_depo = drifter.extract(depo);
+	if (!produced_depo) {
+	    break;
 	}
-        
-	WireCell::IDepo::pointer p;
-	bool produced_depo = drifter.source(p);
-	if (produced_depo) {
-	    result.push_back(p);
-	    if (!p) {
-		cerr << "test_drifted hit EOI" << endl;
-		break; 
-	    }
-	    WireCell::IDepoVector vec = depo_chain(p);
-	    AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
-	}
+	result.push_back(depo);
+	WireCell::IDepoVector vec = depo_chain(depo);
+	AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
     }
     cerr << "test_drifter: start with: " << activity.size()
 	 << ", after drifting have: " << result.size() << endl;

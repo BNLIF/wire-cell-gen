@@ -3,6 +3,8 @@
 
 #include "WireCellIface/ITiling.h"
 
+#include <deque>
+
 namespace WireCell {
 
 
@@ -18,19 +20,13 @@ namespace WireCell {
 	Tiling();
 	virtual ~Tiling();
 
-	/** Provide input vector of cells build summary.
-	 */
-	virtual bool sink(const ICellVector& cells);
-
-	/** Return the most recent cell summary.
-	 */
-	virtual bool source(ICellSummary::pointer& summary) {
-	    summary = m_summary;
-	    return true;
-	}
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& cell_vector);
+	virtual bool extract(output_type& cell_summary);
 
     private:
-	ICellSummary::pointer m_summary;
+	std::deque<ICellSummary::pointer> m_output;
 	
     };
 

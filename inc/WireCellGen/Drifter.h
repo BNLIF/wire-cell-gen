@@ -8,38 +8,36 @@
 
 namespace WireCell {
 
-    /** A Drifter takes depositions from the connected slot and
-     * produces new depositions drifted to a given location.  It
-     * properly manages the time/distance ordering by reading ahead
-     * from its input stream just far enough in space and time.
+    /** A Drifter takes inserted depositions, drifts and buffers as
+     * needed and reproduces new depositions drifted to a new
+     * location.
      */
     class Drifter : public IDrifter {
     public:
 	/// Create a drifter that will drift charge to a given
 	/// location at a given drift velocity.
-	
+
 	Drifter(double x_location=0*units::meter,
 		double drift_velocity = 1.6*units::mm/units::microsecond);
 	// fixme: make configureable
 
-	/// This drifter internally buffers all input 
-	bool sink(const IDepo::pointer& depo);
-
-	/// If the buffer is deep enough, this pops the next available
-	/// deposition.  The depth of the buffer is maintained such
-	/// that time at origin of the last expected (of all currently
-	/// buffered) deposition is after the arrive time of the
-	/// earliest expected (of all currently buffered).
-	bool source(IDepo::pointer& depo);
+	/// WireCell::IDrifter interface.
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& depo);
+	virtual bool extract(output_type& depo);
 
     private:
 	double m_location, m_drift_velocity;
 	bool m_eoi;		// end of input
-	DepoTauSortedSet m_input;
-	std::deque<IDepo::pointer> m_output;
-	double proper_time(IDepo::pointer depo);
 
-	void process();
+	// Input buffer sorted by proper time
+	DepoTauSortedSet m_input;
+
+	// Output buffer of depos safe to remove from input
+	std::deque<IDepo::pointer> m_output;
+
+	double proper_time(IDepo::pointer depo);
     };
 
 

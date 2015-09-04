@@ -7,27 +7,32 @@
 
 namespace WireCell {
 
-    /** A framer object produces frames.
-     *
-     * It consumes up to a fixed number of ticks of IChannelSlices and
-     * packages them into an IFrame.
+    /** An object produces IFrame objects from IChannelSlice objects.
      */
     class Framer : public IFramer {
+
     public:
 	Framer();
 	Framer(int nticks);
 	virtual ~Framer();
 
-	virtual bool sink(const IChannelSlice::pointer& channel_slice);
-	virtual bool source(IFrame::pointer& frame);
+	virtual void reset();
+	virtual void flush();
+	virtual bool insert(const input_type& in);
+	virtual bool extract(output_type& out);
+
 
     private:
 
-	std::deque<IChannelSlice::pointer> m_input;
-	std::deque<IFrame::pointer> m_output;
+	std::deque<input_type> m_input;
+	std::deque<output_type> m_output;
 
 	int m_nticks;
 	int m_count;
+	bool m_eoi;
+
+	void process(bool flush = false);
+
     };
 }
 
