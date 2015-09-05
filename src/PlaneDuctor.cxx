@@ -29,8 +29,8 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_tbuffer(tbuffer)
     , m_DL(DL)
     , m_DT(DT)
-    , m_hist(new BufferedHistogram2D(tick, ray_length(pitch), tstart, 0))
-    , m_diff(new Diffuser(*m_hist, nsigma))
+    , m_hist(0)
+    , m_diff(0)
     , m_high_water_tau(tstart)
 
 {
@@ -40,6 +40,9 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     // diffusion, the point deposition is placed at a proper time in
     // the future by the amount of buffering requested.
 
+    m_hist = new BufferedHistogram2D(tick, ray_length(pitch), tstart, 0);
+    m_diff = new Diffuser(*m_hist, nsigma);
+
     // cerr << "PlaneDuctor: BufferedHistogram2D: "
     // 	 << "xmin=" << m_hist->xmin() << " xbinsize=" << m_hist->xbinsize() << ", "
     // 	 << "ymin=" << m_hist->ymin() << " ybinsize=" << m_hist->ybinsize() << endl;
@@ -47,8 +50,11 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
 }
 PlaneDuctor::~PlaneDuctor()
 {
+    cerr << "PlaneDuctor::~PlaneDuctor()" << endl;
     delete m_diff;
+    m_diff = 0;
     delete m_hist;
+    m_hist = 0;
 }
 
 double PlaneDuctor::proper_tau(double event_time, double event_xloc)
@@ -146,6 +152,16 @@ bool PlaneDuctor::extract(output_type& plane_slice)
 }
 void PlaneDuctor::process()
 {
+    if (!m_hist) {
+	cerr << "PlaneDuctor::process: No BufferedHistogram2D" << endl;
+	return;
+    }
+    if (!m_diff) {
+	cerr << "PlaneDuctor::process: No Diffuser" << endl;
+	return;
+    }
+
+
     // drain until empty
     while (!m_input.empty()) {
 	IDepo::pointer depo = m_input.front();

@@ -114,15 +114,15 @@ int main(int argc, char** argv)
 
     WireGenerator wiregen;
     IWireParameters::pointer iparams(params);
-    wiregen.sink(iparams);
+    wiregen.insert(iparams);
     IWireVector wires;
-    wiregen.source(wires);
+    wiregen.extract(wires);
     cout << tk("generated wires") << endl;
 
     BoundCells bc;
-    bc.sink(wires);
+    bc.insert(wires);
     ICellVector cells;
-    bc.source(cells);
+    bc.extract(cells);
     cout << tk("generated cells") << endl;
 
     const Ray& bbox = params->bounds();

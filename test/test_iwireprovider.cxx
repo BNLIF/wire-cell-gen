@@ -73,10 +73,10 @@ int main(int argc, char* argv[])
     AssertMsg(wg, "Failed to get IWireGenerator from default WireGenerator");
     cout << "Got WireGenerator IWireGenerator interface @ " << wg << endl;
 
-    Assert(wg->sink(wp));
+    Assert(wg->insert(wp));
 
     IWireVector wires;
-    Assert(wg->source(wires));
+    Assert(wg->extract(wires));
 
     cout << tk("Generated ParamWires") << endl;
     cout << mu("Generated ParamWires") << endl;
@@ -90,10 +90,10 @@ int main(int argc, char* argv[])
 
     auto wser = WireCell::Factory::lookup<IWireSummarizer>("WireSummarizer");
 
-    Assert(wser->sink(wires));
+    Assert(wser->insert(wires));
 
     IWireSummary::pointer ws;
-    Assert(wser->source(ws));
+    Assert(wser->extract(ws));
 
     WireCell::BoundingBox bb2 = ws->box();
 

@@ -37,9 +37,9 @@ void test_manual_execution()
     IWireParameters::pointer iwp(new WireParams);
 
     WireGenerator wiregen;
-    wiregen.sink(iwp);
+    wiregen.insert(iwp);
     IWireVector wires;
-    wiregen.source(wires);
+    wiregen.extract(wires);
 
 
     TrackDepos td = make_tracks();

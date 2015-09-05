@@ -16,6 +16,7 @@
 #include <iostream>
 #include <boost/signals2.hpp>
 #include <typeinfo>
+#include <vector>
 
 using namespace WireCell;
 using namespace std;
@@ -37,36 +38,6 @@ TrackDepos make_tracks() {
     return td;
 }
 
-template<class ProcessorType, typename InputType, typename OutputType>
-class SignalExecutor {
-public:
-    typedef boost::signals2::signal<InputType ()> signal_type;
-    typedef typename signal_type::slot_type slot_type;
-
-    SignalExecutor(ProcessorType& proc) : m_proc(proc) {
-	cerr << "SignalExecutor " << typeid(proc).name() << endl;
-    }
-    OutputType operator()() {
-	OutputType out;
-	while (!m_proc.source(out)) {
-	    InputType in = *m_sig();
-	    m_proc.sink(in);
-	}
-	return out;	
-    }
-
-    void connect(const slot_type& s) {
-	cerr << "Connect " << typeid(s).name() << endl;
-	m_sig.connect(s);
-    }
-
-private:
-    ProcessorType& m_proc;
-    signal_type m_sig;
-};
-
-
-
 
 int main()
 {
@@ -77,99 +48,119 @@ int main()
     IWireParameters::pointer iwp(new WireParams);
 
     WireGenerator wg;
+    Assert(wg.insert(iwp));
 
-    // Build a "mini application" using a lambda to return the wire params.
-    SignalExecutor<WireGenerator, IWireParameters::pointer, IWireVector> wgse(wg);
-    auto blerg = [iwp]() {return iwp;};
-    wgse.connect(blerg);
-    IWireVector wires = wgse();
+    IWireVector wires;
+    Assert(wg.extract(wires));
     Assert(wires.size());
-
 
     TrackDepos td = make_tracks();
 
     // drift
-    WireCell::Drifter drifter0(iwp->pitchU().first.x());
-    WireCell::Drifter drifter1(iwp->pitchV().first.x());
-    WireCell::Drifter drifter2(iwp->pitchW().first.x());
+    // WireCell::Drifter drifter0(iwp->pitchU().first.x());
+    // WireCell::Drifter drifter1(iwp->pitchV().first.x());
+    // WireCell::Drifter drifter2(iwp->pitchW().first.x());
+    std::vector<WireCell::Drifter*> drifters = {
+	new Drifter(iwp->pitchU().first.x()),
+	new Drifter(iwp->pitchV().first.x()),
+	new Drifter(iwp->pitchW().first.x())
+    };
 
-    typedef SignalExecutor<Drifter, IDepo::pointer, IDepo::pointer>  DriftExecutor;
-    DriftExecutor driftse0(drifter0);
-    DriftExecutor driftse1(drifter1);
-    DriftExecutor driftse2(drifter2);
-
-    // fanout
-
-    Fanout<IDepo::pointer> fandepo;
-    fandepo.connect(td);
-    for (int addr = 0; addr < 3; ++addr) {
-	fandepo.address(addr);	// register
+    // load up drifters all the way
+    while (true) {
+	auto depo = td();
+	if (!depo) { break; }
+	for (int ind=0; ind<3; ++ind) {
+	    Assert(drifters[ind]->insert(depo));
+	}
     }
-
-    driftse0.connect([&fandepo]() { return fandepo(0); });
-    driftse1.connect([&fandepo]() { return fandepo(1); });
-    driftse2.connect([&fandepo]() { return fandepo(2); });
+    // and flush them out 
+    for (int ind=0; ind<3; ++ind) {
+	drifters[ind]->flush();
+    }
 
     // diffuse + collect/induce
 
-    PlaneDuctor pd0(WirePlaneId(kUlayer), iwp->pitchU(), tick, now);
-    PlaneDuctor pd1(WirePlaneId(kVlayer), iwp->pitchV(), tick, now);
-    PlaneDuctor pd2(WirePlaneId(kWlayer), iwp->pitchW(), tick, now);
+    std::vector<PlaneDuctor*> ductors = {
+	new PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
+	new PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
+	new PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
+    };
+    while (true) {
+	int n_ok = 0;
+	for (int ind=0; ind < 3; ++ind) {
+	    IDepo::pointer depo;
+	    if (!drifters[ind]->extract(depo)) {
+		continue;
+	    }
+	    Assert(depo);
+	    Assert(ductors[ind]->insert(depo));
+	    ++n_ok;
+	}
+	if (n_ok == 0) {
+	    break;
+	}
+	Assert(n_ok == 3);
+    }
+    for (int ind=0; ind < 3; ++ind) {
+	ductors[ind]->flush();
+    }
 
-    typedef IPlaneSlice::pointer IPSptr;
-    typedef SignalExecutor<PlaneDuctor, IDepo::pointer, IPSptr> PDExecutor;
-
-    PDExecutor pdse0(pd0);
-    PDExecutor pdse1(pd1);
-    PDExecutor pdse2(pd2);
-
-    pdse0.connect(boost::ref(driftse0));
-    pdse1.connect(boost::ref(driftse1));
-    pdse2.connect(boost::ref(driftse2));
-
-    // fanin 
-
-    typedef boost::signals2::signal<IPSptr (), Fanin< IPlaneSliceVector > > PlaneSliceFanin;
-    PlaneSliceFanin fanin;
-    fanin.connect(boost::ref(pdse0));
-    fanin.connect(boost::ref(pdse1));
-    fanin.connect(boost::ref(pdse2));
-    
-
-    // digitize
-    
     Digitizer digitizer;
-    typedef SignalExecutor<Digitizer, IPlaneSliceVector, IChannelSlice::pointer> DigiExecutor;
-    DigiExecutor digise(digitizer);
-    digise.connect(boost::ref(fanin));
-    
+    digitizer.set_wires(wires);
 
-    // frame
+    while (true) {
+	IPlaneSliceVector psv(3);
+	int n_ok = 0;
+	for (int ind=0; ind<3; ++ind) {
+	    if (!ductors[ind]->extract(psv[ind])) {
+		cerr << "ductor #"<<ind<<"failed"<<endl;
+		continue;
+	    }
+	    Assert(psv[ind]);
+	    ++n_ok;
+	}
+	if (n_ok == 0) {
+	    break;
+	}
+	Assert(n_ok == 3);
+	Assert(digitizer.insert(psv));
+    }
+    
+    digitizer.flush();
 
     Framer framer;
-    typedef SignalExecutor<Framer, IChannelSlice::pointer, IFrame::pointer> FrameExecutor;
-    FrameExecutor framese(framer);
-    framese.connect(boost::ref(digise));
-
-
-    // process
     while (true) {
-    	auto frame = framese();
-    	if (!frame) { break; }
+	IChannelSlice::pointer csp;
+	if (!digitizer.extract(csp)) {
+	    break;
+	}
+	Assert(csp);
+	Assert(framer.insert(csp));
+    }
+
+    framer.flush();
+
+    while (true) {
+	IFrame::pointer frame;
+	if (!framer.extract(frame)) {
+	    break;
+	}
+	Assert(frame);
 
     	int ntraces = boost::distance(frame->range());
-	if (ntraces > 0) {
-	    cerr << "test_framer: Frame: #" << frame->ident()
-		 << " at t=" << frame->time()/units::microsecond << " usec"
-		 << " with " << ntraces << " traces"
-		 << endl;
-	    for (auto trace : *frame) {
-		cerr << "\ttrace ch:" << trace->channel()
-		     << " start tbin=" << trace->tbin()
-		     << " #time bins=" << trace->charge().size()
-		     << endl;
-	    }
-	}
+    	if (ntraces > 0) {
+    	    cerr << "test_framer: Frame: #" << frame->ident()
+    		 << " at t=" << frame->time()/units::microsecond << " usec"
+    		 << " with " << ntraces << " traces"
+    		 << endl;
+    	    for (auto trace : *frame) {
+    		cerr << "\ttrace ch:" << trace->channel()
+    		     << " start tbin=" << trace->tbin()
+    		     << " #time bins=" << trace->charge().size()
+    		     << endl;
+    	    }
+    	}
 
     }
 

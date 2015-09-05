@@ -23,10 +23,10 @@ void test1()
     IWireParameters::pointer iwp(params);
 
     WireGenerator wg;
-    Assert(wg.sink(iwp));
+    Assert(wg.insert(iwp));
 
     IWireVector wires;
-    Assert(wg.source(wires));
+    Assert(wg.extract(wires));
 
     cerr << "Got " << wires.size() << " wires" <<endl;
     Assert(wires.size());
@@ -63,10 +63,10 @@ void test2()
 	params->configure(cfg);
 	IWireParameters::pointer iwp(params);
 	WireGenerator wg;
-	Assert(wg.sink(iwp));
+	Assert(wg.insert(iwp));
 
 	IWireVector wires;
-	Assert(wg.source(wires));
+	Assert(wg.extract(wires));
 
 	int nwires = wires.size();
 	cout << ind << ": pitch=" << pitches[ind] << " nwires=" << nwires << " (want=" << want[ind] << ")" << endl;
@@ -80,10 +80,10 @@ void test3D(bool interactive)
     WireParams* params = new WireParams;
     IWireParameters::pointer iwp(params);
     WireGenerator wg;
-    Assert(wg.sink(iwp));
+    Assert(wg.insert(iwp));
 
     IWireVector wires;
-    Assert(wg.source(wires));
+    Assert(wg.extract(wires));
     AssertMsg(wires.size(), "Got no wires");
 
     const Ray& bbox = params->bounds();
