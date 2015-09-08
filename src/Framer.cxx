@@ -69,7 +69,7 @@ void Framer::process(bool flush)
 		time = chslice->time();
 	    }
 
-	    IChannelSlice::ChannelCharge cc = chslice->charge();
+	    auto cc = chslice->charge();
 	    for (auto chq : cc) {
 		int chn = chq.first;
 		double charge = chq.second;

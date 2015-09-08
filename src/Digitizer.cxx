@@ -60,7 +60,7 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
 	return false;
     }
 
-    IChannelSlice::ChannelCharge cc;
+    WireCell::ChannelCharge cc;
     double the_times[3] = {0};
 
     int nplanes = plane_slice_vector.size();
