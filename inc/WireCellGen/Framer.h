@@ -21,7 +21,6 @@ namespace WireCell {
 	virtual bool insert(const input_type& in);
 	virtual bool extract(output_type& out);
 
-
     private:
 
 	std::deque<input_type> m_input;

@@ -54,10 +54,10 @@ int main()
 
     IWireParameters::pointer iwp(params);
     WireGenerator wg;
-    Assert(wg.sink(iwp));
+    Assert(wg.insert(iwp));
 
     IWireVector wires;
-    Assert(wg.source(wires));
+    Assert(wg.extract(wires));
 
     IWireVector u_wires, v_wires, w_wires;
 
@@ -71,24 +71,24 @@ int main()
     IWireVector* uvw_wires[3] = { &u_wires, &v_wires, &w_wires };
 
     WireSummarizer wser;
-    Assert(wser.sink(wires));
+    Assert(wser.insert(wires));
 
     WireSummary::pointer ws;
-    Assert(wser.source(ws));
+    Assert(wser.extract(ws));
 
     BoundCells bc;
-    Assert(bc.sink(wires));
+    Assert(bc.insert(wires));
 
     ICellVector cells;
-    Assert(bc.source(cells));
+    Assert(bc.extract(cells));
 
     tk("made cells"); mu("made cells");
 
     Tiling til;
-    Assert(til.sink(cells));
+    Assert(til.insert(cells));
 
     ICellSummary::pointer csum;
-    Assert(til.source(csum));
+    Assert(til.extract(csum));
 
 
     TFile* tfile = TFile::Open("test_tiling.root","RECREATE");

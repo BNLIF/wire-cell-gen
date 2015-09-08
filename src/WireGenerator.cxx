@@ -133,6 +133,7 @@ void WireGenerator::reset()
 }
 void WireGenerator::flush()
 {
+    m_output.push_back(eos());
     return;		  // fixme: maybe do input buffering for lazy exec
 }
 bool WireGenerator::insert(const input_type& wp)

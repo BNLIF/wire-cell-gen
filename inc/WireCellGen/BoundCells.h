@@ -20,7 +20,6 @@ namespace WireCell {
 	virtual void flush();
 	virtual bool insert(const input_type& wire_vector);
 	virtual bool extract(output_type& cell_vector);
-	
 
     private:
 	std::deque<ICellVector> m_output;

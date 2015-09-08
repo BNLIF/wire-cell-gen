@@ -121,6 +121,7 @@ bool is_point_inside_w_lane(const Point& point, const double& w_lane_center, con
 
 void BoundCells::flush()
 {
+    m_output.push_back(eos());
     return;
 }
 void BoundCells::reset()

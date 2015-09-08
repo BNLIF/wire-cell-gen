@@ -26,6 +26,7 @@ void Tiling::reset()
 }
 void Tiling::flush()
 {
+    m_output.push_back(eos());
 }
 
 bool Tiling::insert(const input_type& cell_vector)

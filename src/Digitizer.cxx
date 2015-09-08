@@ -50,6 +50,7 @@ void Digitizer::reset()
 }
 void Digitizer::flush()
 {
+    m_output.push_back(eos());
     return;			// no input buffer
 }
 bool Digitizer::insert(const input_type& plane_slice_vector)

@@ -112,18 +112,29 @@ int main()
     while (true) {
 	IPlaneSliceVector psv(3);
 	int n_ok = 0;
+	int n_eos = 0;
 	for (int ind=0; ind<3; ++ind) {
 	    if (!ductors[ind]->extract(psv[ind])) {
 		cerr << "ductor #"<<ind<<"failed"<<endl;
 		continue;
 	    }
-	    Assert(psv[ind]);
 	    ++n_ok;
+	    if (psv[ind] == ductors[ind]->eos()) {
+		++n_eos;
+	    }
 	}
 	if (n_ok == 0) {
+	    cerr << "Got no channel slices from plane ductors" << endl;
 	    break;
 	}
 	Assert(n_ok == 3);
+
+	Assert(n_eos == 0 || n_eos == 3);
+	if (n_eos == 3) {
+	    cerr << "Got three EOS from plane ductors" << endl;
+	    break;
+	}
+
 	Assert(digitizer.insert(psv));
     }
     
@@ -133,9 +144,13 @@ int main()
     while (true) {
 	IChannelSlice::pointer csp;
 	if (!digitizer.extract(csp)) {
+	    cerr << "Digitizer fails to produce output" << endl;
 	    break;
 	}
-	Assert(csp);
+	if (csp == digitizer.eos()) {
+	    cerr << "Digitizer reaches EOS" << endl;
+	    break;
+	}
 	Assert(framer.insert(csp));
     }
 
@@ -146,7 +161,10 @@ int main()
 	if (!framer.extract(frame)) {
 	    break;
 	}
-	Assert(frame);
+	if (frame == framer.eos()) {
+	    cerr << "Framer reaches EOS" << endl;
+	    break;
+	}
 
     	int ntraces = boost::distance(frame->range());
     	if (ntraces > 0) {

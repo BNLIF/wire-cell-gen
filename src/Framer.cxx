@@ -39,6 +39,8 @@ void Framer::reset()
 void Framer::flush()
 {
     process(true);
+    m_output.push_back(eos());
+
 }
 
 bool Framer::insert(const input_type& channel_slice)

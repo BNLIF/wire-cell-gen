@@ -28,7 +28,6 @@ namespace WireCell {
 	virtual bool insert(const input_type& plane_slice_vector);
 	virtual bool extract(output_type& channel_slice);
 
-
     private:
 
 	// wires, organized by plane

@@ -23,6 +23,7 @@ void WireSummarizer::reset()
 
 void WireSummarizer::flush()
 {
+    m_output.push_back(eos());
     return;			// no input buffer.
 }
 

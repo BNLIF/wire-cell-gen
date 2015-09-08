@@ -133,6 +133,7 @@ void PlaneDuctor::flush()
 	IPlaneSlice::pointer ps(new PDPS(m_wpid, t, m_hist->popx()));
 	m_output.push_back(ps);
     }
+    m_output.push_back(eos());
 }
 
 bool PlaneDuctor::insert(const input_type& depo) 
