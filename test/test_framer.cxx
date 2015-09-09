@@ -57,9 +57,7 @@ int main()
     TrackDepos td = make_tracks();
 
     // drift
-    // WireCell::Drifter drifter0(iwp->pitchU().first.x());
-    // WireCell::Drifter drifter1(iwp->pitchV().first.x());
-    // WireCell::Drifter drifter2(iwp->pitchW().first.x());
+
     std::vector<WireCell::Drifter*> drifters = {
 	new Drifter(iwp->pitchU().first.x()),
 	new Drifter(iwp->pitchV().first.x()),
