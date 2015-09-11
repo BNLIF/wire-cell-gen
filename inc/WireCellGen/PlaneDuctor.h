@@ -15,6 +15,8 @@
 #include "WireCellIface/IDepo.h"
 #include "WireCellIface/IPlaneSlice.h"
 
+#include "WireCellUtil/BufferedHistogram2D.h"
+
 #include <deque>
 
 namespace WireCell {
@@ -58,6 +60,10 @@ namespace WireCell {
 	// <pitch> ray) that the projection of the 3D point makes on
 	// the wire plane.
 	double pitch_dist(const Point& p);
+
+	int ninput() const { return m_input.size(); }
+	int noutput() const { return m_output.size(); }
+	int nbuffer() const { if (!m_hist) return -1; return m_hist->size(); }
 
     private:
 	WirePlaneId m_wpid;

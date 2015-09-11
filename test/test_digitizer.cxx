@@ -5,6 +5,7 @@
 #include "WireCellGen/TrackDepos.h"
 #include "WireCellGen/WireParams.h"
 #include "WireCellGen/WireGenerator.h"
+#include "WireCellGen/WireSummary.h"
 
 #include "WireCellIface/WirePlaneId.h"
 
@@ -12,7 +13,18 @@
 #include "WireCellUtil/Faninout.h"
 #include "WireCellUtil/Testing.h"
 
+
+#include "TApplication.h"
+#include "TCanvas.h"
+#include "TH1F.h"
+#include "TLine.h"
+#include "TPolyLine.h"
+#include "TPolyMarker.h"
+
 #include <iostream>
+#include <boost/signals2.hpp>
+#include <typeinfo>
+#include <vector>
 
 using namespace WireCell;
 using namespace std;
@@ -21,83 +33,301 @@ TrackDepos make_tracks() {
     TrackDepos td;
 
     const double cm = units::cm;
-    td.add_track( 1.0*units::microsecond, Ray(Point(100*cm, 0, 0),         Point(103*cm,0,0)));
-    td.add_track( 2.0*units::microsecond, Ray(Point(102*cm,-1*cm,-1*cm),   Point(102*cm,cm,cm)));
-    td.add_track( 5.0*units::microsecond, Ray(Point(120*cm,-10*cm,-10*cm), Point(110*cm,10*cm,10*cm)));
-    td.add_track(10.0*units::microsecond, Ray(Point(110*cm,-10*cm,-10*cm), Point(110*cm,10*cm,10*cm)));
+    Ray same_point(Point(10*cm, -10*cm,  1*cm),
+		   Point(11*cm, + 1*cm, 30*cm));
+
+    const double usec = units::microsecond;
+
+    td.add_track(1*usec, same_point);
+    td.add_track(10*usec, same_point);
+    td.add_track(100*usec, same_point);
+    td.add_track(1000*usec, same_point);
+    td.add_track(10000*usec, same_point);
+
     return td;
 }
 
 
-void test_manual_execution()
+int main(int argc, char* argv[])
 {
-    const double tick = 2.0*units::microsecond;
+    // we make some plots
+    TApplication* theApp = 0;
+    if (argc > 1) {
+	theApp = new TApplication ("test_digitizer",0,0);
+    }
+
+    TCanvas canvas("c","c",500,500);
+    const char* pdf = "test_digitizer.pdf";
+    canvas.Print(Form("%s[",pdf), "pdf");
+    int colors[3] = {2, 4, 1};
+
+    const double enlarge = 1.05;
+    const double max_width = 5;
+    const double max_charge = 25;
+
+
+    const double tick = 2.0*units::microsecond; 
+    const int nticks_per_frame = 100;
     double now = 0.0*units::microsecond;
 
     IWireParameters::pointer iwp(new WireParams);
 
-    WireGenerator wiregen;
-    wiregen.insert(iwp);
-    IWireVector wires;
-    wiregen.extract(wires);
+    WireGenerator wg;
+    Assert(wg.insert(iwp));
 
+    IWireVector wires;
+    Assert(wg.extract(wires));
+    Assert(wires.size());
+
+    Ray bbox = iwp->bounds();
+    WireSummary ws(wires);
 
     TrackDepos td = make_tracks();
 
-    // Fanout<IDepo::pointer> depofan;
-    // depofan.address(0);
-    // depofan.address(1);
-    // depofan.address(2);
+    // immediately slurp all depos in to local collection to make some plots
+    IDepoVector depos;
+    while (true) {
+	auto depo = td();
+	if (!depo) { break; }
+	depos.push_back(depo);
+    }
 
-    // Addresser<IDepo::pointer> depoU(0), depoV(1), depoW(2);
+    canvas.Clear();
+    canvas.Divide(2,2);
+    {
+	canvas.cd(1);
+	TH1F* frame = canvas.DrawFrame(enlarge*bbox.first.z(), enlarge*bbox.first.y(),
+				       enlarge*bbox.second.z(), enlarge*bbox.second.y());
+	frame->SetXTitle("Transverse Z direction");
+	frame->SetYTitle("Transverse Y (W) direction");
+	frame->SetTitle(Form("%d depositions", (int)depos.size()));
+	TPolyMarker* pm = new TPolyMarker;
+	pm->SetMarkerColor(5);
+	pm->SetMarkerStyle(8);
+	int ndepo = 0;
+	for (auto depo : depos) {
+	    pm->SetMarkerColor(1);
+	    pm->SetMarkerStyle(8);
+	    pm->SetPoint(ndepo, depo->pos().z(), depo->pos().y());
+	    ++ndepo;
+	}
+	pm->Draw();
+    }
+    {
+	canvas.cd(2);
+	TH1F* frame = canvas.DrawFrame(enlarge*bbox.first.x(), enlarge*bbox.first.y(),
+				       enlarge*bbox.second.x(), enlarge*bbox.second.y());
+	frame->SetXTitle("Transverse X direction");
+	frame->SetYTitle("Transverse Y (W) direction");
+	frame->SetTitle(Form("%d depositions", (int)depos.size()));
+	TPolyMarker* pm = new TPolyMarker;
+	pm->SetMarkerColor(5);
+	pm->SetMarkerStyle(8);
+	int ndepo = 0;
+	for (auto depo : depos) {
+	    pm->SetMarkerColor(1);
+	    pm->SetMarkerStyle(8);
+	    pm->SetPoint(ndepo, depo->pos().x(), depo->pos().y());
+	    ++ndepo;
+	}
+	pm->Draw();
+    }
+    {
+	canvas.cd(3);
+	TH1F* frame = canvas.DrawFrame(enlarge*bbox.first.z(), enlarge*bbox.first.x(),
+				       enlarge*bbox.second.z(), enlarge*bbox.second.x());
+	frame->SetXTitle("Transverse Z direction");
+	frame->SetYTitle("Transverse X direction");
+	frame->SetTitle(Form("%d depositions", (int)depos.size()));
+	TPolyMarker* pm = new TPolyMarker;
+	pm->SetMarkerColor(5);
+	pm->SetMarkerStyle(8);
+	int ndepo = 0;
+	for (auto depo : depos) {
+	    pm->SetMarkerColor(1);
+	    pm->SetMarkerStyle(8);
+	    pm->SetPoint(ndepo, depo->pos().z(), depo->pos().x());
+	    ++ndepo;
+	}
+	pm->Draw();
+    }
+    canvas.Print(pdf, "pdf");    
 
-    // PlaneDuctor pdU(WirePlaneId(kUlayer), iwp->pitchU(), tick, now);
-    // PlaneDuctor pdV(WirePlaneId(kVlayer), iwp->pitchV(), tick, now);
-    // PlaneDuctor pdW(WirePlaneId(kWlayer), iwp->pitchW(), tick, now);
 
-    // WireCell::Drifter driftU(iwp->pitchU().first.x());
-    // WireCell::Drifter driftV(iwp->pitchV().first.x());
-    // WireCell::Drifter driftW(iwp->pitchW().first.x());
+    // drift
 
-    // Digitizer digitizer;
-    // digitizer.sink(wires)
+    std::vector<WireCell::Drifter*> drifters = {
+	new Drifter(iwp->pitchU().first.x()),
+	new Drifter(iwp->pitchV().first.x()),
+	new Drifter(iwp->pitchW().first.x())
+    };
 
-    // // Now connect up the nodes
+    // load up drifters all the way
+    for (auto depo : depos) {
+	for (int ind=0; ind<3; ++ind) {
+	    Assert(drifters[ind]->insert(depo));
+	}
+    }
+    // and flush them out 
+    for (int ind=0; ind<3; ++ind) {
+	drifters[ind]->flush();
 
-    // // fan out the depositions
-    // depofan.connect(td);
+	cerr << "drifter #"  << ind
+	     << ": #in=" << drifters[ind]->ninput()
+	     << " #out=" << drifters[ind]->noutput()
+	     << endl;
+    }
 
-    // // address the fan-out
-    // depoU.connect(boost::ref(depofan));
-    // depoV.connect(boost::ref(depofan));
-    // depoW.connect(boost::ref(depofan));
+    // diffuse + collect/induce
 
-    // // drift each to the plane
-    // driftU.connect(boost::ref(depoU));
-    // driftV.connect(boost::ref(depoV));
-    // driftW.connect(boost::ref(depoW));
+    std::vector<PlaneDuctor*> ductors = {
+	new PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
+	new PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
+	new PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
+    };
 
-    // // diffuse and digitize
-    // pdU.connect(boost::ref(driftU));
-    // pdV.connect(boost::ref(driftV));
-    // pdW.connect(boost::ref(driftW));
+    int ndrifted[3] = {0};
+    while (true) {
+	int n_ok = 0;
+	for (int ind=0; ind < 3; ++ind) {
+	    IDepo::pointer depo;
+	    if (!drifters[ind]->extract(depo)) {
+		cerr << "Failed to extract from drifter " << ind << endl;
+		continue;
+	    }
+	    ++ndrifted[ind];
+	    Assert(depo);
+	    depos.push_back(depo);
+	    Assert(ductors[ind]->insert(depo));
+	    ++n_ok;
+	}
+	if (n_ok == 0) {
+	    break;
+	}
+	Assert(n_ok == 3);
 
-    // // aggregate and digitize
-    // digitizer.connect(boost::ref(pdU));
-    // digitizer.connect(boost::ref(pdV));
-    // digitizer.connect(boost::ref(pdW));
+	for (int ind=0; ind < 3; ++ind) {
+	    ductors[ind]->flush();
+	    cerr << "^ " << ind
+		 << " #in=" << ductors[ind]->ninput()
+		 << " #out=" << ductors[ind]->noutput()
+		 << " #buf=" << ductors[ind]->nbuffer()
+		 << endl;
+	}
 
-    // // process
-    // while (true) {
-    // 	auto slice = digitizer();
-    // 	if (!slice) { break; }
-    // 	IChannelSlice::ChannelCharge cc = slice->charge();
-    // 	cout << "Digitized t=" << slice->time() << " #ch=" << cc.size() << endl;
-    // }
 
-}
-int main()
-{
-    test_manual_execution();
+    }
+    Assert(ductors[0]->noutput() == ductors[1]->noutput() && ductors[1]->noutput() == ductors[2]->noutput());
+
+
+    Digitizer digitizer;
+    digitizer.set_wires(wires);
+
+    int nducted[3] = {0};
+    while (true) {
+	IPlaneSliceVector psv(3);
+	int n_ok = 0;
+	int n_eos = 0;
+
+	for (int ind=0; ind<3; ++ind) {
+
+	    if (!ductors[ind]->extract(psv[ind])) {
+		cerr << "ductor #"<<ind<<"failed"<<endl;
+		continue;
+	    }
+	    ++nducted[ind];
+	    ++n_ok;
+	    if (psv[ind] == ductors[ind]->eos()) {
+		++n_eos;
+	    }
+	}
+	if (n_ok == 0) {
+	    cerr << "Got no channel slices from plane ductors" << endl;
+	    break;
+	}
+	Assert(n_ok == 3);
+
+	if (!(n_eos ==0 || n_eos == 3)) {
+	    cerr << "Lost sync! #eos:" << n_eos << endl;
+	    cerr << "ndrifted/nducted ninput/noutput:\n";
+	    for (int ind=0; ind<3; ++ind) {
+		cerr << "\t" << ndrifted[ind] << "/" << nducted[ind]
+		     << " " << ductors[ind]->ninput() << "/" << ductors[ind]->noutput()
+		     << endl;
+	    }
+	}
+	Assert(n_eos == 0 || n_eos == 3);
+	if (n_eos == 3) {
+	    cerr << "Got three EOS from plane ductors" << endl;
+	    break;
+	}
+
+	Assert(digitizer.insert(psv));
+    }
+    
+    digitizer.flush();
+
+    while (true) {
+	IChannelSlice::pointer csp;
+	if (!digitizer.extract(csp)) {
+	    cerr << "Digitizer fails to produce output" << endl;
+	    break;
+	}
+	if (csp == digitizer.eos()) {
+	    cerr << "Digitizer reaches EOS" << endl;
+	    break;
+	}
+
+	ChannelCharge cc = csp->charge();
+	int nhit_wires = cc.size();
+	if (!nhit_wires) {
+	    //cerr << "Digitizer returns no charge at " << csp->time() << endl;
+	    continue;
+	}
+
+	cerr << "Digitized " << cc.size() << " at " << csp->time() << endl;
+	canvas.Clear();
+	TH1F* frame = canvas.DrawFrame(enlarge*bbox.first.z(), enlarge*bbox.first.y(),
+				       enlarge*bbox.second.z(), enlarge*bbox.second.y());
+
+	frame->SetXTitle("Transverse Z direction");
+	frame->SetYTitle("Transverse Y (W) direction");
+	frame->SetTitle(Form("t=%f %d hit wires red=U, blue=V, +X (-drift) direction into page",
+			     csp->time(), nhit_wires));
+
+	for (auto cq : cc) {	// for each hit channel
+
+	    // for each wire on that channel
+	    for (auto wire : ws.by_channel(cq.first)) {
+		Ray r = wire->ray();
+
+		TLine* a_wire = new TLine(r.first.z(), r.first.y(), r.second.z(), r.second.y());
+		a_wire->SetLineColor(colors[wire->planeid().index()]);
+		double width = cq.second.mean()/max_charge*max_width;
+		if (width<1) { width = 1.0; }
+		a_wire->SetLineWidth(width);
+		a_wire->Draw();	    
+	    }
+	}
+
+	TPolyMarker* pm = new TPolyMarker;
+	pm->SetMarkerColor(1);
+	pm->SetMarkerStyle(8);
+	int ndepo = 0;
+	for (auto depo : depos) {
+	    if (std::abs(depo->time() - csp->time()) < 0.5*units::microsecond) {
+		//cerr << ndepo << " t=" << depo->time() << " at: " << depo->pos() << endl;
+		pm->SetPoint(ndepo, depo->pos().z(), depo->pos().y());
+		++ndepo;
+	    }
+	}
+	pm->Draw();
+
+	canvas.Print(pdf, "pdf");
+    }
+    canvas.Print(Form("%s]",pdf), "pdf");
+
+
+
     return 0;
 }

@@ -27,6 +27,9 @@ namespace WireCell {
 	virtual bool insert(const input_type& depo);
 	virtual bool extract(output_type& depo);
 
+	int ninput() const { return m_input.size(); }
+	int noutput() const { return m_output.size(); }
+
     private:
 	double m_location, m_drift_velocity;
 	bool m_eoi;		// end of input

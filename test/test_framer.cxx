@@ -165,18 +165,22 @@ int main()
 	}
 
     	int ntraces = boost::distance(frame->range());
-    	if (ntraces > 0) {
-    	    cerr << "test_framer: Frame: #" << frame->ident()
-    		 << " at t=" << frame->time()/units::microsecond << " usec"
-    		 << " with " << ntraces << " traces"
-    		 << endl;
-    	    for (auto trace : *frame) {
-    		cerr << "\ttrace ch:" << trace->channel()
-    		     << " start tbin=" << trace->tbin()
-    		     << " #time bins=" << trace->charge().size()
-    		     << endl;
-    	    }
-    	}
+    	if (!ntraces) {
+	    continue;
+	}
+	cerr << "test_framer: Frame: #" << frame->ident()
+	     << " at t=" << frame->time()/units::microsecond << " usec"
+	     << " with " << ntraces << " traces"
+	     << endl;
+
+	for (auto trace : *frame) {
+	    cerr << "\ttrace ch:" << trace->channel()
+		 << " start tbin=" << trace->tbin()
+		 << " #time bins=" << trace->charge().size()
+		 << endl;
+	    
+	}
+
 
     }
 

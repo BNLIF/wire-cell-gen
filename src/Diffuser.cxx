@@ -90,6 +90,7 @@ double Diffuser::diffuse(double x, double y, double sigma_x, double sigma_y, dou
 		continue;
 	    }
 	    bool ok = m_hist.fill(xval, yval, val);
+	    cerr << "\t" << m_hist.size() << "\t" << xval << "," << yval << " = " << val<<endl;
 	    if (!ok) {
 		cerr << "underflow: " << "(" << xval << "," << yval << ") = " << val << endl;
 	    }

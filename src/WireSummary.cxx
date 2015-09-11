@@ -2,6 +2,7 @@
 #include "WireCellIface/IWireSelectors.h"
 
 #include <iterator>
+#include <map>
 
 using namespace WireCell;
 using namespace std;
@@ -61,11 +62,14 @@ struct WireSummary::WireSummaryCache {
     BoundingBox bb;
     WirePlaneCache *plane_cache[3];
 
+    std::map<int,IWireSegmentSet> chan2wire;
+
     WireSummaryCache(const IWireVector& wires)
 	: wires(wires)
    {
        for (auto wire : wires) {
 	   bb(wire->ray());
+	   chan2wire[wire->channel()].insert(wire);
        }
 
        plane_cache[0] = new WirePlaneCache(WirePlaneId(kUlayer), wires);
@@ -87,6 +91,11 @@ struct WireSummary::WireSummaryCache {
 	return plane_cache[index];
     }
     
+    IWireVector by_chan(int chan) {
+	IWireSegmentSet& got = chan2wire[chan];
+	return IWireVector(got.begin(), got.end());
+    }
+
 };
 
 static IWireVector dummy_vector;
@@ -183,6 +192,14 @@ const Vector& WireSummary::pitch_direction(WirePlaneId wpid) const
 	return dummy;
     }
     return wpc->pitch_unit;
+}
+
+IWireVector WireSummary::by_channel(int channel) const
+{
+    if (!m_cache) {
+	return IWireVector();
+    }
+    return m_cache->by_chan(channel);
 }
 
 WireSummary::WireSummary(const IWireVector& wires)

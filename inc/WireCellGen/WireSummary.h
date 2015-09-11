@@ -36,6 +36,8 @@ namespace WireCell {
 	/// Return a unit vector along the direction of the pitch.
 	virtual const Vector& pitch_direction(WirePlaneId wpid) const;
 
+	virtual IWireVector by_channel(int channel) const;
+
     private:
 	class WireSummaryCache;
 	WireSummaryCache* m_cache;

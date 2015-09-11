@@ -1,7 +1,6 @@
 #include "WireCellGen/PlaneDuctor.h"
 #include "WireCellGen/Diffuser.h"
 
-#include "WireCellUtil/BufferedHistogram2D.h"
 
 #include <iostream>
 using namespace std;		// debugging
@@ -43,9 +42,9 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     m_hist = new BufferedHistogram2D(tick, ray_length(pitch), tstart, 0);
     m_diff = new Diffuser(*m_hist, nsigma);
 
-    // cerr << "PlaneDuctor: BufferedHistogram2D: "
-    // 	 << "xmin=" << m_hist->xmin() << " xbinsize=" << m_hist->xbinsize() << ", "
-    // 	 << "ymin=" << m_hist->ymin() << " ybinsize=" << m_hist->ybinsize() << endl;
+    cerr << "PlaneDuctor: BufferedHistogram2D: "
+    	 << "xmin=" << m_hist->xmin() << " xbinsize=" << m_hist->xbinsize() << ", "
+    	 << "ymin=" << m_hist->ymin() << " ybinsize=" << m_hist->ybinsize() << endl;
 
 }
 PlaneDuctor::~PlaneDuctor()
@@ -144,6 +143,8 @@ bool PlaneDuctor::insert(const input_type& depo)
 
 bool PlaneDuctor::extract(output_type& plane_slice) 
 {
+    process();
+
     if (m_output.empty()) {
 	return false;
     }
