@@ -40,7 +40,7 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     // the future by the amount of buffering requested.
 
     m_hist = new BufferedHistogram2D(tick, ray_length(pitch), tstart, 0);
-    m_diff = new Diffuser(*m_hist, nsigma);
+//    m_diff = new Diffuser(nsigma); // fixme, let user pass this in?
 
     cerr << "PlaneDuctor: BufferedHistogram2D: "
     	 << "xmin=" << m_hist->xmin() << " xbinsize=" << m_hist->xbinsize() << ", "
@@ -182,7 +182,7 @@ void PlaneDuctor::process()
 	double sigmaT = sqrt(2*m_DT*drift_time/units::centimeter2)*units::centimeter2;
 	double trans = pitch_dist(depo->pos());
 
-	m_diff->diffuse(tau, trans, sigmaL, sigmaT, depo->charge());
+//	(*m_diff)(*m_hist, tau, trans, sigmaL, sigmaT, depo->charge());
 
 	if (tau > m_high_water_tau) {
 	    m_high_water_tau = tau;

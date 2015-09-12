@@ -7,102 +7,85 @@ using namespace std;		// debugging
 
 using namespace WireCell;
 
-Diffuser::Diffuser(BufferedHistogram2D& hist, int nsigma)
-    : m_hist(hist)
-    , m_nsigma(nsigma)
+Diffuser::Diffuser(double binsize_l, double binsize_t,
+		   double origin_l, double origin_t,
+		   double nsigma)
+    : m_origin_l(origin_l), m_origin_t(origin_t),
+      m_binsize_l(binsize_l), m_binsize_t(binsize_t), 
+      m_nsigma(nsigma)
 {
 }
+
 Diffuser::~Diffuser()
 {
 }
 
-std::vector<double> Diffuser::oned(double mean, double sigma, double origin, double binsize) const
+std::vector<double> Diffuser::oned(double mean, double sigma, double binsize,
+				   const Diffuser::bounds_type& bounds)
 {
-    // find the high/low edges of bins containing nsigma 
-    int bin_edge_low = floor((mean - m_nsigma*sigma - origin)/binsize);
-    int bin_edge_high = ceil((mean + m_nsigma*sigma - origin)/binsize);
-
-    if (bin_edge_high < 0) {
-	return std::vector<double>();
-    }
-    if (bin_edge_low < 0) {
-	bin_edge_low = 0;
-    }
-    bin_edge_high = max(bin_edge_low+1, bin_edge_high);
-
-    int nbins = bin_edge_high - bin_edge_low; // >= 1
-
-    // cerr << "Diffuse: oned(mean="<<mean<<", sigma="<<sigma<<", origin="<<origin<<", binsize="<<binsize<<") "
-    // 	 << "nbins=" << nbins << ":["<<bin_edge_low<<","<<bin_edge_high<<"]" << endl;
+    int nbins = round((bounds.second - bounds.first)/binsize);
 
     /// fragment between bin_edge_{low,high}
     std::vector<double> integral(nbins+1, 0.0);
     for (int ibin=0; ibin <= nbins; ++ibin) {
-	double absx = origin + (bin_edge_low + ibin)*binsize;
+	double absx = bounds.first + ibin*binsize;
 	double t = 0.5*(absx-mean)/sigma;
 	double e = 0.5*std::erf(t);
 	integral[ibin] = e;
-	// cerr << "\tintegral[" << ibin << "] = " << integral[ibin] << " at absx=" << absx << " relx=" << t << endl;
     }
 
-    std::vector<double> bins(bin_edge_high,0.0);
+    std::vector<double> bins;
     for (int ibin=0; ibin<nbins; ++ibin) {
-	bins[ibin+bin_edge_low] = integral[ibin+1] - integral[ibin];
-	// cerr << "\tbins["<<ibin<<"+"<<bin_edge_low<<"] = " << bins[ibin+bin_edge_low]
-	//      << " = " << integral[ibin+1] << " - " << integral[ibin] << endl;
+	bins.push_back(integral[ibin+1] - integral[ibin]);
     }
     return bins;
 }
 
-double Diffuser::diffuse(double x, double y, double sigma_x, double sigma_y, double q)
+
+Diffuser::bounds_type Diffuser::bounds(double mean, double sigma, double binsize, double origin)
 {
-    std::vector<double> xbins = oned(x, sigma_x, m_hist.xmin(), m_hist.xbinsize());
-    if (!xbins.size()) {
-	return m_hist.xmin();
-    }
-    std::vector<double> ybins = oned(y, sigma_y, m_hist.ymin(), m_hist.ybinsize());
-    if (!ybins.size()) {
-	return m_hist.xmin();
+    double low = floor( (mean - m_nsigma*sigma - origin) / binsize ) * binsize + origin;    
+    double high = ceil( (mean + m_nsigma*sigma - origin) / binsize ) * binsize + origin;    
+
+    return std::make_pair(low, high);
+}
+
+
+Diffusion::pointer Diffuser::operator()(double mean_l, double mean_t,
+					double sigma_l, double sigma_t,
+					double weight)
+{
+    bounds_type bounds_l = bounds(mean_l, sigma_l, m_binsize_l, m_origin_l);
+    bounds_type bounds_t = bounds(mean_t, sigma_t, m_binsize_t, m_origin_t);
+
+    std::vector<double> l_bins = oned(mean_l, sigma_l, m_binsize_l, bounds_l);
+    std::vector<double> t_bins = oned(mean_t, sigma_t, m_binsize_t, bounds_t);
+
+    if (l_bins.empty() || t_bins.empty()) {
+	return nullptr;
     }
 
     // get normalization
     double power = 0;
-    for (int xind = 0; xind < xbins.size(); ++xind) {
-	for (int yind = 0; yind < ybins.size(); ++yind) {
-	    double p = xbins[xind]*ybins[yind];
-	    //cerr << xind << "," << yind << ": " << xbins[xind] << "," << ybins[yind] << " = " << p << endl;
-	    power += p;
+    for (auto l : l_bins) {
+	for (auto t : t_bins) {
+	    power += l*t;
 	}
     }
     if (power == 0.0) {
-	return m_hist.xmin();
+	return nullptr;
     }
-	
 
-    // cerr << "nbins="<<xbins.size() << " X " << ybins.size() << " power = " << power << endl;
-    
-    for (int xind = 0; xind < xbins.size(); ++xind) {
-	for (int yind = 0; yind < ybins.size(); ++yind) {
-	    double xval = m_hist.xmin() + (xind+0.5)*m_hist.xbinsize();
-	    double yval = m_hist.ymin() + (yind+0.5)*m_hist.ybinsize();
-	    double val = xbins[xind]*ybins[yind]*q/power;
-	    if (val <= 0.0) {
-		continue;
-	    }
-	    bool ok = m_hist.fill(xval, yval, val);
-	    cerr << "\t" << m_hist.size() << "\t" << xval << "," << yval << " = " << val<<endl;
-	    if (!ok) {
-		cerr << "underflow: " << "(" << xval << "," << yval << ") = " << val << endl;
-	    }
+    Diffusion* smear = new Diffusion(l_bins.size(), t_bins.size(),
+				     bounds_l.first, bounds_t.first,
+				     bounds_l.second, bounds_t.second);
+
+    for (int ind_l = 0; ind_l < l_bins.size(); ++ind_l) {
+	for (int ind_t = 0; ind_t < t_bins.size(); ++ind_t) {
+	    smear->array[ind_l][ind_t] = l_bins[ind_l]*t_bins[ind_t]/power*weight;
 	}
     }
     
-
-    // return lowest new data
-    for (int xind = 0; xind < xbins.size(); ++xind) {
-	if (xbins[xind] > 0.0) {
-	    return m_hist.xmin() + xind * m_hist.xbinsize();
-	}
-    }
-    return m_hist.xmin();
+    Diffusion::pointer ret(smear);
+    return ret;
 }

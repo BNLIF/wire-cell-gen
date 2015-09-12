@@ -1,88 +1,123 @@
-#include "WireCellUtil/BufferedHistogram2D.h"
-#include "WireCellUtil/Testing.h"
 #include "WireCellGen/Diffuser.h"
+
+#include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Units.h"
+
+
+#include "TApplication.h"
+#include "TCanvas.h"
+#include "TH2F.h"
+#include "TStyle.h"
+#include "TPolyMarker.h"
 
 #include <iostream>
 
 using namespace WireCell;
 using namespace std;
 
-void dump_hist(BufferedHistogram2D& hist)
+
+void dump_smear(Diffusion::pointer smear)
 {
-    while (hist.size()) {
-	double x = hist.xmin();
-	std::vector<double> slice = hist.popx();
-	if (!slice.size()) { continue; }
-	cerr << "[" << hist.size() << "/" << slice.size()<<"] " << x;
-	for (auto d : slice) {
-	    cerr << " " << d;
+    cerr << "L: [ " << smear->lmin << " , " << smear->lmax << " ] x " << smear->lbin << endl;
+    cerr << "T: [ " << smear->tmin << " , " << smear->tmax << " ] x " << smear->tbin << endl;
+    for (int tind = 0; tind < smear->tsize(); ++tind) {
+	for (int lind = 0; lind < smear->lsize(); ++lind) {
+	    cerr << "\t" << smear->array[lind][tind];
 	}
 	cerr << endl;
     }
 }
 
-int test_dump()
+void test_one()
 {
-    BufferedHistogram2D hist;
-    Diffuser diff(hist, 3);
+    // binsize_l, binsize_t
+    Diffuser diff(1000, 1);
+    // mean_l, mean_t, sigma_l, sigma_t
+    dump_smear(diff(20000, 20, 2000, 2));
 
-    double xmin2 = diff.diffuse(15.0,10.0,1.0,1.0);
-    cerr << "depo2 xmin = " << xmin2 << endl;
-
-    double xmin1 = diff.diffuse(4.0,2.0,1.0,1.0);
-    cerr << "depo1 xmin = " << xmin1 << endl;
-
-    dump_hist(hist);
-
-    return 0;
-
+    for (double mean = -100; mean <= 100; mean += 0.11) {
+	Diffuser::bounds_type bb = diff.bounds(mean, 1.5, 1.0);
+	//cerr << "mean=" << mean << " [" << bb.first << " --> " << bb.second << "]" << endl;
+	Assert(bb.second - bb.first == 10.0);
+    }
 }
 
-int test1()
+
+void test_plot_hist(TCanvas& canvas)
 {
-    BufferedHistogram2D hist(1000,10,1000,10);
-    Diffuser diff(hist, 3);
+    canvas.Clear();
 
-    auto qa = diff.oned(11010, 103, 7000, 1000);
-    Assert(qa.size());
-    double tot_qa = 0;
-    for (auto q: qa) {
-	tot_qa += q;
-    }
-    Assert(tot_qa > 0);
-
-    auto qb = diff.oned(100, 1.6, -5, 10);
-    Assert(qb.size());
-    double tot_qb = 0;
-    for (auto q: qb) {
-	tot_qb += q;
-    }
-    Assert(tot_qb > 0);
-}
-
-int test2()
-{
-    const double xbinsize = 1000;
-    const double ybinsize = 1;
     const int nsigma = 3;
+    const double drift_velocity = 1.6 * units::mm/units::microsecond;
+    const double binsize_l = 0.5*units::microsecond*drift_velocity;
+    const double binsize_t = 5*units::mm;
 
+    const double sigma_l = 3.0*units::microsecond*drift_velocity;
+    const double sigma_t = 3*units::mm;
 
-    BufferedHistogram2D hist(xbinsize, ybinsize);
-    Diffuser diff(hist, nsigma);
+    Diffuser diff(binsize_l, binsize_t);
 
-    const double tau = 110028;
-    const double sigma_tau = 325.576;
-    const double sigma_trans = 5.0;
-    for (double trans=0; trans<20; trans+=0.01) {
-	cerr << "test_diffuser: trans=" << trans << endl;
-	diff.diffuse(tau, trans, sigma_tau, sigma_trans, 1.0);
+    vector< Diffusion::pointer> diffs;
+    vector< pair<double,double> > pts;
+
+    // make a diagnonal
+    for (double step=0; step<200; step += 5) {
+    	double mean_l = (0.5+step)*binsize_l;
+    	double mean_t = (0.5+step)*binsize_t;
+    	diffs.push_back(diff(mean_l, mean_t, sigma_l, sigma_t));
+    	pts.push_back(make_pair(mean_l, mean_t));
     }
-    dump_hist(hist);
+
+    // and two isolated dots
+    diffs.push_back(diff(10*binsize_l, 100*binsize_t, 3*sigma_l, 3*sigma_t, 10.0));
+    diffs.push_back(diff(100*binsize_l, 10*binsize_t, 3*sigma_l, 3*sigma_t, 10.0));
+
+    double min_l=0,min_t=0,max_l=0,max_t=0;
+    for (auto d : diffs) {
+	min_l = min(min_l, d->lmin);
+	min_t = min(min_t, d->tmin);
+	max_l = max(max_l, d->lmax);
+	max_t = max(max_t, d->tmax);
+    }
+
+
+    TH2F* h = new TH2F("smear","Smear",
+		       (max_l-min_l)/binsize_l, min_l, max_l,
+		       (max_t-min_t)/binsize_t, min_t, max_t);
+    for (auto smear : diffs) {
+	for (int tind = 0; tind < smear->tsize(); ++tind) {
+	    for (int lind = 0; lind < smear->lsize(); ++lind) {
+		h->Fill(smear->lpos(lind), smear->tpos(tind), smear->array[lind][tind]);
+	    }
+	}
+    }
+
+    h->SetXTitle("Longitudinal direction");
+    h->SetYTitle("Transverse direction");
+    h->Draw("colz");
+
+    TPolyMarker* pm = new TPolyMarker;
+    pm->SetMarkerColor(5);
+    pm->SetMarkerStyle(8);
+    int count = 0;
+    for (auto xy : pts) {
+    	pm->SetPoint(count++, xy.first, xy.second);
+    }
+    pm->Draw();
+
+    gStyle->SetOptStat(11111111);
+    canvas.Print("test_diffuser.pdf","pdf");
 }
 
 
-int main()
+int main(int argc, char* argv[])
 {
-    //test1();
-    test2();
+    test_one();
+
+    TCanvas canvas("c","c",500,500);
+    canvas.Print("test_diffuser.pdf[","pdf");
+
+    test_plot_hist(canvas);
+
+    canvas.Print("test_diffuser.pdf]","pdf");
 }

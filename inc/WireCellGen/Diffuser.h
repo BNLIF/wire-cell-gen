@@ -1,57 +1,117 @@
 #ifndef WIRECELL_DIFUSER
 #define WIRECELL_DIFUSER
 
-#include "WireCellUtil/BufferedHistogram2D.h"
-#include "WireCellUtil/Point.h"
-#include "WireCellUtil/Units.h"
-#include "WireCellIface/IDepo.h"
+#include <boost/multi_array.hpp>
 
 #include <vector>
 
 namespace WireCell {
 
+    /** A simple 2D histogram which is an array and its 2D bounds. */
+    struct Diffusion {
+	typedef boost::multi_array<double, 2> array_type;
+	typedef array_type::index index;
+	typedef std::shared_ptr<Diffusion> pointer;
 
-    /** Model diffusion of drifted charge.
+	array_type array;
+	double lmin, tmin, lmax, tmax, lbin, tbin;
+
+	Diffusion(int nlong, int ntrans, double lmin, double tmin, double lmax, double tmax)
+	    : array(boost::extents[nlong][ntrans])
+	    , lmin(lmin), tmin(tmin), lmax(lmax), tmax(tmax)
+	{
+	    lbin = (lmax-lmin) / nlong;
+	    tbin = (tmax-tmin) / ntrans;
+	}
+	
+	// Size of diffusion patch in both directions.
+	int lsize() const { return array.shape()[0]; }
+	int tsize() const { return array.shape()[1]; }
+
+	// Longitudinal position at index with extra offset 0.5 is bin center.
+	double lpos(index ind, double offset=0.5) const {
+	    return lmin + (ind+offset)*lbin; 
+	}
+	// Transverse position at index with extra offset 0.5 is bin center.
+	double tpos(index ind, double offset=0.5) const {
+	    return tmin + (ind+offset)*tbin; 
+	}
+    };
+
+    /** Model longitudinal and transverse diffusion of drifted charge.
      *
-     * Each point deposition is spread out in the longitudinal (X,
-     * drift) and transverse (Y, wire pitch) directions.
-     * 
-     * The spread in either direction is taken to be independent and
-     * Gaussian but truncated to the number of sigma.  
-     *
-     * The spread is placed on to a BufferedHistogram2D. 
-     *
-     * Charge is conserved unless it underflows the histogram.
-     *
-     * Note: caller must take care to sync the BufferedHistogram2D
-     * with the depositions and to select suitable binning of the
-     * BufferedHistogram2D.
+     * The result is returned as a truncated 2D Gaussian distribution
+     * defined on a grid covering a rectangular domain.  Each
+     * direction is considered independently.
      */
 
-    class Diffuser { 		// fixme: make interface?
+    class Diffuser {
     public:
 
+	typedef std::pair<double,double> bounds_type;
 
-	/// Create a diffuser on the given buffered histogram (as
-	/// described above).  Truncate the diffusion at the given
-	/// number of sigma.
-	Diffuser(BufferedHistogram2D& hist, int nsigma);
+
+	/** Create a diffuser.
+	 *
+	 * \param lbinsize defines the grid spacing in the longitudinal direction.
+	 * \param tbinsize defines the grid spacing in the transverse direction.
+	 * \param lorigin defines a grid line in the longitudinal direction.
+	 * \param torigin defines a grid line in the transverse direction.
+	 * \param nsigma defines the number of sigma at which to truncate the Gaussian.
+	 */
+	Diffuser(double binsize_l, double binsize_t,
+		 double origin_l=0.0, double origin_t=0.0,
+		 double nsigma=3.0);
+
 	~Diffuser();
 	
-	/// Diffuse the deposition onto the buffered histogram, return
-	/// the low-X bound of the diffusion patch.
-	double diffuse(double x, double y, double sigma_x, double sigma_y,
-		       double charge = 1.0);
+	/** Diffuse a point charge.
+	 *
+	 * \param mean_l is the position in the longitudinal direction.
+	 * \param mean_t is the position in the transverse direction.
+	 * \param sigma_l is the Gaussian sigma in the longitudinal direction.
+	 * \param sigma_t is the Gaussian sigma in the transverse direction.
+	 * \param weight is the normalization (eg, amount of charge)
+	 *
+	 * Returns a 2D array of the diffused distribution.
+	 *
+	 * Use like:
+	 *
+	 * ```c++
+	 *
+	 * Diffuser diff(...);
+	 * Diffusion::pointer smear = diff(mean_l,mean_t,sigma_l,sigma_t);
+	 *
+	 * Histogram hist; 
+	 * for (int l_ind=0; l_ind < smear->lsize(); ++l_ind) {
+	 *   for (int t_ind=0; t_ind < smear->tsize(); ++t_ind) {
+	 *      hist.fill(smear->lval(l_ind), smear->tval(t_ind), smear->array[l_ind][t_ind]);
+	 *   }
+	 * } 
+	 *
+	 * ```
+	 */
+	Diffusion::pointer operator()(double mean_l, double mean_t,
+				      double sigma_l, double sigma_t,
+				      double weight = 1.0);
+
+	/** Return the +/- nsigma*sigma bounds around mean enlarged to fall on bin edges.
+	 */
+	bounds_type bounds(double mean, double sigma, double binsize, double origin=0.0);
+
 
 	/// Internal function, return a 1D distribution of mean/sigma
 	/// binned with zeroth bin at origin and given binsize.
 	std::vector<double> oned(double mean, double sigma,
-				 double origin, double binsize) const;
+				 double binsize,
+				 const Diffuser::bounds_type& bounds);
+
 
 
     private:
-	BufferedHistogram2D& m_hist;
-	const int m_nsigma;
+	const double m_origin_l, m_origin_t, m_binsize_l, m_binsize_t;
+	const double m_nsigma;
+
     };
 
 }
