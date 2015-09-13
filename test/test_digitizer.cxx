@@ -178,154 +178,155 @@ int main(int argc, char* argv[])
 	     << endl;
     }
 
+    AssertMsg(false, "Finish this test");
     // diffuse + collect/induce
 
-    std::vector<PlaneDuctor*> ductors = {
-	new PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
-	new PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
-	new PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
-    };
+    // std::vector<PlaneDuctor*> ductors = {
+    // 	new PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
+    // 	new PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
+    // 	new PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
+    // };
 
-    int ndrifted[3] = {0};
-    while (true) {
-	int n_ok = 0;
-	for (int ind=0; ind < 3; ++ind) {
-	    IDepo::pointer depo;
-	    if (!drifters[ind]->extract(depo)) {
-		cerr << "Failed to extract from drifter " << ind << endl;
-		continue;
-	    }
-	    ++ndrifted[ind];
-	    Assert(depo);
-	    depos.push_back(depo);
-	    Assert(ductors[ind]->insert(depo));
-	    ++n_ok;
-	}
-	if (n_ok == 0) {
-	    break;
-	}
-	Assert(n_ok == 3);
+    // int ndrifted[3] = {0};
+    // while (true) {
+    // 	int n_ok = 0;
+    // 	for (int ind=0; ind < 3; ++ind) {
+    // 	    IDepo::pointer depo;
+    // 	    if (!drifters[ind]->extract(depo)) {
+    // 		cerr << "Failed to extract from drifter " << ind << endl;
+    // 		continue;
+    // 	    }
+    // 	    ++ndrifted[ind];
+    // 	    Assert(depo);
+    // 	    depos.push_back(depo);
+    // 	    Assert(ductors[ind]->insert(depo));
+    // 	    ++n_ok;
+    // 	}
+    // 	if (n_ok == 0) {
+    // 	    break;
+    // 	}
+    // 	Assert(n_ok == 3);
 
-	for (int ind=0; ind < 3; ++ind) {
-	    ductors[ind]->flush();
-	    cerr << "^ " << ind
-		 << " #in=" << ductors[ind]->ninput()
-		 << " #out=" << ductors[ind]->noutput()
-		 << " #buf=" << ductors[ind]->nbuffer()
-		 << endl;
-	}
-
-
-    }
-    Assert(ductors[0]->noutput() == ductors[1]->noutput() && ductors[1]->noutput() == ductors[2]->noutput());
+    // 	for (int ind=0; ind < 3; ++ind) {
+    // 	    ductors[ind]->flush();
+    // 	    cerr << "^ " << ind
+    // 		 << " #in=" << ductors[ind]->ninput()
+    // 		 << " #out=" << ductors[ind]->noutput()
+    // 		 << " #buf=" << ductors[ind]->nbuffer()
+    // 		 << endl;
+    // 	}
 
 
-    Digitizer digitizer;
-    digitizer.set_wires(wires);
+    // }
+    // Assert(ductors[0]->noutput() == ductors[1]->noutput() && ductors[1]->noutput() == ductors[2]->noutput());
 
-    int nducted[3] = {0};
-    while (true) {
-	IPlaneSliceVector psv(3);
-	int n_ok = 0;
-	int n_eos = 0;
 
-	for (int ind=0; ind<3; ++ind) {
+    // Digitizer digitizer;
+    // digitizer.set_wires(wires);
 
-	    if (!ductors[ind]->extract(psv[ind])) {
-		cerr << "ductor #"<<ind<<"failed"<<endl;
-		continue;
-	    }
-	    ++nducted[ind];
-	    ++n_ok;
-	    if (psv[ind] == ductors[ind]->eos()) {
-		++n_eos;
-	    }
-	}
-	if (n_ok == 0) {
-	    cerr << "Got no channel slices from plane ductors" << endl;
-	    break;
-	}
-	Assert(n_ok == 3);
+    // int nducted[3] = {0};
+    // while (true) {
+    // 	IPlaneSliceVector psv(3);
+    // 	int n_ok = 0;
+    // 	int n_eos = 0;
 
-	if (!(n_eos ==0 || n_eos == 3)) {
-	    cerr << "Lost sync! #eos:" << n_eos << endl;
-	    cerr << "ndrifted/nducted ninput/noutput:\n";
-	    for (int ind=0; ind<3; ++ind) {
-		cerr << "\t" << ndrifted[ind] << "/" << nducted[ind]
-		     << " " << ductors[ind]->ninput() << "/" << ductors[ind]->noutput()
-		     << endl;
-	    }
-	}
-	Assert(n_eos == 0 || n_eos == 3);
-	if (n_eos == 3) {
-	    cerr << "Got three EOS from plane ductors" << endl;
-	    break;
-	}
+    // 	for (int ind=0; ind<3; ++ind) {
 
-	Assert(digitizer.insert(psv));
-    }
+    // 	    if (!ductors[ind]->extract(psv[ind])) {
+    // 		cerr << "ductor #"<<ind<<"failed"<<endl;
+    // 		continue;
+    // 	    }
+    // 	    ++nducted[ind];
+    // 	    ++n_ok;
+    // 	    if (psv[ind] == ductors[ind]->eos()) {
+    // 		++n_eos;
+    // 	    }
+    // 	}
+    // 	if (n_ok == 0) {
+    // 	    cerr << "Got no channel slices from plane ductors" << endl;
+    // 	    break;
+    // 	}
+    // 	Assert(n_ok == 3);
+
+    // 	if (!(n_eos ==0 || n_eos == 3)) {
+    // 	    cerr << "Lost sync! #eos:" << n_eos << endl;
+    // 	    cerr << "ndrifted/nducted ninput/noutput:\n";
+    // 	    for (int ind=0; ind<3; ++ind) {
+    // 		cerr << "\t" << ndrifted[ind] << "/" << nducted[ind]
+    // 		     << " " << ductors[ind]->ninput() << "/" << ductors[ind]->noutput()
+    // 		     << endl;
+    // 	    }
+    // 	}
+    // 	Assert(n_eos == 0 || n_eos == 3);
+    // 	if (n_eos == 3) {
+    // 	    cerr << "Got three EOS from plane ductors" << endl;
+    // 	    break;
+    // 	}
+
+    // 	Assert(digitizer.insert(psv));
+    // }
     
-    digitizer.flush();
+    // digitizer.flush();
 
-    while (true) {
-	IChannelSlice::pointer csp;
-	if (!digitizer.extract(csp)) {
-	    cerr << "Digitizer fails to produce output" << endl;
-	    break;
-	}
-	if (csp == digitizer.eos()) {
-	    cerr << "Digitizer reaches EOS" << endl;
-	    break;
-	}
+    // while (true) {
+    // 	IChannelSlice::pointer csp;
+    // 	if (!digitizer.extract(csp)) {
+    // 	    cerr << "Digitizer fails to produce output" << endl;
+    // 	    break;
+    // 	}
+    // 	if (csp == digitizer.eos()) {
+    // 	    cerr << "Digitizer reaches EOS" << endl;
+    // 	    break;
+    // 	}
 
-	ChannelCharge cc = csp->charge();
-	int nhit_wires = cc.size();
-	if (!nhit_wires) {
-	    //cerr << "Digitizer returns no charge at " << csp->time() << endl;
-	    continue;
-	}
+    // 	ChannelCharge cc = csp->charge();
+    // 	int nhit_wires = cc.size();
+    // 	if (!nhit_wires) {
+    // 	    //cerr << "Digitizer returns no charge at " << csp->time() << endl;
+    // 	    continue;
+    // 	}
 
-	cerr << "Digitized " << cc.size() << " at " << csp->time() << endl;
-	canvas.Clear();
-	TH1F* frame = canvas.DrawFrame(enlarge*bbox.first.z(), enlarge*bbox.first.y(),
-				       enlarge*bbox.second.z(), enlarge*bbox.second.y());
+    // 	cerr << "Digitized " << cc.size() << " at " << csp->time() << endl;
+    // 	canvas.Clear();
+    // 	TH1F* frame = canvas.DrawFrame(enlarge*bbox.first.z(), enlarge*bbox.first.y(),
+    // 				       enlarge*bbox.second.z(), enlarge*bbox.second.y());
 
-	frame->SetXTitle("Transverse Z direction");
-	frame->SetYTitle("Transverse Y (W) direction");
-	frame->SetTitle(Form("t=%f %d hit wires red=U, blue=V, +X (-drift) direction into page",
-			     csp->time(), nhit_wires));
+    // 	frame->SetXTitle("Transverse Z direction");
+    // 	frame->SetYTitle("Transverse Y (W) direction");
+    // 	frame->SetTitle(Form("t=%f %d hit wires red=U, blue=V, +X (-drift) direction into page",
+    // 			     csp->time(), nhit_wires));
 
-	for (auto cq : cc) {	// for each hit channel
+    // 	for (auto cq : cc) {	// for each hit channel
 
-	    // for each wire on that channel
-	    for (auto wire : ws.by_channel(cq.first)) {
-		Ray r = wire->ray();
+    // 	    // for each wire on that channel
+    // 	    for (auto wire : ws.by_channel(cq.first)) {
+    // 		Ray r = wire->ray();
 
-		TLine* a_wire = new TLine(r.first.z(), r.first.y(), r.second.z(), r.second.y());
-		a_wire->SetLineColor(colors[wire->planeid().index()]);
-		double width = cq.second.mean()/max_charge*max_width;
-		if (width<1) { width = 1.0; }
-		a_wire->SetLineWidth(width);
-		a_wire->Draw();	    
-	    }
-	}
+    // 		TLine* a_wire = new TLine(r.first.z(), r.first.y(), r.second.z(), r.second.y());
+    // 		a_wire->SetLineColor(colors[wire->planeid().index()]);
+    // 		double width = cq.second.mean()/max_charge*max_width;
+    // 		if (width<1) { width = 1.0; }
+    // 		a_wire->SetLineWidth(width);
+    // 		a_wire->Draw();	    
+    // 	    }
+    // 	}
 
-	TPolyMarker* pm = new TPolyMarker;
-	pm->SetMarkerColor(1);
-	pm->SetMarkerStyle(8);
-	int ndepo = 0;
-	for (auto depo : depos) {
-	    if (std::abs(depo->time() - csp->time()) < 0.5*units::microsecond) {
-		//cerr << ndepo << " t=" << depo->time() << " at: " << depo->pos() << endl;
-		pm->SetPoint(ndepo, depo->pos().z(), depo->pos().y());
-		++ndepo;
-	    }
-	}
-	pm->Draw();
+    // 	TPolyMarker* pm = new TPolyMarker;
+    // 	pm->SetMarkerColor(1);
+    // 	pm->SetMarkerStyle(8);
+    // 	int ndepo = 0;
+    // 	for (auto depo : depos) {
+    // 	    if (std::abs(depo->time() - csp->time()) < 0.5*units::microsecond) {
+    // 		//cerr << ndepo << " t=" << depo->time() << " at: " << depo->pos() << endl;
+    // 		pm->SetPoint(ndepo, depo->pos().z(), depo->pos().y());
+    // 		++ndepo;
+    // 	    }
+    // 	}
+    // 	pm->Draw();
 
-	canvas.Print(pdf, "pdf");
-    }
-    canvas.Print(Form("%s]",pdf), "pdf");
+    // 	canvas.Print(pdf, "pdf");
+    // }
+    // canvas.Print(Form("%s]",pdf), "pdf");
 
 
 

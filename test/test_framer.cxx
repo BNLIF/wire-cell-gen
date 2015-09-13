@@ -77,112 +77,126 @@ int main()
 	drifters[ind]->flush();
     }
 
-    // diffuse + collect/induce
+    AssertMsg(false, "Finish this test");
 
-    std::vector<PlaneDuctor*> ductors = {
-	new PlaneDuctor(WirePlaneId(kUlayer), iwp->pitchU(), tick, now),
-	new PlaneDuctor(WirePlaneId(kVlayer), iwp->pitchV(), tick, now),
-	new PlaneDuctor(WirePlaneId(kWlayer), iwp->pitchW(), tick, now)
-    };
-    while (true) {
-	int n_ok = 0;
-	for (int ind=0; ind < 3; ++ind) {
-	    IDepo::pointer depo;
-	    if (!drifters[ind]->extract(depo)) {
-		continue;
-	    }
-	    Assert(depo);
-	    Assert(ductors[ind]->insert(depo));
-	    ++n_ok;
-	}
-	if (n_ok == 0) {
-	    break;
-	}
-	Assert(n_ok == 3);
-    }
-    for (int ind=0; ind < 3; ++ind) {
-	ductors[ind]->flush();
-    }
+    // diffuse
 
-    Digitizer digitizer;
-    digitizer.set_wires(wires);
+    // 	Diffuser(const Ray& pitch,
+    // 		 double binsize_l,
+    // 		 double origin_l = 0.0*units::microsecond,
+    // 		 double DL=5.3*units::centimeter2/units::second,
+    // 		 double DT=12.8*units::centimeter2/units::second,
+    // 		 double drift_velocity = 1.6*units::millimeter/units::microsecond,
+    // 		 double max_sigma_l = 5*units::microsecond,
+    // 		 double nsigma=3.0);
 
-    while (true) {
-	IPlaneSliceVector psv(3);
-	int n_ok = 0;
-	int n_eos = 0;
-	for (int ind=0; ind<3; ++ind) {
-	    if (!ductors[ind]->extract(psv[ind])) {
-		cerr << "ductor #"<<ind<<"failed"<<endl;
-		continue;
-	    }
-	    ++n_ok;
-	    if (psv[ind] == ductors[ind]->eos()) {
-		++n_eos;
-	    }
-	}
-	if (n_ok == 0) {
-	    cerr << "Got no channel slices from plane ductors" << endl;
-	    break;
-	}
-	Assert(n_ok == 3);
 
-	Assert(n_eos == 0 || n_eos == 3);
-	if (n_eos == 3) {
-	    cerr << "Got three EOS from plane ductors" << endl;
-	    break;
-	}
+    // // collect/induce
 
-	Assert(digitizer.insert(psv));
-    }
+    // std::vector<PlaneDuctor*> ductors = {
+    // 	new PlaneDuctor(WirePlaneId(kUlayer), ray_length(iwp->pitchU()), tick, now),
+    // 	new PlaneDuctor(WirePlaneId(kVlayer), ray_length(iwp->pitchV()), tick, now),
+    // 	new PlaneDuctor(WirePlaneId(kWlayer), ray_length(iwp->pitchW()), tick, now)
+    // };
+    // while (true) {
+    // 	int n_ok = 0;
+    // 	for (int ind=0; ind < 3; ++ind) {
+    // 	    IDepo::pointer depo;
+    // 	    if (!drifters[ind]->extract(depo)) {
+    // 		continue;
+    // 	    }
+    // 	    Assert(depo);
+    // 	    Assert(ductors[ind]->insert(depo));
+    // 	    ++n_ok;
+    // 	}
+    // 	if (n_ok == 0) {
+    // 	    break;
+    // 	}
+    // 	Assert(n_ok == 3);
+    // }
+    // for (int ind=0; ind < 3; ++ind) {
+    // 	ductors[ind]->flush();
+    // }
+
+    // Digitizer digitizer;
+    // digitizer.set_wires(wires);
+
+    // while (true) {
+    // 	IPlaneSliceVector psv(3);
+    // 	int n_ok = 0;
+    // 	int n_eos = 0;
+    // 	for (int ind=0; ind<3; ++ind) {
+    // 	    if (!ductors[ind]->extract(psv[ind])) {
+    // 		cerr << "ductor #"<<ind<<"failed"<<endl;
+    // 		continue;
+    // 	    }
+    // 	    ++n_ok;
+    // 	    if (psv[ind] == ductors[ind]->eos()) {
+    // 		++n_eos;
+    // 	    }
+    // 	}
+    // 	if (n_ok == 0) {
+    // 	    cerr << "Got no channel slices from plane ductors" << endl;
+    // 	    break;
+    // 	}
+    // 	Assert(n_ok == 3);
+
+    // 	Assert(n_eos == 0 || n_eos == 3);
+    // 	if (n_eos == 3) {
+    // 	    cerr << "Got three EOS from plane ductors" << endl;
+    // 	    break;
+    // 	}
+
+    // 	Assert(digitizer.insert(psv));
+    // }
     
-    digitizer.flush();
+    // digitizer.flush();
 
-    Framer framer;
-    while (true) {
-	IChannelSlice::pointer csp;
-	if (!digitizer.extract(csp)) {
-	    cerr << "Digitizer fails to produce output" << endl;
-	    break;
-	}
-	if (csp == digitizer.eos()) {
-	    cerr << "Digitizer reaches EOS" << endl;
-	    break;
-	}
-	Assert(framer.insert(csp));
-    }
+    // Framer framer;
+    // while (true) {
+    // 	IChannelSlice::pointer csp;
+    // 	if (!digitizer.extract(csp)) {
+    // 	    cerr << "Digitizer fails to produce output" << endl;
+    // 	    break;
+    // 	}
+    // 	if (csp == digitizer.eos()) {
+    // 	    cerr << "Digitizer reaches EOS" << endl;
+    // 	    break;
+    // 	}
+    // 	Assert(framer.insert(csp));
+    // }
 
-    framer.flush();
+    // framer.flush();
 
-    while (true) {
-	IFrame::pointer frame;
-	if (!framer.extract(frame)) {
-	    break;
-	}
-	if (frame == framer.eos()) {
-	    cerr << "Framer reaches EOS" << endl;
-	    break;
-	}
+    // while (true) {
+    // 	IFrame::pointer frame;
+    // 	if (!framer.extract(frame)) {
+    // 	    break;
+    // 	}
+    // 	if (frame == framer.eos()) {
+    // 	    cerr << "Framer reaches EOS" << endl;
+    // 	    break;
+    // 	}
 
-    	int ntraces = boost::distance(frame->range());
-    	if (!ntraces) {
-	    continue;
-	}
-	cerr << "test_framer: Frame: #" << frame->ident()
-	     << " at t=" << frame->time()/units::microsecond << " usec"
-	     << " with " << ntraces << " traces"
-	     << endl;
+    // 	int ntraces = boost::distance(frame->range());
+    // 	if (!ntraces) {
+    // 	    continue;
+    // 	}
+    // 	cerr << "test_framer: Frame: #" << frame->ident()
+    // 	     << " at t=" << frame->time()/units::microsecond << " usec"
+    // 	     << " with " << ntraces << " traces"
+    // 	     << endl;
 
-	for (auto trace : *frame) {
-	    cerr << "\ttrace ch:" << trace->channel()
-		 << " start tbin=" << trace->tbin()
-		 << " #time bins=" << trace->charge().size()
-		 << endl;
+    // 	for (auto trace : *frame) {
+    // 	    cerr << "\ttrace ch:" << trace->channel()
+    // 		 << " start tbin=" << trace->tbin()
+    // 		 << " #time bins=" << trace->charge().size()
+    // 		 << endl;
 	    
-	}
+    // 	}
 
 
-    }
+    // }
 
     return 0;
 }

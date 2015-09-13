@@ -73,9 +73,9 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
 	IWireVector& wires = m_wires[wpid.index()];
 	the_times[wpid.index()] = ps->time();
 
-	for (auto cg : ps->charge_groups()) {
-	    int index = cg.first;
-	    for (auto q : cg.second) {
+	for (auto wcr : ps->charge_runs()) {
+	    int index = wcr.first;
+	    for (auto q : wcr.second) {
 		IWire::pointer wire = wires[index];
 		cc[wire->channel()] += q;
 		++index;

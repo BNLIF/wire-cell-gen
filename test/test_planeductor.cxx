@@ -1,11 +1,11 @@
 #include "WireCellGen/PlaneDuctor.h"
-#include "WireCellGen/Drifter.h"
-#include "WireCellGen/TrackDepos.h"
+#include "WireCellGen/Diffusion.h"
 
 #include "WireCellIface/WirePlaneId.h"
 
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Units.h"
 
 #include <iostream>
 #include <algorithm> 
@@ -17,73 +17,49 @@ using namespace std;
 
 int main()
 {
-    // Describe a wire plane is at x=10 with 1 cm pitch
-    const double plane_x = 1*units::cm;
-    const double plane_pitch = 1*units::cm;
-    const double plane_half_width = 10*units::cm;
-    const double drift_velocity = 1.0*units::millimeter/units::microsecond;
-    const double tick = 1.0*units::microsecond;
+    const int nlong = 10;
+    const int ntrans = 10;
+    const double lbin = 0.5*units::microsecond;
+    const double tbin = 5.0*units::millimeter;
+    const double lpos0 = 0.0*units::microsecond;
+    const double tpos0 = 0.0*units::millimeter;
 
-    Ray pitch(Point(plane_x,0,-plane_half_width),
-	      Point(plane_x,0,-(plane_half_width - plane_pitch)));
+    const double lmean = 0.5*nlong*lbin;
+    const double lsigma = 3*lbin;
+    const double tmean = 0.5*ntrans*tbin;
+    const double tsigma = 3*tbin;
 
-    cerr << "Pitch: " << pitch.first << " --> " << pitch.second 
-	 << " pitch=" << ray_length(pitch) 
-	 << " total wires=" << (2*plane_half_width/plane_pitch)
-	 << endl ;
-    cerr << "Drift: to x=" << plane_x
-	 << " tau=" << plane_x / drift_velocity 
-	 << " velocity=" << drift_velocity << endl;
-
-    TrackDepos td;
-
-    const double cm = units::cm;
-    td.add_track(1.0*units::microsecond, Ray(Point(plane_x+1*cm, 0, 0),       Point(plane_x+3*cm,0,0)));
-    td.add_track(2.0*units::microsecond, Ray(Point(plane_x+2*cm,-1*cm,-1*cm), Point(plane_x+2*cm,cm,cm)));
-    td.add_track(5.0*units::microsecond, Ray(Point(plane_x+20*cm,-10*cm,-10*cm), Point(plane_x+10*cm,10*cm,10*cm)));
-    td.add_track(10.0*units::microsecond, Ray(Point(plane_x+10*cm,-10*cm,-10*cm), Point(plane_x+10*cm,10*cm,10*cm)));
-
-
-    double now = 0.0*units::microsecond;
-    PlaneDuctor pd(WirePlaneId(kUnknownLayer), pitch, tick, now, drift_velocity);
-
-    
-    for (auto depo : *td.depositions()) {
-	double tau = pd.proper_tau(depo->time(), depo->pos().x());
-	double pdist = pd.pitch_dist(depo->pos());
-	//cerr << "Depp: pos=" << depo->pos() << " time=" << depo->time() << " tau=" << tau << " pdist=" << pdist << endl;
-	AssertMsg(tau>0, "Negative tau");
+    Diffusion* diffusion =
+	new Diffusion(nullptr, nlong, ntrans, lpos0, tpos0, nlong*lbin, ntrans*tbin);
+    for (int tind=0; tind<ntrans; ++tind) {
+	const double t = tpos0 + (0.5*ntrans - tind) * tbin;
+	double tx = (t-tmean)/tsigma;
+	tx *= tx;
+	for (int lind=0; lind<nlong; ++lind) {
+	    const double l = lpos0 + (0.5*nlong - lind) * lbin;	    
+	    double lx = (l-lmean)/lsigma;
+	    lx *= lx;
+	    const double v = exp(-(tx + lx));
+	    cerr << "set("<<lind<<" , " <<tind<< " , " << v << ")" << endl;
+	    diffusion->set(lind,tind,v);
+	}
     }
-
-    WireCell::Drifter drifter(plane_x, drift_velocity);
-    AssertMsg(false, "Need to update this test");
-    // drifter.connect(td);
+    IDiffusion::pointer idiff(diffusion);
 
 
-    // pd.connect(boost::ref(drifter));
+    const WirePlaneId wpid(kWlayer);
+    PlaneDuctor pd(wpid, lbin, tbin, lpos0, tpos0);
 
-    // while (now < 10*units::microsecond) {
-    // 	IPlaneSlice::pointer ps = pd();
-    // 	if (!ps) {
-    // 	    cerr << "\nNo more data.\n";
-    // 	    break;
-    // 	}
-
-    // 	double clock = ps->time();
-    // 	WirePlaneId wpid = ps->planeid();
-    // 	IPlaneSlice::ChargeGrouping cg = ps->charge_groups();
-
-    // 	if (!cg.size()) { continue; }
-
-    // 	cerr << "Clock: " << clock << " plane: " << wpid << " got " << cg.size() << " groups" << endl;
-
-    // 	for (auto group : cg) {
-    // 	    cerr << "\t[@" << group.first <<"/"<<group.second.size() <<"]";
-    // 	    for (auto q : group.second) {
-    // 		cerr << " " << q;
-    // 	    }
-    // 	    cerr << endl;
-    // 	}
-    // }
-    return 1;
+    Assert(pd.insert(idiff));
+    pd.flush();
+    IPlaneSlice::pointer ps;
+    Assert(pd.extract(ps));
+    Assert(ps->planeid() == wpid);
+    cerr << "lpos0 = " << lpos0 << " ps->time() = " << ps->time() << endl;
+    Assert(lpos0 == ps->time());
+    cerr << "# charge runs: " << ps->charge_runs().size() << endl;
+    Assert(ps->charge_runs().size() > 0);
+    Assert(ps->flatten().size() > 0);
+    
+    return 0;
 }
