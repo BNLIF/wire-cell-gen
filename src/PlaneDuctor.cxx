@@ -38,7 +38,7 @@ void PlaneDuctor::flush()
 bool PlaneDuctor::insert(const input_type& diffusion) 
 {
     m_input.insert(diffusion);
-    while (latch_one()) { /**/}
+    while (latch_one()) { /* no op */ }
     return true;
 }
 
@@ -63,7 +63,13 @@ void PlaneDuctor::purge_bygone()
 	}
 	break;
     }
+    if (to_kill.empty()) {
+	return;
+    }
+    cerr << "PlaneDuctor t=" << m_lpos << " purging: " << to_kill.size() << endl;
     for (auto diff : to_kill) {
+	cerr << "\t[" << diff->lbegin() << " -> " << diff->lend() << "] #bins=" << diff->lsize()
+	     << endl;
 	m_input.erase(diff);
     }
 }
@@ -72,16 +78,21 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 {
     IPlaneSlice::WireChargeRunVector wcrv;
 
-    vector<double> wires_charge;
+    // cerr << "PlaneDuctor::latch_hits t=" << m_lpos
+    // 	 << " #input=" << m_input.size()
+    // 	 << " #output=" << m_output.size() << endl;
+
     for (auto diff : m_input) {
 	// Skip old patches, call purge_bygone() first to make this a no-op
 	if (m_lpos >= diff->lend()) {
+	    //cerr << "\tskip old diffusion: " << diff->lend() << " <= " << m_lpos << endl;
 	    continue;		
 	}
 
 	// the start of this and all subsequent diffusions are at
 	// least one bin in the future, so bail.
 	if (diff->lbegin() >= m_lpos + m_lbin) {
+	    //cerr << "\tignore future diffusions: " << m_lpos + m_lbin << " <= " << diff->lbegin() << endl;
 	    break;
 	}
 
@@ -90,13 +101,19 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	const int lind = (0.5 + m_lpos - diff->lbegin())/m_lbin;
 
 	const int wire_index = (0.5 + diff->tbegin() - m_tpos0)/m_tbin;
+	// cerr << "\twire_index=" << wire_index
+	//      << ": tbeg=" << diff->tbegin() << " tpos0=" << m_tpos0 << " tbin=" << m_tbin << endl;
 	const int nwires_patch = diff->tsize();
 	vector<double> wire_charge;
 	for (int tind = 0; tind < nwires_patch; ++tind) {
-	    wires_charge.push_back(diff->get(lind,tind));
+	    wire_charge.push_back(diff->get(lind,tind));
 	}
-	wcrv.push_back(make_pair(wire_index, wire_charge));
+
+	IPlaneSlice::WireChargeRun wcr(wire_index, wire_charge);
+	wcrv.push_back(wcr);
     }
+
+
 
     IPlaneSlice::pointer ret(new SimplePlaneSlice(m_wpid, m_lpos, wcrv));
     return ret;
@@ -110,6 +127,7 @@ bool PlaneDuctor::latch_one()
     // fixme: need assurance we have enough buffered!
 
     IPlaneSlice::pointer ps = latch_hits();
+
     m_output.push_back(ps);
     m_lpos += m_lbin;		// on to next.
     return true;
