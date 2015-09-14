@@ -66,10 +66,7 @@ void PlaneDuctor::purge_bygone()
     if (to_kill.empty()) {
 	return;
     }
-    cerr << "PlaneDuctor t=" << m_lpos << " purging: " << to_kill.size() << endl;
     for (auto diff : to_kill) {
-	cerr << "\t[" << diff->lbegin() << " -> " << diff->lend() << "] #bins=" << diff->lsize()
-	     << endl;
 	m_input.erase(diff);
     }
 }
