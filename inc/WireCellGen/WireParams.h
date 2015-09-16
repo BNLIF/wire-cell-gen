@@ -7,7 +7,8 @@
 
 namespace WireCell {
 
-    /** Embody parameters describing a triple of wire planes and provide a configurable interface. */
+    /** Embody parameters describing a triple of wire planes and
+     * provide a configurable interface. */
     class WireParams : 
 	public IWireParameters,
 	public IConfigurable

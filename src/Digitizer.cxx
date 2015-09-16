@@ -61,17 +61,18 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
     }
 
     WireCell::ChannelCharge cc;
-    double the_times[3] = {0};
+    double the_time = -1;
 
     int nplanes = plane_slice_vector.size();
     for (int iplane = 0; iplane < nplanes; ++iplane) {
 	IPlaneSlice::pointer ps = plane_slice_vector[iplane];
 	if (!ps) {
-	    return false;
+	    //cerr << "Digitizer::insert: ignoring null PlaneSlice" << endl;
+	    continue;
 	}
 	WirePlaneId wpid = ps->planeid();
 	IWireVector& wires = m_wires[wpid.index()];
-	the_times[wpid.index()] = ps->time();
+	the_time = ps->time();
 
 	for (auto wcr : ps->charge_runs()) {
 	    int index = wcr.first;
@@ -84,7 +85,7 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
     }
     // fixme: maybe add check for consistent times between planes....
 
-    IChannelSlice::pointer next(new SimpleChannelSlice(the_times[0], cc));
+    IChannelSlice::pointer next(new SimpleChannelSlice(the_time, cc));
     m_output.push_back(next);
     return true;
 }

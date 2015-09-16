@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
 
     const WirePlaneId wpid(kWlayer);
-    PlaneDuctor pd(wpid, lbin, tbin); // start at lpos=tpos=0.0.
+    PlaneDuctor pd(wpid, ntrans, lbin, tbin); // start at lpos=tpos=0.0.
 
     // stuff and flush
     Assert(pd.insert(idiff));

@@ -12,6 +12,7 @@ using namespace WireCell;
 
 Diffuser::Diffuser(const Ray& pitch,
 		   double binsize_l,
+		   double time_offset,
 		   double origin_l,
 		   double DL,
 		   double DT,
@@ -20,6 +21,7 @@ Diffuser::Diffuser(const Ray& pitch,
 		   double nsigma)
     : m_pitch_origin(pitch.first)
     , m_pitch_direction(ray_unit(pitch))
+    , m_time_offset(time_offset)
     , m_origin_l(origin_l)
     , m_origin_t(0.0)		// measure pitch direction from wire zero
     , m_binsize_l(binsize_l)
@@ -61,7 +63,7 @@ bool Diffuser::insert(const input_type& depo)
     const Vector to_depo = depo->pos() - m_pitch_origin;
     const double pitch_distance = m_pitch_direction.dot(to_depo);
 
-    IDiffusion::pointer diff = this->diffuse(depo->time(), pitch_distance,
+    IDiffusion::pointer diff = this->diffuse(m_time_offset + depo->time(), pitch_distance,
 					     sigmaL, sigmaT, depo->charge(), depo);
     m_input.insert(diff);
     return true;

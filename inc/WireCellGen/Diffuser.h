@@ -20,6 +20,12 @@ namespace WireCell {
      * assumed to be drifted to whatever location they are wanted.
      * The IDepo::prior() method is used to find the total drift
      * distance.
+     *
+     * FIXME: this action is really a compound as it does three things:
+     *
+     * 1) Projects a deposition position onto wire pitch.
+     * 2) Applies arbitrary time offset.
+     * 3) Diffuses the deposition.
      */
     class Diffuser : public IDiffuser {
     public:
@@ -29,6 +35,7 @@ namespace WireCell {
 
 	/** Create a diffuser.
 	 *
+	 * \param pitch gives the wire coordinate system.
 	 * \param lbinsize defines the grid spacing in the longitudinal direction.
 	 * \param tbinsize defines the grid spacing in the transverse direction.
 	 * \param lorigin defines a grid line in the longitudinal direction.
@@ -41,6 +48,7 @@ namespace WireCell {
 	 */
 	Diffuser(const Ray& pitch,
 		 double binsize_l,
+		 double time_offset = 0.0*units::microsecond,
 		 double origin_l = 0.0*units::microsecond,
 		 double DL=5.3*units::centimeter2/units::second,
 		 double DT=12.8*units::centimeter2/units::second,
@@ -92,6 +100,7 @@ namespace WireCell {
     private:
 	const Point m_pitch_origin;
 	const Vector m_pitch_direction;
+	const double m_time_offset;
 	const double m_origin_l;
 	const double m_origin_t;
 	const double m_binsize_l;
