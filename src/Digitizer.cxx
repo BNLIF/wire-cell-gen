@@ -78,7 +78,7 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
 	    int index = wcr.first;
 	    for (auto q : wcr.second) {
 		IWire::pointer wire = wires[index];
-		cc[wire->channel()] += q;
+		cc[wire->channel()] += Quantity(q, sqrt(q));
 		++index;
 	    }
 	}

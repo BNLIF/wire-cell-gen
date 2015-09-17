@@ -23,7 +23,7 @@ Diffuser::Diffuser(const Ray& pitch,
     , m_pitch_direction(ray_unit(pitch))
     , m_time_offset(time_offset)
     , m_origin_l(origin_l)
-    , m_origin_t(0.0)		// measure pitch direction from wire zero
+    , m_origin_t(0.0)		// measure pitch direction from pitch_origin
     , m_binsize_l(binsize_l)
     , m_binsize_t(ray_length(pitch))
     , m_DL(DL)
@@ -160,7 +160,8 @@ IDiffusion::pointer Diffuser::diffuse(double mean_l, double mean_t,
 
     for (int ind_l = 0; ind_l < l_bins.size(); ++ind_l) {
 	for (int ind_t = 0; ind_t < t_bins.size(); ++ind_t) {
-	    smear->set(ind_l, ind_t, l_bins[ind_l]*t_bins[ind_t]/power*weight);
+	    double value = l_bins[ind_l]*t_bins[ind_t]/power*weight;
+	    smear->set(ind_l, ind_t, value);
 	}
     }
     

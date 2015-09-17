@@ -22,7 +22,7 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_lpos(lpos0)
     , m_tpos0(tpos0)
 {
-    cerr << "PlaneDuctor("<<m_wpid<<","<<m_nwires<<","<<m_lbin<<","<<m_tbin<<")" << endl;
+    cerr << "PlaneDuctor(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
 }
 PlaneDuctor::~PlaneDuctor()
 {
@@ -49,9 +49,9 @@ void PlaneDuctor::flush()
 
 bool PlaneDuctor::insert(const input_type& diff) 
 {
-    cerr << m_wpid.ident() << " " << diff.get() << "\tinsert at t="
-    	 << m_lpos << " diff: [" << diff->lbegin() << " --> "
-    	 << diff->lend() << "]" << endl;
+    // cerr << m_wpid.ident() << " " << diff.get() << "\tinsert at t="
+    // 	 << m_lpos << " diff: [" << diff->lbegin() << " --> "
+    // 	 << diff->lend() << "]" << endl;
     m_input.insert(diff);
     while (true) {
 	purge_bygone();
@@ -85,26 +85,23 @@ void PlaneDuctor::purge_bygone()
 {
     IDiffusionVector to_kill;
     for (auto diff : m_input) {
-	// find any in need of purging.
+	if (diff->lbegin() >= m_lpos) {
+	    break;
+	}
+
 	if (m_lpos >= diff->lend()) {
 	    to_kill.push_back(diff);
-	    continue;
 	}
-	break;
     }
     if (to_kill.empty()) {
 	return;
     }
-    // cerr << "PlaneDuctor::purge_bygone() wpid" << m_wpid
-    // 	 << " killing "	 << to_kill.size() 
-    // 	 << " at t=" << m_lpos
-    //cerr << endl;
 
     for (auto diff : to_kill) {
-	cerr << m_wpid.ident() << " " << diff.get()
-	     << "\tpurge lpos=" << m_lpos
-	     << " diff=[" << diff->lbegin() << " --> " << diff->lend() << "]@" << diff->lbin() << "*" << diff->lsize()
-	     << endl;
+	// cerr << m_wpid.ident() << " " << diff.get()
+	//      << "\tpurge lpos=" << m_lpos
+	//      << " diff=[" << diff->lbegin() << " --> " << diff->lend() << "]@" << diff->lbin() << "*" << diff->lsize()
+	//      << endl;
 	m_input.erase(diff);
     }
 }
@@ -138,9 +135,9 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	if (diff->lend() <= m_lpos) {
 	    // should never print.
 	    cerr << m_wpid.ident() << " " << diff.get()
-		 << " PlaneDuctor: error, why have I not been purged? "
-		 << " must skip old diffusion: [" << diff->lbegin() << " --> " << diff->lend() << "] < "
-		 << " lpos=" << m_lpos << endl;
+	    	 << " PlaneDuctor: error, why have I not been purged? "
+	    	 << " must skip old diffusion: [" << diff->lbegin() << " --> " << diff->lend() << "] < "
+	    	 << " lpos=" << m_lpos << endl;
 	    continue;
 	}
 	if (m_lpos + diff->lbin() <= diff->lbegin()) {
@@ -161,7 +158,7 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	// transverse bins and wire indices
 	int tbin_begin = 0;
 	int tbin_end   = diff->tsize();
-	int wbin_begin = diff->tbegin() - m_tpos0 - 0.5*diff->tbin();
+	int wbin_begin = (diff->tbegin() - m_tpos0)/diff->tbin();
 	int wbin_end   = wbin_begin + diff->tsize();
 
 	// cerr << m_wpid.ident() << " " << diff.get()
@@ -190,11 +187,11 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	    continue;		// patch fully outside
 	}
 
-	cerr << m_wpid.ident() << " " << diff.get()
-	     << " tbins:["<< tbin_begin << "," << tbin_end << "]"
-	     << " wbins:["<< wbin_begin << "," << wbin_end << "] = "
-	     << nwires_patch << " wires"
-	     <<  endl;
+	// cerr << m_wpid.ident() << " " << diff.get()
+	//      << " tbins:["<< tbin_begin << "," << tbin_end << "]"
+	//      << " wbins:["<< wbin_begin << "," << wbin_end << "] = "
+	//      << nwires_patch << " wires"
+	//      <<  endl;
 
 	vector<double> wire_charge;
 	for (int tbin = tbin_begin; tbin < tbin_end; ++tbin) {
@@ -205,9 +202,9 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	wcrv.push_back(wcr);
     }
 
-    if (wcrv.size()) {
-    	cerr << m_wpid.ident() << "\tslice made at lpos=" << m_lpos << " runs=" << wcrv.size() << endl;
-    }
+    // if (wcrv.size()) {
+    // 	cerr << m_wpid.ident() << "\tslice made at lpos=" << m_lpos << " runs=" << wcrv.size() << endl;
+    // }
     IPlaneSlice::pointer ret(new SimplePlaneSlice(m_wpid, m_lpos, wcrv));
     return ret;
 }
