@@ -37,6 +37,7 @@ void Drifter::flush()
 	IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
 	m_output.push_back(ret);
     }
+    m_output.push_back(eos());
 }
 
 bool Drifter::insert(const input_type& depo)
