@@ -98,6 +98,9 @@ IDepoVector test_drifted()
 	if (!produced_depo) {
 	    break;
 	}
+	if (depo == drifter.eos()) {
+	    break;
+	}
 	result.push_back(depo);
 	WireCell::IDepoVector vec = depo_chain(depo);
 	AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");

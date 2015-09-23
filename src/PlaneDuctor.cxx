@@ -183,6 +183,9 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	if (nwires_patch <= 0) {
 	    cerr << m_wpid.ident() << " " << diff.get()
 	    	 << " patch outside, nwires_patch = " << nwires_patch
+		 << " longitudinal:[" << diff->lbegin() << "," << diff->lend() << "]"
+		 << " transverse:[" << diff->tbegin() << "," << diff->tend() << "]"
+		 << " I am at lpos=" << m_lpos << "+"<< m_lbin << ", trans:["<<m_tpos0<<","<<m_tpos0+m_nwires*m_tbin << "]"
 	    	 << endl;
 	    continue;		// patch fully outside
 	}

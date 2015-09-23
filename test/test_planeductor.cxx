@@ -76,14 +76,14 @@ int main(int argc, char* argv[])
 	    lx *= lx;
 
 	    const double v = exp(-(tx + lx));
-	    cerr << "set("<<lind<<" , " <<tind<< " , " << v << ")"
+	    cerr << "diffusion->set("<<lind<<" , " <<tind<< " , " << v << ")"
 		 << " tx=" << tx << " lx=" << lx
 		 << endl;
 	    diffusion->set(lind,tind,v);
 	}
     }
     IDiffusion::pointer idiff(diffusion);
-    cerr << "IDiffusion patch: "
+    cerr << "test_planeductor: made IDiffusion patch: "
 	 << " l: "<<idiff->lsize()<<": ["<<idiff->lbegin()<<" --> " << idiff->lend() << "]"
 	 << " t: "<<idiff->tsize()<<": ["<<idiff->tbegin()<<" --> " << idiff->tend() << "]"
 	 << endl;
@@ -93,7 +93,9 @@ int main(int argc, char* argv[])
 
 
     const WirePlaneId wpid(kWlayer);
-    PlaneDuctor pd(wpid, ntrans, lbin, tbin); // start at lpos=tpos=0.0.
+
+    const int nwires = tpos0/tbin + ntrans;
+    PlaneDuctor pd(wpid, nwires, lbin, tbin); // start at lpos=tpos=0.0.
 
     // stuff and flush
     Assert(pd.insert(idiff));
@@ -111,7 +113,7 @@ int main(int argc, char* argv[])
     while (true) {
 	IPlaneSlice::pointer ps;
 	Assert(pd.extract(ps));
-	if (!ps) {
+	if (ps == pd.eos()) {
 	    cerr << "Reached EOS from plane ductor" << endl;
 	    break;
 	}
@@ -138,8 +140,6 @@ int main(int argc, char* argv[])
 	    Assert(wcr.first == 10);
 	}
 
-
-
 	if (!wcrv.empty()) {
 	    ++nslices;
 	}
@@ -149,6 +149,7 @@ int main(int argc, char* argv[])
 	++time_index;
     };
     
+    cerr << "Got nslices=" << nslices << endl;
     Assert(nslices == 10);
     canvas.cd(2);
     pshist->Draw("colz");
