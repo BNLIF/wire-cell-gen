@@ -100,7 +100,7 @@ int main(int argc, char** argv)
      * 3.0, 2485, 1154415, 21283
      */
     double pitch = 50.0*units::mm; // leave it large so the results can actually be seen
-    double angle_deg = 60.0;
+    double angle_deg = 35.0;	   // approx
     double full_width = 1.0*units::meter;
     auto cfg = params->default_configuration();
     cfg.put("pitch_mm.u", pitch);
@@ -129,11 +129,11 @@ int main(int argc, char** argv)
 
     TApplication* theApp = 0;
     if (interactive) {
-	theApp = new TApplication ("test_boundcells",0,0);
+	theApp = new TApplication ("test_boundcells_dune",0,0);
     }
 
     TCanvas c("c","c",2000,2000);
-    const double enlarge = 2.0;
+    const double enlarge = 1.1;
     c.DrawFrame(enlarge*bbox.first.z(), enlarge*bbox.first.y(),
     		enlarge*bbox.second.z(), enlarge*bbox.second.y());
 
@@ -150,8 +150,8 @@ int main(int argc, char** argv)
 	theApp->Run();
     }
     else {			// batch
-	c.Print("test_boundcells.pdf");
-	c.Print("test_boundcells.png");
+	c.Print("test_boundcells_dune.pdf");
+	c.Print("test_boundcells_dune.png");
     }
 
 
