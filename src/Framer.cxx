@@ -1,5 +1,5 @@
 #include "WireCellGen/Framer.h"
-#include "WireCellGen/SimpleFrame.h"
+#include "WireCellIface/SimpleFrame.h"
 #include "WireCellGen/ZSEndedTrace.h"
 
 #include "WireCellUtil/NamedFactory.h"

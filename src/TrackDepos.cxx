@@ -1,5 +1,5 @@
 #include "WireCellGen/TrackDepos.h"
-#include "WireCellGen/SimpleDepo.h"
+#include "WireCellIface/SimpleDepo.h"
 
 #include "WireCellUtil/Units.h"
 
