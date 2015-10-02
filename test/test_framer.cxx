@@ -27,21 +27,20 @@ int main()
 
     IFrame::pointer frame;
     Assert(framer.extract(frame));
-    Assert(frame != framer.eos());
+    Assert(frame);
 
     Assert(frame->time() == the_time);
-    ITraceVector traces(frame->begin(), frame->end());
-    Assert(!traces.empty());
+    ITrace::shared_vector traces = frame->traces();
+    Assert(traces);
+    Assert(!traces->empty());
+    int ntraces = traces->size();
 
-    int ntraces = boost::distance(frame->range());
-    Assert(ntraces == traces.size());
-    
     cerr << "test_framer: Frame: #" << frame->ident()
 	 << " at t=" << frame->time()/units::microsecond << " usec"
 	 << " with " << ntraces << " traces"
 	 << endl;
 
-    for (auto trace : *frame) {
+    for (auto trace : *traces) {
 	cerr << "\ttrace ch:" << trace->channel()
 	     << " start tbin=" << trace->tbin()
 	     << " #time bins=" << trace->charge().size()
@@ -50,7 +49,7 @@ int main()
 
     IFrame::pointer eos;
     Assert(framer.extract(eos));
-    Assert(eos == framer.eos());
+    Assert(!eos);
 
     return 0;
 }

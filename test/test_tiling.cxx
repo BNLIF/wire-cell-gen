@@ -56,31 +56,34 @@ int main()
     WireGenerator wg;
     Assert(wg.insert(iwp));
 
-    IWireVector wires;
+    IWire::shared_vector wires;
     Assert(wg.extract(wires));
+    Assert(wires);
 
-    IWireVector u_wires, v_wires, w_wires;
+    IWire::vector u_wires, v_wires, w_wires;
 
-    copy_if(boost::begin(wires), boost::end(wires), 
+    copy_if(wires->begin(), wires->end(),
 	    back_inserter(u_wires), select_u_wires);
-    copy_if(boost::begin(wires), boost::end(wires), 
+    copy_if(wires->begin(), wires->end(),
 	    back_inserter(v_wires), select_v_wires);
-    copy_if(boost::begin(wires), boost::end(wires), 
+    copy_if(wires->begin(), wires->end(),
 	    back_inserter(w_wires), select_w_wires);
     
-    IWireVector* uvw_wires[3] = { &u_wires, &v_wires, &w_wires };
+    IWire::vector* uvw_wires[3] = { &u_wires, &v_wires, &w_wires };
 
     WireSummarizer wser;
     Assert(wser.insert(wires));
 
     WireSummary::pointer ws;
     Assert(wser.extract(ws));
+    Assert(ws);
 
     BoundCells bc;
     Assert(bc.insert(wires));
 
-    ICellVector cells;
+    ICell::shared_vector cells;
     Assert(bc.extract(cells));
+    Assert(cells);
 
     tk("made cells"); mu("made cells");
 
@@ -89,13 +92,14 @@ int main()
 
     ICellSummary::pointer csum;
     Assert(til.extract(csum));
+    Assert(csum);
 
 
     TFile* tfile = TFile::Open("test_tiling.root","RECREATE");
 
     TCanvas *canvas = new TCanvas;
 
-    for (auto cell : cells) {
+    for (auto cell : *cells) {
 	AssertMsg(cell, "Got null cell.");
 	//cerr << "Checking cell #" << cell->ident() << " center=" << cell->center() << endl;
 	auto assoc_wires = csum->wires(cell);
@@ -156,7 +160,7 @@ int main()
 	int nwires = 0;
 	for (auto w: assoc_wires) {
 	    draw_wire(w, colors[nwires]);
-	    IWireVector& plane_wires = *uvw_wires[w->planeid().index()];
+	    IWire::vector& plane_wires = *uvw_wires[w->planeid().index()];
 
 	    int wire_index = w->index();
 
@@ -181,10 +185,10 @@ int main()
 
     }
 
-    for (auto wire : wires) {
+    for (auto wire : *wires) {
 	AssertMsg(wire, "Got null wire.");
 
-	auto cells = csum->cells(wire);
+	auto these_cells = csum->cells(wire);
 	//cerr << "Wire #" << wire->ident() << " with " << cells.size() << " cells" <<  endl;
     }
 

@@ -14,6 +14,7 @@
 #include "TPolyLine.h"
 #include "TLine.h"
 #include "TBox.h"
+#include "TColor.h"
 
 #include <boost/range.hpp>
 
@@ -23,10 +24,9 @@
 using namespace WireCell;
 using namespace std;
 
-void draw_wires(const IWireVector& wires)
+void draw_wires(const IWire::vector& wires,
+    		const std::vector<int>& colors = {2,4,1})
 {
-    int colors[3] = {2, 4, 1};
-
     int nwires = wires.size();
     cerr << "nwires = " << nwires << endl;
     for (auto wire : wires) {
@@ -42,7 +42,7 @@ void draw_wires(const IWireVector& wires)
     }
 }
 
-void draw_cells(const ICellVector& cells)
+void draw_cells(const ICell::vector& cells)
 {
     const int ncolors= 4;
     int colors[ncolors] = {2, 4, 6, 8};
@@ -81,7 +81,10 @@ void draw_cells(const ICellVector& cells)
 
 int main(int argc, char** argv)
 {
-    bool interactive = argc > 1;
+    string mode = "batch";
+    if (argc > 1) {
+	mode = argv[1];
+    }
 
     TimeKeeper tk("test bound cells");
 
@@ -115,20 +118,20 @@ int main(int argc, char** argv)
     WireGenerator wiregen;
     IWireParameters::pointer iparams(params);
     wiregen.insert(iparams);
-    IWireVector wires;
+    IWire::shared_vector wires;
     wiregen.extract(wires);
     cout << tk("generated wires") << endl;
 
     BoundCells bc;
     bc.insert(wires);
-    ICellVector cells;
+    ICell::shared_vector cells;
     bc.extract(cells);
     cout << tk("generated cells") << endl;
 
     const Ray& bbox = params->bounds();
 
     TApplication* theApp = 0;
-    if (interactive) {
+    if (mode == "interactive") {
 	theApp = new TApplication ("test_boundcells",0,0);
     }
 
@@ -139,11 +142,28 @@ int main(int argc, char** argv)
 
     TBox* box = new TBox(bbox.first.z(), bbox.first.y(),
     			 bbox.second.z(), bbox.second.y());
+    if (mode == "pub") {
+	// ROOT is weird
+	TColor* mygreen = new TColor(1756, 0x75/255.0, 0xa6/255.0, 0x71/255.0);
+	box->SetFillColor(mygreen->GetNumber());
+	cerr << "Set background color to "<< mygreen->GetNumber() << endl;
+    }
+    if (mode == "pubwhite") {
+	box->SetFillColor(kWhite);
+    }
+
     box->Draw();
     cout << tk("set up canvas") << endl;
-    draw_cells(cells);
+    draw_cells(*cells);
     cout << tk("drew cells") << endl;
-    draw_wires(wires);
+    vector<int> colors = {2, 4, 1};
+    if (mode == "pub") {
+	colors[0] = colors[1] = colors[2] = 19;
+    }
+    if (mode == "pubwhite") {
+	colors[0] = colors[1] = colors[2] = 18;
+    }
+    draw_wires(*wires, colors);
     cout << tk("drew wires") << endl;
 
     if (theApp) {

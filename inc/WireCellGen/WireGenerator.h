@@ -20,14 +20,15 @@ namespace WireCell {
 	WireGenerator();
 	virtual ~WireGenerator();
 
-	virtual void reset();
-	virtual void flush();
 	virtual bool insert(const input_type& in);
-	virtual bool extract(output_type& out);
+	virtual bool extract(output_type& out) {
+	    out = m_output;
+	    return true;
+	}
 
     private:
 
-	std::deque<IWireVector> m_output;
+	output_type m_output;
     };
 
 

@@ -20,14 +20,14 @@ namespace WireCell {
 	Tiling();
 	virtual ~Tiling();
 
-	virtual void reset();
-	virtual void flush();
 	virtual bool insert(const input_type& cell_vector);
-	virtual bool extract(output_type& cell_summary);
+	virtual bool extract(output_type& cell_summary) {
+	    cell_summary = m_output;
+	    return true;
+	}
 
     private:
-	std::deque<ICellSummary::pointer> m_output;
-	
+	output_type m_output;
     };
 
 } // namespace WireCell

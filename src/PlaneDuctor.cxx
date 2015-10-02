@@ -44,11 +44,16 @@ void PlaneDuctor::flush()
 	}	    
 	latch_one();
     }
-    m_output.push_back(eos());
+    m_output.push_back(nullptr);
 }
 
 bool PlaneDuctor::insert(const input_type& diff) 
 {
+    if (!diff) {
+	flush();
+	return true;
+    }
+
     // cerr << m_wpid.ident() << " " << diff.get() << "\tinsert at t="
     // 	 << m_lpos << " diff: [" << diff->lbegin() << " --> "
     // 	 << diff->lend() << "]" << endl;

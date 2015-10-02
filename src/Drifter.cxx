@@ -37,11 +37,16 @@ void Drifter::flush()
 	IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
 	m_output.push_back(ret);
     }
-    m_output.push_back(eos());
+    m_output.push_back(nullptr);
 }
 
 bool Drifter::insert(const input_type& depo)
 {
+    if (!depo) {
+	flush();
+	return true;
+    }
+
     m_input.insert(depo);
     while (!m_input.empty()) {	
 	IDepo::pointer top = *m_input.begin();

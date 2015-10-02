@@ -13,17 +13,17 @@ namespace WireCell {
     class SimpleFrame : public IFrame {
     public:
 
-	SimpleFrame(int ident, double time, const ITraceVector& traces);
+	SimpleFrame(int ident, double time, const ITrace::vector& traces);
 	~SimpleFrame();
 	virtual int ident() const;
 	virtual double time() const;
     
-	virtual iterator begin();
-	virtual iterator end();
+	virtual ITrace::shared_vector traces() const;
+
     private:
 	int m_ident;
 	double m_time;
-	ITraceVector m_traces;
+	ITrace::shared_vector m_traces;
     };
 
 }

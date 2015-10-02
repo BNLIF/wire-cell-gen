@@ -13,14 +13,14 @@ namespace WireCell {
 	WireSummarizer();
 	virtual ~WireSummarizer();
 
-	virtual void reset();
-	virtual void flush();
 	virtual bool insert(const input_type& in);
-	virtual bool extract(output_type& out);
-
+	virtual bool extract(output_type& out) {
+	    out = m_output;
+	    return true;
+	}
 
     private:
-	std::deque<IWireSummary::pointer> m_output;
+	output_type m_output;
     };
 
 }

@@ -15,14 +15,12 @@ WIRECELL_NAMEDFACTORY_ASSOCIATE(Framer, IFramer);
 Framer::Framer()		// fixme: needed for factory
     : m_nticks(100)
     , m_count(0)
-    , m_eoi(false)
 {
 }
 
 Framer::Framer(int nticks)
     : m_nticks(nticks)
     , m_count(0)
-    , m_eoi(false)
 {
 }
 Framer::~Framer()
@@ -39,15 +37,18 @@ void Framer::reset()
 void Framer::flush()
 {
     process(true);
-    m_output.push_back(eos());
+    m_output.push_back(nullptr);
 
 }
 
 bool Framer::insert(const input_type& channel_slice)
 {
-    if (channel_slice) {
-	m_input.push_back(channel_slice);
+    if (!channel_slice) {
+	flush();
+	return true;
     }
+
+    m_input.push_back(channel_slice);
     process(false);
     return true;
 }

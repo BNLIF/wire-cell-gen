@@ -2,6 +2,7 @@
 #define WIRECELL_DRIFTER
 
 #include "WireCellIface/IDrifter.h"
+#include "WireCellIface/IBuffering.h"
 #include "WireCellUtil/Units.h"
 
 #include <deque>
@@ -12,7 +13,7 @@ namespace WireCell {
      * needed and reproduces new depositions drifted to a new
      * location.
      */
-    class Drifter : public IDrifter {
+    class Drifter : public IDrifter, public IBuffering {
     public:
 	/// Create a drifter that will drift charge to a given
 	/// location at a given drift velocity.

@@ -48,10 +48,15 @@ void Diffuser::flush()
     for (auto diff : m_input) {
 	m_output.push_back(diff);
     }
-    m_output.push_back(eos());
+    m_output.push_back(nullptr);
 }
 bool Diffuser::insert(const input_type& depo)
 {
+    if (!depo) {
+	flush();
+	return true;
+    }
+
     auto first = *depo_chain(depo).rbegin();
     const double drift_distance = first->pos().x() - depo->pos().x();
     const double drift_time = drift_distance / m_drift_velocity;

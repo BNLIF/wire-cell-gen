@@ -16,30 +16,13 @@ WireSummarizer::~WireSummarizer()
 {
 }
 
-void WireSummarizer::reset()
-{
-    m_output.clear();
-}
-
-void WireSummarizer::flush()
-{
-    m_output.push_back(eos());
-    return;			// no input buffer.
-}
-
 bool WireSummarizer::insert(const input_type& wires)
 {
-    m_output.push_back(IWireSummary::pointer(new WireSummary(wires)));
-    return true;
-}
-
-bool WireSummarizer::extract(output_type& out)
-{
-    if (m_output.empty()) {
-	return false;
+    if (!wires) {
+	m_output = nullptr;
+	return true;
     }
-    out = m_output.front();
-    m_output.pop_front();
+    m_output = output_type(new WireSummary(*wires));
     return true;
 }
 

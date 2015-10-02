@@ -111,9 +111,9 @@ int main(int argc, char* argv[])
     int nslices = 0;
     int time_index = 0;
     while (true) {
-	IPlaneSlice::pointer ps;
+	PlaneDuctor::output_type ps;
 	Assert(pd.extract(ps));
-	if (ps == pd.eos()) {
+	if (!ps) {
 	    cerr << "Reached EOS from plane ductor" << endl;
 	    break;
 	}

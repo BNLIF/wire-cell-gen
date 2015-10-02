@@ -2,6 +2,7 @@
 #define WIRECELL_FRAMER
 
 #include "WireCellIface/IFramer.h"
+#include "WireCellIface/IBuffering.h"
 
 #include <deque>
 
@@ -9,7 +10,7 @@ namespace WireCell {
 
     /** An object produces IFrame objects from IChannelSlice objects.
      */
-    class Framer : public IFramer {
+    class Framer : public IFramer, public IBuffering {
 
     public:
 	Framer();
@@ -28,7 +29,6 @@ namespace WireCell {
 
 	int m_nticks;
 	int m_count;
-	bool m_eoi;
 
 	void process(bool flush = false);
 

@@ -119,21 +119,9 @@ bool is_point_inside_w_lane(const Point& point, const double& w_lane_center, con
 }
 
 
-void BoundCells::flush()
+bool BoundCells::insert(const input_type& wires)
 {
-    m_output.push_back(eos());
-    return;
-}
-void BoundCells::reset()
-{
-    m_output.clear();
-    return;
-}
-
-
-bool BoundCells::insert(const IWireVector& wires)
-{
-    ICellVector res_cells;
+    ICellVector* res_cells = new ICellVector;
 
     /* This was originally Xin's cell algorithm but only the concept
        remains.
@@ -164,9 +152,9 @@ bool BoundCells::insert(const IWireVector& wires)
     */
     
     vector<IWire::pointer> u_wires, v_wires, w_wires;
-    copy_if(wires.begin(), wires.end(), back_inserter(u_wires), select_u_wires);
-    copy_if(wires.begin(), wires.end(), back_inserter(v_wires), select_v_wires);
-    copy_if(wires.begin(), wires.end(), back_inserter(w_wires), select_w_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(u_wires), select_u_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(v_wires), select_v_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(w_wires), select_w_wires);
 
     std::sort(u_wires.begin(), u_wires.end(), ascending_index);
     std::sort(v_wires.begin(), v_wires.end(), ascending_index);
@@ -202,7 +190,7 @@ bool BoundCells::insert(const IWireVector& wires)
     const double tolerance = 0.0*units::mm;
 
     BoundingBox bb;
-    for (auto wire : wires) {
+    for (auto wire : *wires) {
 	bb(wire->ray());
     }
     
@@ -303,27 +291,15 @@ bool BoundCells::insert(const IWireVector& wires)
 		}
 			
 		// result
-		res_cells.push_back(ICell::pointer(new BoundCell(res_cells.size(), pcell, uvw_wires)));
+		res_cells->push_back(ICell::pointer(new BoundCell(res_cells->size(), pcell, uvw_wires)));
 
             } // W wires
         } // v wires
     } // u wires
 
-    m_output.push_back(res_cells);
+    m_output = output_type(res_cells);
     return true;
 }
-
-bool BoundCells::extract(output_type& cell_vector)
-{
-    if (m_output.empty()) {
-	return false;
-    }
-    cell_vector = m_output.front();
-    m_output.pop_front();
-    return true;
-}
-
-
 
 BoundCells::BoundCells()
 {

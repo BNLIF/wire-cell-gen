@@ -34,22 +34,22 @@ int main(int argc, char* argv[])
     WireGenerator wg;
     Assert(wg.insert(iwp));
 
-    IWireVector wires;
+    IWire::shared_vector wires;
     Assert(wg.extract(wires));
-    Assert(wires.size());
+    Assert(wires);
+    Assert(wires->size());
 
-    WireSummary ws(wires);
+    WireSummary ws(*wires);
 
     Digitizer digitizer;
     digitizer.set_wires(wires);
 
     const double the_time = 11.0*units::microsecond;
 
-    IPlaneSliceVector psv = {
-	make_planeslice(WirePlaneId(kUlayer), the_time),
-	make_planeslice(WirePlaneId(kVlayer), the_time),
-	make_planeslice(WirePlaneId(kWlayer), the_time)
-    };
+    IPlaneSlice::shared_vector psv(new IPlaneSliceVector({
+		make_planeslice(WirePlaneId(kUlayer), the_time),
+		make_planeslice(WirePlaneId(kVlayer), the_time),
+		make_planeslice(WirePlaneId(kWlayer), the_time)}));
 
 
     Assert(digitizer.insert(psv));
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
     IChannelSlice::pointer cs;
     Assert(digitizer.extract(cs));
-    Assert(cs != digitizer.eos());
+    Assert(cs);
 
     ChannelCharge cc = cs->charge();
     Assert(!cc.empty());
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 
     IChannelSlice::pointer eos;
     Assert(digitizer.extract(eos));
-    Assert(eos == digitizer.eos());
+    Assert(!eos);
 
 
     return 0;

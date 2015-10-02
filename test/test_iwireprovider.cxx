@@ -75,13 +75,14 @@ int main(int argc, char* argv[])
 
     Assert(wg->insert(wp));
 
-    IWireVector wires;
+    IWireGenerator::output_type wires;
     Assert(wg->extract(wires));
+    Assert(wires);
 
     cout << tk("Generated ParamWires") << endl;
     cout << mu("Generated ParamWires") << endl;
 
-    int nwires = wires.size();
+    int nwires = wires->size();
     cout << "Got " << nwires << " wires" << endl;
     //Assert(1103 == nwires);
 
@@ -101,8 +102,8 @@ int main(int argc, char* argv[])
     cout << mu("Made wire summary") << endl;
 
     WireCell::BoundingBox boundingbox;
-    for (int ind = 0; ind < wires.size(); ++ind) {
-	boundingbox(wires[ind]->ray());
+    for (int ind = 0; ind < wires->size(); ++ind) {
+	boundingbox(wires->at(ind)->ray());
     }
     const Ray& bbox = boundingbox.bounds();
 
@@ -110,9 +111,9 @@ int main(int argc, char* argv[])
     cout << mu("Made bounding box") << endl;
 
     vector<IWire::pointer> u_wires, v_wires, w_wires;
-    copy_if(wires.begin(), wires.end(), back_inserter(u_wires), select_u_wires);
-    copy_if(wires.begin(), wires.end(), back_inserter(v_wires), select_v_wires);
-    copy_if(wires.begin(), wires.end(), back_inserter(w_wires), select_w_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(u_wires), select_u_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(v_wires), select_v_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(w_wires), select_w_wires);
 
     size_t n_wires[3] = {
 	u_wires.size(),
@@ -141,7 +142,7 @@ int main(int argc, char* argv[])
     frame->SetTitle("Wires, red=U, blue=V, thicker=increasing index");
     frame->SetXTitle("Z transverse direction");
     frame->SetYTitle("Y transverse direction");
-    for (auto wit = wires.begin(); wit != wires.end(); ++wit) {
+    for (auto wit = wires->begin(); wit != wires->end(); ++wit) {
 	IWire::pointer wire = *wit;
 
 	Ray wray = wire->ray();

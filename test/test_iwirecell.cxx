@@ -63,10 +63,10 @@ int main(int argc, char* argv[])
     cout << "Got WireGenerator IWireGenerator interface @ " << pw_gen << endl;
     Assert(pw_gen->insert(wp_wps));
 
-    IWireVector wires;
+    IWireGenerator::output_type wires;
     Assert(pw_gen->extract(wires));
 
-    int nwires = wires.size();
+    int nwires = wires->size();
     cout << "Got " << nwires << " wires" << endl;
     //Assert(747 == nwires);
     cout << tk("Got ParamWires to local collection") << endl;
@@ -78,17 +78,17 @@ int main(int argc, char* argv[])
 
     Assert(bc->insert(wires));
 
-    ICellVector cells;
+    ICellMaker::output_type cells;
     Assert(bc->extract(cells));
     cout << tk("BoundCells generated") << endl;
 
-    int ncells = cells.size();
+    int ncells = cells->size();
     cout << "Got " << ncells << " cells" << endl;
     cout << tk("Got BoundCells to local collection") << endl;
     AssertMsg(ncells, "Got no cells");
 
     WireCell::BoundingBox boundingbox;
-    for (auto cell : cells) {
+    for (auto cell : *cells) {
 	boundingbox(cell->center());
     }
     const Ray& bbox = boundingbox.bounds();
@@ -106,8 +106,8 @@ int main(int argc, char* argv[])
     c.DrawFrame(bbox.first.z(), bbox.first.y(), bbox.second.z(), bbox.second.y());
     cout << tk("Started TCanvas") << endl;
 
-    for (int cind = 0; cind < cells.size(); ++cind) {
-	ICell::pointer cell = cells[cind];
+    for (int cind = 0; cind < cells->size(); ++cind) {
+	ICell::pointer cell = cells->at(cind);
 
 	TPolyLine *pl = new TPolyLine; // Hi and welcome to Leak City.
 	PointVector corners = cell->corners();

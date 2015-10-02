@@ -127,34 +127,20 @@ static void make_one_plane(IWireVector& returned_wires,
 }
 
 
-void WireGenerator::reset()
-{
-    m_output.clear();
-}
-void WireGenerator::flush()
-{
-    m_output.push_back(eos());
-    return;		  // fixme: maybe do input buffering for lazy exec
-}
 bool WireGenerator::insert(const input_type& wp)
 {
-    IWireVector wires;
-    make_one_plane(wires, WirePlaneId(kUlayer), wp->bounds(), wp->pitchU());
-    make_one_plane(wires, WirePlaneId(kVlayer), wp->bounds(), wp->pitchV());
-    make_one_plane(wires, WirePlaneId(kWlayer), wp->bounds(), wp->pitchW());
-    m_output.push_back(wires);
+    if (!wp) {
+	m_output = nullptr;
+	return true;
+    }
+    IWireVector* wires = new IWireVector;
+    make_one_plane(*wires, WirePlaneId(kUlayer), wp->bounds(), wp->pitchU());
+    make_one_plane(*wires, WirePlaneId(kVlayer), wp->bounds(), wp->pitchV());
+    make_one_plane(*wires, WirePlaneId(kWlayer), wp->bounds(), wp->pitchW());
+    m_output = output_type (wires);
     return true;
 }
 
-bool WireGenerator::extract(output_type& out)
-{
-    if (m_output.empty()) {
-	return false;
-    }
-    out = m_output.front();
-    m_output.pop_front();
-    return true;
-}
 
 WireGenerator::WireGenerator()
 {

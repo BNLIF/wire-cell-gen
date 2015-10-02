@@ -2,6 +2,7 @@
 #define WIRECELL_PLANEDUCTOR
 
 #include "WireCellIface/IPlaneDuctor.h"
+#include "WireCellIface/IBuffering.h"
 #include "WireCellIface/IDiffusion.h"
 
 #include <deque>
@@ -12,7 +13,7 @@ namespace WireCell {
     class Diffuser;
 
     // IConverter<IDiffusion::pointer, IPlaneSlice::pointer>
-    class PlaneDuctor : public IPlaneDuctor {
+    class PlaneDuctor : public IPlaneDuctor, public IBuffering {
     public:
 
 

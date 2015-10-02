@@ -2,6 +2,7 @@
 #define WIRECELLGEN_BOUNDCELLS
 
 #include "WireCellIface/ICellMaker.h"
+
 #include <deque>
 
 namespace WireCell {
@@ -16,13 +17,15 @@ namespace WireCell {
 	BoundCells();
 	virtual ~BoundCells();
 
-	virtual void reset();
-	virtual void flush();
 	virtual bool insert(const input_type& wire_vector);
-	virtual bool extract(output_type& cell_vector);
+
+	virtual bool extract(output_type& cell_vector) {
+	    cell_vector = m_output;
+	    return true;
+	}
 
     private:
-	std::deque<ICellVector> m_output;
+	output_type m_output;
 
     };
 }

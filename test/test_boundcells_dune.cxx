@@ -23,7 +23,7 @@
 using namespace WireCell;
 using namespace std;
 
-void draw_wires(const IWireVector& wires)
+void draw_wires(const IWire::vector& wires)
 {
     int colors[3] = {2, 4, 1};
 
@@ -42,7 +42,7 @@ void draw_wires(const IWireVector& wires)
     }
 }
 
-void draw_cells(const ICellVector& cells)
+void draw_cells(const ICell::vector& cells)
 {
     const int ncolors= 4;
     int colors[ncolors] = {2, 4, 6, 8};
@@ -115,13 +115,13 @@ int main(int argc, char** argv)
     WireGenerator wiregen;
     IWireParameters::pointer iparams(params);
     wiregen.insert(iparams);
-    IWireVector wires;
+    IWire::shared_vector wires;
     wiregen.extract(wires);
     cout << tk("generated wires") << endl;
 
     BoundCells bc;
     bc.insert(wires);
-    ICellVector cells;
+    ICell::shared_vector cells;
     bc.extract(cells);
     cout << tk("generated cells") << endl;
 
@@ -141,9 +141,9 @@ int main(int argc, char** argv)
     			 bbox.second.z(), bbox.second.y());
     box->Draw();
     cout << tk("set up canvas") << endl;
-    draw_cells(cells);
+    draw_cells(*cells);
     cout << tk("drew cells") << endl;
-    draw_wires(wires);
+    draw_wires(*wires);
     cout << tk("drew wires") << endl;
 
     if (theApp) {

@@ -20,11 +20,11 @@ Digitizer::~Digitizer()
 {
 }
 
-bool Digitizer::set_wires(const IWireVector& wires)
+bool Digitizer::set_wires(const IWire::shared_vector& wires)
 {
     for (int ind=0; ind<3; ++ind) {
 	m_wires[ind].clear();
-	copy_if(wires.begin(), wires.end(),
+	copy_if(wires->begin(), wires->end(),
 		back_inserter(m_wires[ind]), select_uvw_wires[ind]);
 	std::sort(m_wires[ind].begin(), m_wires[ind].end(), ascending_index);
     }
@@ -50,11 +50,16 @@ void Digitizer::reset()
 }
 void Digitizer::flush()
 {
-    m_output.push_back(eos());
+    m_output.push_back(nullptr);
     return;			// no input buffer
 }
 bool Digitizer::insert(const input_type& plane_slice_vector)
 {
+    if (!plane_slice_vector) {
+	flush();
+	return true;
+    }
+
     if (!m_wires[0].size()) {
 	cerr << "Digitizer::insert: no wires" << endl;
 	return false;
@@ -63,9 +68,9 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
     WireCell::ChannelCharge cc;
     double the_time = -1;
 
-    int nplanes = plane_slice_vector.size();
+    int nplanes = plane_slice_vector->size();
     for (int iplane = 0; iplane < nplanes; ++iplane) {
-	IPlaneSlice::pointer ps = plane_slice_vector[iplane];
+	IPlaneSlice::pointer ps = plane_slice_vector->at(iplane);
 	if (!ps) {
 	    //cerr << "Digitizer::insert: ignoring null PlaneSlice" << endl;
 	    continue;

@@ -98,7 +98,7 @@ IDepoVector test_drifted()
 	if (!produced_depo) {
 	    break;
 	}
-	if (depo == drifter.eos()) {
+	if (!depo) {
 	    break;
 	}
 	result.push_back(depo);

@@ -25,14 +25,15 @@ void test1()
     WireGenerator wg;
     Assert(wg.insert(iwp));
 
-    IWireVector wires;
+    IWire::shared_vector wires;
     Assert(wg.extract(wires));
+    Assert(wires);
 
-    cerr << "Got " << wires.size() << " wires" <<endl;
-    Assert(wires.size());
+    cerr << "Got " << wires->size() << " wires" <<endl;
+    Assert(wires->size());
     int last_plane = -1;
     int last_index = -1;
-    for (auto wit = wires.begin(); wit != wires.end(); ++wit) {
+    for (auto wit = wires->begin(); wit != wires->end(); ++wit) {
 	IWire::pointer wire = *wit;
 	int iplane = wire->planeid().index();
 	int ident = (1+iplane)*100000 + wire->index();
@@ -65,10 +66,11 @@ void test2()
 	WireGenerator wg;
 	Assert(wg.insert(iwp));
 
-	IWireVector wires;
+	IWire::shared_vector wires;
 	Assert(wg.extract(wires));
+	Assert(wires);
 
-	int nwires = wires.size();
+	int nwires = wires->size();
 	cout << ind << ": pitch=" << pitches[ind] << " nwires=" << nwires << " (want=" << want[ind] << ")" << endl;
 	AssertMsg(nwires == want[ind], "Wrong number of wires");
 	AssertMsg(configuration_dumps(cfg).size(), "Failed to dump cfg");
@@ -82,9 +84,10 @@ void test3D(bool interactive)
     WireGenerator wg;
     Assert(wg.insert(iwp));
 
-    IWireVector wires;
+    IWire::shared_vector wires;
     Assert(wg.extract(wires));
-    AssertMsg(wires.size(), "Got no wires");
+    Assert(wires);
+    AssertMsg(wires->size(), "Got no wires");
 
     const Ray& bbox = params->bounds();
 
@@ -103,9 +106,9 @@ void test3D(bool interactive)
 
 
     IWireVector u_wires, v_wires, w_wires;
-    copy_if(wires.begin(), wires.end(), back_inserter(u_wires), select_u_wires);
-    copy_if(wires.begin(), wires.end(), back_inserter(v_wires), select_v_wires);
-    copy_if(wires.begin(), wires.end(), back_inserter(w_wires), select_w_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(u_wires), select_u_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(v_wires), select_v_wires);
+    copy_if(wires->begin(), wires->end(), back_inserter(w_wires), select_w_wires);
     size_t n_wires[3] = {
 	u_wires.size(),
 	v_wires.size(),
@@ -113,7 +116,7 @@ void test3D(bool interactive)
     };
 
     double max_width = 5;
-    for (auto wit = wires.begin(); wit != wires.end(); ++wit) {
+    for (auto wit = wires->begin(); wit != wires->end(); ++wit) {
 	IWire::pointer wire = *wit;
 	int iplane = wire->planeid().index();
 	int index = wire->index();
