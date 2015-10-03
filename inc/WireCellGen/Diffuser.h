@@ -4,7 +4,6 @@
 #include "WireCellIface/IDiffuser.h"
 #include "WireCellIface/IDiffusion.h"
 #include "WireCellIface/IDepo.h"
-#include "WireCellIface/IBuffering.h"
 
 #include <vector>
 #include <deque>
@@ -28,7 +27,7 @@ namespace WireCell {
      * 2) Applies arbitrary time offset.
      * 3) Diffuses the deposition.
      */
-    class Diffuser : public IDiffuser, public IBuffering {
+    class Diffuser : public IDiffuser {
     public:
 
 	typedef std::pair<double,double> bounds_type;
@@ -62,7 +61,6 @@ namespace WireCell {
 	// IConverter interface
 
 	virtual void reset();
-	virtual void flush();
 	virtual bool insert(const input_type& depo);
 	virtual bool extract(output_type& diffusion);
 
@@ -99,6 +97,8 @@ namespace WireCell {
 
 
     private:
+	void flush();
+
 	const Point m_pitch_origin;
 	const Vector m_pitch_direction;
 	const double m_time_offset;

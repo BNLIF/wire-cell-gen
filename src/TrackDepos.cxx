@@ -53,6 +53,13 @@ WireCell::IDepo::pointer TrackDepos::operator()()
     return p;
 }
 
+bool TrackDepos::extract(output_type& out)
+{
+    out = (*this)();
+    return true;
+}
+
+
 std::shared_ptr<WireCell::IDepoVector> TrackDepos::depositions()
 {
     return m_depos;

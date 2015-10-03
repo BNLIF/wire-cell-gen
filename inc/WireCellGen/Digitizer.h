@@ -2,7 +2,6 @@
 #define WIRECELL_DIGITIZER
 
 #include "WireCellIface/IDigitizer.h"
-#include "WireCellIface/IBuffering.h"
 #include <deque>
 
 namespace WireCell {
@@ -11,7 +10,7 @@ namespace WireCell {
      * contents into channel slices.  Charges on wires going to the
      * same channel are simply summed.
      */
-    class Digitizer : public IDigitizer, public IBuffering {
+    class Digitizer : public IDigitizer {
     public:
 	Digitizer();       
 	virtual ~Digitizer();       
@@ -25,11 +24,11 @@ namespace WireCell {
 	 */
         virtual bool set_wires(const IWire::shared_vector& wires);
 	virtual void reset();
-	virtual void flush();
 	virtual bool insert(const input_type& plane_slice_vector);
 	virtual bool extract(output_type& channel_slice);
 
     private:
+	void flush();
 
 	// wires, organized by plane
 	IWireVector m_wires[3];

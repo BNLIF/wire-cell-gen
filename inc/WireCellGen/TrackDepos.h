@@ -2,13 +2,17 @@
 #define WIRECELL_TRACKDEPOS
 
 #include "WireCellIface/IDepo.h"
+#include "WireCellIface/ISource.h"
 #include "WireCellUtil/Units.h"
 
 namespace WireCell {
 /// A producer of depositions created from some number of simple, linear tracks.
-    class TrackDepos {
+    class TrackDepos 
+	: public ISource<IDepo>
+    {
     public:    
-	/// Create tracks with depositions every stepsize and assumed to be traveling at clight.
+	/// Create tracks with depositions every stepsize and assumed
+	/// to be traveling at clight.
 	TrackDepos(double stepsize=1.0*units::millimeter,
 		   double clight=units::clight);
 
@@ -21,7 +25,8 @@ namespace WireCell {
 	/// Pop the next available deposition in time-order.
 	WireCell::IDepo::pointer operator()();
 
-
+	/// ISource
+	bool extract(output_type& out);
 
 	/// Utility: access deposition store.
 	std::shared_ptr<WireCell::IDepoVector> depositions();

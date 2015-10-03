@@ -30,18 +30,28 @@ TrackDepos make_tracks() {
     return td;
 }
 
-IDepoVector get_depos()
+// Return a vector of depositions.  Vector is in a shared_ptr and is
+// not EOS/nullptr terminated.
+IDepo::shared_vector get_depos()
 {
     TrackDepos td = make_tracks();
-    shared_ptr<IDepoVector> sdepov = td.depositions();
-    IDepoVector copy = *sdepov.get();
-    return std::move(copy);
+    IDepo::vector* ret = new IDepo::vector;
+    while (true) {
+	IDepo::pointer depo;
+	Assert(td.extract(depo));
+	if (!depo) {
+	    break;
+	}
+	ret->push_back(depo);
+    }
+    return IDepo::shared_vector(ret);
 }
 
 Ray make_bbox()
 {
     BoundingBox bbox(Ray(Point(-1,-1,-1), Point(1,1,1)));
-    for (auto depo : get_depos()) {
+    IDepo::vector activity(*get_depos());
+    for (auto depo : activity) {
 	bbox(depo->pos());
     }
     Ray bb = bbox.bounds();
@@ -52,7 +62,7 @@ Ray make_bbox()
 
 void test_sort()
 {
-    IDepoVector activity = get_depos();
+    IDepo::vector activity(*get_depos());
     int norig = activity.size();
 
     sort(activity.begin(), activity.end(), ascending_time);
@@ -70,7 +80,7 @@ void test_sort()
 
 void test_feed()
 {
-    IDepoVector activity = get_depos();
+    IDepo::vector activity(*get_depos());
     int count=0, norig = activity.size();
     WireCell::RangeFeed<IDepoVector::iterator> feed(activity.begin(), activity.end());
     WireCell::IDepo::pointer p;
@@ -80,9 +90,9 @@ void test_feed()
     AssertMsg(count == norig , "Lost some points from feed"); 
 }
 
-IDepoVector test_drifted()
+IDepo::vector test_drifted()
 {
-    IDepoVector activity = get_depos(), result;
+    IDepo::vector activity(*get_depos()), result;
 
     WireCell::Drifter drifter;
     int count = 0;
@@ -91,20 +101,19 @@ IDepoVector test_drifted()
 	bool accepted_depo = drifter.insert(depo);
 	Assert(accepted_depo);
     }
-    drifter.flush();
+    Assert(drifter.insert(nullptr)); // flush with EOS
+
     while (true) {
 	WireCell::IDepo::pointer depo;
-	bool produced_depo = drifter.extract(depo);
-	if (!produced_depo) {
-	    break;
-	}
+	Assert(drifter.extract(depo)); // should be eos-flushed
 	if (!depo) {
-	    break;
+	    break;		// EOS
 	}
 	result.push_back(depo);
 	WireCell::IDepoVector vec = depo_chain(depo);
 	AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
     }
+
     cerr << "test_drifter: start with: " << activity.size()
 	 << ", after drifting have: " << result.size() << endl;
     AssertMsg(activity.size() == result.size(), "Lost some points drifting"); 
@@ -140,7 +149,7 @@ int main(int argc, char* argv[])
 
 
     // draw raw activity
-    IDepoVector activity = get_depos();
+    IDepoVector activity(*get_depos());
     TPolyMarker3D orig(activity.size(), 6);
     orig.SetMarkerColor(2);
     int indx=0;

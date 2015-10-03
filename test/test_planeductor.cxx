@@ -97,9 +97,8 @@ int main(int argc, char* argv[])
     const int nwires = tpos0/tbin + ntrans;
     PlaneDuctor pd(wpid, nwires, lbin, tbin); // start at lpos=tpos=0.0.
 
-    // stuff and flush
     Assert(pd.insert(idiff));
-    pd.flush();
+    Assert(pd.insert(nullptr));	// EOS
 
     TH2F* pshist = new TH2F("ps","PlaneSlices vs Time",
 			    100, 0, 100,

@@ -53,7 +53,6 @@ int main(int argc, char* argv[])
 
 
     Assert(digitizer.insert(psv));
-    digitizer.flush();
 
     IChannelSlice::pointer cs;
     Assert(digitizer.extract(cs));
@@ -77,6 +76,7 @@ int main(int argc, char* argv[])
 	cerr << endl;
     }
 
+    Assert(digitizer.insert(nullptr));
     IChannelSlice::pointer eos;
     Assert(digitizer.extract(eos));
     Assert(!eos);

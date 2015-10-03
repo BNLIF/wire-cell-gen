@@ -23,7 +23,7 @@ int main()
     IChannelSlice::pointer cs(new SimpleChannelSlice(the_time, cc));
 
     Assert(framer.insert(cs));
-    framer.flush();
+    Assert(framer.insert(nullptr));
 
     IFrame::pointer frame;
     Assert(framer.extract(frame));
