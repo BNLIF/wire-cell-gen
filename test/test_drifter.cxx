@@ -82,7 +82,7 @@ void test_feed()
 {
     IDepo::vector activity(*get_depos());
     int count=0, norig = activity.size();
-    WireCell::RangeFeed<IDepoVector::iterator> feed(activity.begin(), activity.end());
+    WireCell::RangeFeed<IDepo::vector::iterator> feed(activity.begin(), activity.end());
     WireCell::IDepo::pointer p;
     while ((p=feed())) {
 	++count;
@@ -110,7 +110,7 @@ IDepo::vector test_drifted()
 	    break;		// EOS
 	}
 	result.push_back(depo);
-	WireCell::IDepoVector vec = depo_chain(depo);
+	WireCell::IDepo::vector vec = depo_chain(depo);
 	AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
     }
 
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
     cout << tk("sorted") << endl;
     test_feed();
     cout << tk("range feed") << endl;
-    IDepoVector drifted = test_drifted();
+    IDepo::vector drifted = test_drifted();
     cout << tk("transport") << endl;
     cout << tk.summary() << endl;
     
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 
 
     // draw raw activity
-    IDepoVector activity(*get_depos());
+    IDepo::vector activity(*get_depos());
     TPolyMarker3D orig(activity.size(), 6);
     orig.SetMarkerColor(2);
     int indx=0;

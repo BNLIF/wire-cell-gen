@@ -16,7 +16,7 @@ namespace WireCell {
 
     class TilingGraph : public ICellSummary {
     public:
-	TilingGraph(const ICellVector& the_cells);
+	TilingGraph(const ICell::vector& the_cells);
 	virtual ~TilingGraph();
 
 
@@ -24,16 +24,16 @@ namespace WireCell {
 
 	// return wires associated with cell.  This should be
 	// identical to cell->wires() but does query the graph.
-	virtual IWireVector wires(ICell::pointer cell) const;
+	virtual IWire::vector wires(ICell::pointer cell) const;
 
 	/// Return cells associated with the wires.
-	virtual ICellVector cells(IWire::pointer wire) const;
+	virtual ICell::vector cells(IWire::pointer wire) const;
 
 	/// Return a single cell if it is associated with all wires.
-	virtual ICell::pointer cell(const IWireVector& wires) const;
+	virtual ICell::pointer cell(const IWire::vector& wires) const;
     
 	/// Return collection of nearest neighbor cells.
-	virtual ICellVector neighbors(ICell::pointer cell) const;
+	virtual ICell::vector neighbors(ICell::pointer cell) const;
 
     private:
 

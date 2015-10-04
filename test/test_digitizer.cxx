@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 
     const double the_time = 11.0*units::microsecond;
 
-    IPlaneSlice::shared_vector psv(new IPlaneSliceVector({
+    IPlaneSlice::shared_vector psv(new IPlaneSlice::vector({
 		make_planeslice(WirePlaneId(kUlayer), the_time),
 		make_planeslice(WirePlaneId(kVlayer), the_time),
 		make_planeslice(WirePlaneId(kWlayer), the_time)}));

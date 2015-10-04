@@ -76,7 +76,7 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
 	    continue;
 	}
 	WirePlaneId wpid = ps->planeid();
-	IWireVector& wires = m_wires[wpid.index()];
+	IWire::vector& wires = m_wires[wpid.index()];
 	the_time = ps->time();
 
 	for (auto wcr : ps->charge_runs()) {

@@ -39,10 +39,10 @@ namespace WireCell {
     
 	int m_ident;
 	PointVector m_corners;	// this is likely a source of a lot of memory usage
-	const IWireVector m_wires;
+	const IWire::vector m_wires;
 
     public:
-	BoundCell(int id, const PointVector& pcell, const IWireVector& wires)
+	BoundCell(int id, const PointVector& pcell, const IWire::vector& wires)
 	    : m_ident(id), m_corners(pcell), m_wires(wires) {
 	    std::sort(m_corners.begin(), m_corners.end(), AngularSort(center()));
 	}
@@ -69,7 +69,7 @@ namespace WireCell {
 	    return m_corners;
 	}
 
-	virtual WireCell::IWireVector wires() const {
+	virtual WireCell::IWire::vector wires() const {
 	    return m_wires;
 	}
     };
@@ -84,7 +84,7 @@ namespace WireCell {
 
 // Return a Ray going from the center point of wires[0] to a point on
 // wire[1] and perpendicular to both.
-static Ray pitch2(const IWireVector& wires)
+static Ray pitch2(const IWire::vector& wires)
 {
     // Use two consecutive wires from the center to determine the pitch. 
     int ind = wires.size()/2;
@@ -98,13 +98,13 @@ static Ray pitch2(const IWireVector& wires)
     return Ray(center0, center0 + ray_vector(p));
 }
 
-static Vector axis(const IWireVector& wires)
+static Vector axis(const IWire::vector& wires)
 {
     int ind = wires.size()/2;
     return ray_vector(wires[ind]->ray()).norm();
 }
 
-Vector origin_cross(const IWireVector& ones, const IWireVector& twos)
+Vector origin_cross(const IWire::vector& ones, const IWire::vector& twos)
 {
     const Ray& ray1 = ones[0]->ray();
     const Ray& ray2 = twos[0]->ray();
@@ -121,7 +121,7 @@ bool is_point_inside_w_lane(const Point& point, const double& w_lane_center, con
 
 bool BoundCells::insert(const input_type& wires)
 {
-    ICellVector* res_cells = new ICellVector;
+    ICell::vector* res_cells = new ICell::vector;
 
     /* This was originally Xin's cell algorithm but only the concept
        remains.

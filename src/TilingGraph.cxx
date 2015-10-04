@@ -4,7 +4,7 @@
 using namespace std;
 using namespace WireCell;
 
-TilingGraph::TilingGraph(const ICellVector& the_cells)
+TilingGraph::TilingGraph(const ICell::vector& the_cells)
 {
     for (auto acell: the_cells) {
 	this->record(acell);
@@ -122,7 +122,7 @@ void WireCell::TilingGraph::record(WireCell::ICell::pointer thecell)
     //cerr << "Recording cell: " << thecell->ident() << " ("<<cv<<") with wires: " << endl;;
 
     // wire vertices and wire-cell edges
-    const IWireVector uvw_wires = thecell->wires();
+    const IWire::vector uvw_wires = thecell->wires();
     for (auto wire : uvw_wires) {
 	Vertex wv = wire_vertex_make(wire);
 	auto the_edge = boost::add_edge(cv, wv, m_graph);
@@ -158,9 +158,9 @@ void WireCell::TilingGraph::record(WireCell::ICell::pointer thecell)
 
 
 // return cells associated with wire
-WireCell::ICellVector WireCell::TilingGraph::cells(WireCell::IWire::pointer wire) const
+WireCell::ICell::vector WireCell::TilingGraph::cells(WireCell::IWire::pointer wire) const
 {
-    WireCell::ICellVector res;
+    WireCell::ICell::vector res;
     Vertex vwire;
     if (!wire_vertex_lookup(wire, vwire)) {
 	return res;
@@ -180,9 +180,9 @@ WireCell::ICellVector WireCell::TilingGraph::cells(WireCell::IWire::pointer wire
 
 
 // return wires associated with cell
-WireCell::IWireVector WireCell::TilingGraph::wires(WireCell::ICell::pointer cell) const
+WireCell::IWire::vector WireCell::TilingGraph::wires(WireCell::ICell::pointer cell) const
 {
-    WireCell::IWireVector res;
+    WireCell::IWire::vector res;
     Vertex vcell;
     if (!cell_vertex_lookup(cell, vcell)) {
 	return res;
@@ -200,7 +200,7 @@ WireCell::IWireVector WireCell::TilingGraph::wires(WireCell::ICell::pointer cell
 
 
 // originally from tiling/src/GraphTiling
-WireCell::ICell::pointer WireCell::TilingGraph::cell(const IWireVector& given) const
+WireCell::ICell::pointer WireCell::TilingGraph::cell(const IWire::vector& given) const
 {
     // This method returns the first cell associated with one wire in
     // the given collection of wires that is also associated with the
@@ -208,7 +208,7 @@ WireCell::ICell::pointer WireCell::TilingGraph::cell(const IWireVector& given) c
 
     IWire::pointer first_wire = given[0];
 
-    WireCell::ICellVector thecells = this->cells(first_wire);
+    WireCell::ICell::vector thecells = this->cells(first_wire);
 
     if (!thecells.size()) {
         return 0;
@@ -217,11 +217,11 @@ WireCell::ICell::pointer WireCell::TilingGraph::cell(const IWireVector& given) c
     IWireSet wanted(given.begin(), given.end());
 
     for (auto thecell : thecells) {
-	IWireVector got = thecell->wires();
+	IWire::vector got = thecell->wires();
 	IWireSet found(got.begin(), got.end()); // for sort
 
 	// Fill <missing> with <wanted> wires not in <found>.
-	IWireVector missing;
+	IWire::vector missing;
         std::set_difference(wanted.begin(), wanted.end(),
                             found.begin(), found.end(),
                             std::back_inserter(missing));
@@ -235,8 +235,8 @@ WireCell::ICell::pointer WireCell::TilingGraph::cell(const IWireVector& given) c
     
 }
 
-WireCell::ICellVector WireCell::TilingGraph::neighbors(ICell::pointer cell) const
+WireCell::ICell::vector WireCell::TilingGraph::neighbors(ICell::pointer cell) const
 {
-    WireCell::ICellVector dummy;
+    WireCell::ICell::vector dummy;
     return dummy;
 }

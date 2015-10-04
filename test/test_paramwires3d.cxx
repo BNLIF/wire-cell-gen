@@ -105,7 +105,7 @@ void test3D(bool interactive)
     int colors[3] = {2, 4, 1};
 
 
-    IWireVector u_wires, v_wires, w_wires;
+    IWire::vector u_wires, v_wires, w_wires;
     copy_if(wires->begin(), wires->end(), back_inserter(u_wires), select_u_wires);
     copy_if(wires->begin(), wires->end(), back_inserter(v_wires), select_v_wires);
     copy_if(wires->begin(), wires->end(), back_inserter(w_wires), select_w_wires);

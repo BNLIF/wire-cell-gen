@@ -79,7 +79,7 @@ struct SortByIndex {
 };    
 
 
-static void make_one_plane(IWireVector& returned_wires,
+static void make_one_plane(IWire::vector& returned_wires,
 			   WirePlaneId wpid, const Ray& bounds, const Ray& step)
 {
     const Vector xaxis(1,0,0);
@@ -133,7 +133,7 @@ bool WireGenerator::insert(const input_type& wp)
 	m_output = nullptr;
 	return true;
     }
-    IWireVector* wires = new IWireVector;
+    IWire::vector* wires = new IWire::vector;
     make_one_plane(*wires, WirePlaneId(kUlayer), wp->bounds(), wp->pitchU());
     make_one_plane(*wires, WirePlaneId(kVlayer), wp->bounds(), wp->pitchV());
     make_one_plane(*wires, WirePlaneId(kWlayer), wp->bounds(), wp->pitchW());

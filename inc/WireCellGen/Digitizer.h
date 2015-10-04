@@ -31,7 +31,7 @@ namespace WireCell {
 	void flush();
 
 	// wires, organized by plane
-	IWireVector m_wires[3];
+	IWire::vector m_wires[3];
 
 	// no input buffering
 	std::deque<output_type> m_output;

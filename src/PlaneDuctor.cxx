@@ -88,7 +88,7 @@ bool PlaneDuctor::extract(output_type& plane_slice)
 
 void PlaneDuctor::purge_bygone()
 {
-    IDiffusionVector to_kill;
+    IDiffusion::vector to_kill;
     for (auto diff : m_input) {
 	if (diff->lbegin() >= m_lpos) {
 	    break;

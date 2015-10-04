@@ -87,7 +87,7 @@ void Framer::process(bool flush)
 	    continue;
 	}
 
-	ITraceVector traces;
+	ITrace::vector traces;
 	for (auto ct : ch2trace) {
 	    ZSEndedTrace* trace = ct.second;
 	    traces.push_back(ITrace::pointer(trace));

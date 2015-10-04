@@ -28,13 +28,13 @@ namespace WireCell {
 	/// ISource
 	bool extract(output_type& out);
 
-	/// Utility: access deposition store.
-	std::shared_ptr<WireCell::IDepoVector> depositions();
+	/// Utility: access entire deposition store.
+	//WireCell::IDepo::shared_vector depositions();
 
     private:
 	const double m_stepsize;
 	const double m_clight;
-	std::shared_ptr<WireCell::IDepoVector> m_depos;
+	WireCell::IDepo::vector m_depos;
     
     };
 

@@ -10,7 +10,7 @@ namespace WireCell {
     class WireSummary : public IWireSummary
     {
     public:
-	WireSummary(const IWireVector& wires);
+	WireSummary(const IWire::vector& wires);
         virtual ~WireSummary();
 
 	/// Return the bounding box of the wire planes.
@@ -36,7 +36,7 @@ namespace WireCell {
 	/// Return a unit vector along the direction of the pitch.
 	virtual const Vector& pitch_direction(WirePlaneId wpid) const;
 
-	virtual IWireVector by_channel(int channel) const;
+	virtual IWire::vector by_channel(int channel) const;
 
     private:
 	class WireSummaryCache;
