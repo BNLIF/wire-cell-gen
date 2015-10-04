@@ -9,6 +9,7 @@ TilingGraph::TilingGraph(const ICell::vector& the_cells)
     for (auto acell: the_cells) {
 	this->record(acell);
     }
+    this->join_neighbors();
 }
 TilingGraph::~TilingGraph()
 {
@@ -47,14 +48,6 @@ TilingGraph::Property WireCell::TilingGraph::wire_property(IWire::pointer wire) 
 {
     return Property(Property::wire, wire_index(wire));
 }
-
-/*
-
-  Make graph store wire/cell info by ident.
-
-  Make TilingGraphCell/Wire.
-
- */
 
 
 
@@ -157,6 +150,24 @@ void WireCell::TilingGraph::record(WireCell::ICell::pointer thecell)
 }
 
 
+bool WireCell::TilingGraph::vertex_cell_lookup(Vertex vtx,
+					       WireCell::ICell::pointer& cell) const
+{
+    auto res = cell_index.collection[m_graph[vtx].index];
+    if (!res) return false;
+    cell = res;
+    return true;
+}
+bool WireCell::TilingGraph::vertex_wire_lookup(Vertex vtx,
+					       WireCell::IWire::pointer& wire) const
+{
+    auto res = wire_index.collection[m_graph[vtx].index];
+    if (!res) return false;
+    wire = res;
+    return true;
+}
+
+
 // return cells associated with wire
 WireCell::ICell::vector WireCell::TilingGraph::cells(WireCell::IWire::pointer wire) const
 {
@@ -235,8 +246,82 @@ WireCell::ICell::pointer WireCell::TilingGraph::cell(const IWire::vector& given)
     
 }
 
+
+
+bool WireCell::TilingGraph::is_cell(const Vertex& vtx) const
+{
+    return m_graph[vtx].vtype == Property::cell;
+}
+bool WireCell::TilingGraph::is_wire(const Vertex& vtx) const
+{
+    return m_graph[vtx].vtype == Property::wire;
+}
+bool WireCell::TilingGraph::is_point(const Vertex& vtx) const
+{
+    return m_graph[vtx].vtype == Property::point;
+}
+
+std::set<TilingGraph::Vertex>
+TilingGraph::connected_of_type(Vertex vtx,
+			       Property::VertexType_t typ) const
+{
+    std::set<Vertex> ret;
+    auto adjacent = boost::adjacent_vertices(vtx, m_graph);
+    std::copy_if(adjacent.first, adjacent.second,
+		 std::inserter(ret, ret.end()),
+		 [=](const Vertex& v) { return m_graph[v].vtype == typ; });
+    return ret;
+}
+
+std::set<TilingGraph::Vertex>
+TilingGraph::all_of_type(Property::VertexType_t typ) const
+{
+    std::set<Vertex> ret;
+    auto adjacent = boost::vertices(m_graph);
+    std::copy_if(adjacent.first, adjacent.second,
+		 std::inserter(ret, ret.end()),
+		 [=](const Vertex& v) { return m_graph[v].vtype == typ; });
+    return ret;
+}
+
+
+
+void WireCell::TilingGraph::join_neighbors()
+{
+    auto cell_verts = all_of_type(Property::cell);
+
+    for (auto the_cell_vert : cell_verts) {
+
+	std::set<Vertex> the_neighbors;
+
+	auto corner_verts = connected_of_type(the_cell_vert, Property::point);
+	for (auto cv : corner_verts) {
+	    auto next_door = connected_of_type(cv, Property::cell);
+	    the_neighbors.insert(next_door.begin(), next_door.end());
+	}
+
+	for (auto neighbor : the_neighbors) {
+	    if (neighbor == the_cell_vert) { continue; }
+	    add_edge(the_cell_vert, neighbor, m_graph);
+	}
+	    
+    } // all cells
+
+}
+
 WireCell::ICell::vector WireCell::TilingGraph::neighbors(ICell::pointer cell) const
 {
-    WireCell::ICell::vector dummy;
-    return dummy;
+    WireCell::ICell::vector ret;
+    Vertex cell_vtx;
+    cell_vertex_lookup(cell, cell_vtx);
+    auto neighbors = connected_of_type(cell_vtx, Property::cell);
+    for (auto nc : neighbors) {
+	WireCell::ICell::pointer np;
+	if (!vertex_cell_lookup(nc, np)) {
+	    cerr << "Failed to find cell for vertex " << nc << endl;
+	    continue;
+	}
+	ret.push_back(np);
+    }
+    return ret;
 }

@@ -16,12 +16,13 @@
 #include "WireCellUtil/TimeKeeper.h"
 #include "WireCellUtil/MemUsage.h"
 
-#include "TFile.h"
+#include "WireCellRootVis/CanvasApp.h"
+#include "WireCellRootVis/Drawers.h"
+
 #include "TPolyMarker.h"
 #include "TH2F.h"
 #include "TArrow.h"
 #include "TCanvas.h"
-#include "TDirectory.h"
 
 #include <iostream>
 
@@ -38,8 +39,26 @@ TArrow* draw_wire(IWire::pointer w, int color)
     return arr;
 }
 
-int main()
+
+TPolyMarker* draw_cell(ICell::pointer cell, int color=1, int style=8)
 {
+    TPolyMarker* pm = new TPolyMarker;
+    pm->SetMarkerColor(color);
+    pm->SetMarkerStyle(style);
+    pm->SetPoint(0, cell->center().z(), cell->center().y());
+    int ncorners = 0;
+    for (auto corner : cell->corners()) {
+	++ncorners;		// preincrement
+	pm->SetPoint(ncorners, corner.z(), corner.y());
+    }
+    pm->Draw();
+    return pm;
+}
+
+int main(int argc, char *argv[])
+{
+    WireCellRootVis::CanvasApp app(argv[0], argc>1, 1000,1000);
+
     TimeKeeper tk("test tiling");
     MemUsage mu("test tiling");
 
@@ -95,9 +114,8 @@ int main()
     Assert(csum);
 
 
-    TFile* tfile = TFile::Open("test_tiling.root","RECREATE");
-
-    TCanvas *canvas = new TCanvas;
+    const int ncolors = 3;
+    int colors[ncolors] = {2,4,7};
 
     for (auto cell : *cells) {
 	AssertMsg(cell, "Got null cell.");
@@ -118,6 +136,8 @@ int main()
 	AssertMsg(samecell, "Failed to get get a round trip cell->wires->cell pointer");
 	AssertMsg(samecell->ident() == cell->ident(), "Cell->wires->cell round trip failed.");
 
+	auto neighbors = csum->neighbors(cell);
+	Assert(!neighbors.empty());
 
 	BoundingBox bb(cell->center());
 	auto corners = cell->corners();
@@ -127,6 +147,14 @@ int main()
 	for (auto wire : assoc_wires) {
 	    bb(wire->ray());
 	}
+	for (auto nc : neighbors) {
+	    for (auto corn : nc->corners()) {
+		bb(corn);
+	    }
+	}
+	cerr << "Cell " << cell->ident()
+	     << " with " << neighbors.size() << " neighbors" << endl;
+	Assert(neighbors.size() >= 3 || neighbors.size() <= 12);
 
 	// prescale what we bother drawing
 	if (cell->ident() % 100 != 1) {
@@ -134,27 +162,19 @@ int main()
 	}
 
 	std::string pad_name = Form("cell%d", cell->ident());
-	TDirectory* dir = tfile->mkdir(pad_name.c_str());
-	dir->cd();
 
-	canvas->cd();
-	canvas->Clear();
-	TH1F* frame = canvas->DrawFrame(bb.bounds().first.z(),  bb.bounds().first.y(),
-					bb.bounds().second.z(), bb.bounds().second.y());
+	TH1F* frame = app.canvas().DrawFrame(bb.bounds().first.z(),  bb.bounds().first.y(),
+					     bb.bounds().second.z(), bb.bounds().second.y());
 	frame->SetTitle(Form("Cell %d", cell->ident()));
 	frame->SetXTitle("Z transverse direction");
 	frame->SetYTitle("Y transverse direction");
 
-	TPolyMarker* cell_pm = new TPolyMarker;
-	cell_pm->SetMarkerColor(1);
-	cell_pm->SetMarkerStyle(8);
-	cell_pm->SetPoint(0, cell->center().z(), cell->center().y());
-	int ncorners = 0;
-	for (auto corner : corners) {
-	    ++ncorners;		// preincrement
-	    cell_pm->SetPoint(ncorners, corner.z(), corner.y());
+	draw_cell(cell);
+	int nneighbors = 0;
+	for (auto nc : neighbors) {
+	    draw_cell(nc, colors[nneighbors%ncolors], 4);
+	    ++nneighbors;
 	}
-	cell_pm->Draw();
 
 	int colors[3] = {2,4,7};
 	int nwires = 0;
@@ -173,8 +193,7 @@ int main()
 	    ++nwires;
 	}
 
-
-	canvas->Write();
+	app.pdf();
 
 	cerr << "Cell #" << cell->ident() << " with " << assoc_wires.size() << " wires:" ;
 	for (auto w : assoc_wires) {
@@ -192,6 +211,5 @@ int main()
 	//cerr << "Wire #" << wire->ident() << " with " << cells.size() << " cells" <<  endl;
     }
 
-    //tfile->Write();
-    tfile->Close();
+    app.run();
 }

@@ -35,9 +35,12 @@ namespace WireCell {
 	/// Return collection of nearest neighbor cells.
 	virtual ICell::vector neighbors(ICell::pointer cell) const;
 
+
+
     private:
 
 	void record(ICell::pointer thecell);
+	void join_neighbors();
 
 	/// Each vertex of the graph has a "type" and an index into a
 	/// vector of objects of corresponding type.:
@@ -85,6 +88,18 @@ namespace WireCell {
     
 	bool cell_vertex_lookup(ICell::pointer cell, Vertex& vtx) const;
 	bool wire_vertex_lookup(IWire::pointer wire, Vertex& vtx) const;
+	bool vertex_cell_lookup(Vertex vtx, WireCell::ICell::pointer& cell) const;
+	bool vertex_wire_lookup(Vertex vtx, WireCell::IWire::pointer& wire) const;
+
+	bool is_cell(const Vertex& vtx) const;
+	bool is_wire(const Vertex& vtx) const;
+	bool is_point(const Vertex& vtx) const;
+
+	// return the vertices connected to vertex <vtx> of a particular type <typ>.
+	std::set<Vertex> connected_of_type(Vertex vtx,
+					   Property::VertexType_t typ) const;
+	// return all vertices of a particular type <typ>.
+	std::set<Vertex> all_of_type(Property::VertexType_t typ) const;
 
 	/// A graph vertex may be a wire a cell or a point.  The graph
 	/// stores this as a type and a key into an index for that type.
@@ -94,6 +109,7 @@ namespace WireCell {
 	WireCell::IndexedSet<ICell::pointer> cell_index;
 	WireCell::IndexedSet<IWire::pointer> wire_index;
     
+
 	Property point_property(const Point2D& point);
 	Property point_property(const Point2D& point) const;
 	Property cell_property(ICell::pointer cell);
