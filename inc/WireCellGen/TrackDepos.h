@@ -15,6 +15,7 @@ namespace WireCell {
 	/// to be traveling at clight.
 	TrackDepos(double stepsize=1.0*units::millimeter,
 		   double clight=units::clight);
+	virtual ~TrackDepos();
 
 	/// Add track starting at given <time> and stretching across given
 	/// ray.  The <dedx> gives a uniform charge/distance and if < 0

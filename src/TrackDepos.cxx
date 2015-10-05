@@ -13,6 +13,10 @@ TrackDepos::TrackDepos(double stepsize, double clight)
 {
 }
 
+TrackDepos::~TrackDepos()
+{
+}
+
 void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
 {
     cerr << "TrackDepos.add_track(" << time / units::microsecond << "us "
