@@ -1,14 +1,14 @@
 #ifndef WIRECELL_TRACKDEPOS
 #define WIRECELL_TRACKDEPOS
 
-#include "WireCellIface/IDepo.h"
+#include "WireCellIface/IDepoSource.h"
 #include "WireCellIface/ISource.h"
 #include "WireCellUtil/Units.h"
 
 namespace WireCell {
 /// A producer of depositions created from some number of simple, linear tracks.
     class TrackDepos 
-	: public ISource<IDepo>
+	: public IDepoSource
     {
     public:    
 	/// Create tracks with depositions every stepsize and assumed
