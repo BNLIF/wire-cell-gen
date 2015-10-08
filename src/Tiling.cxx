@@ -8,8 +8,9 @@
 
 using namespace WireCell;
 
-WIRECELL_NAMEDFACTORY(Tiling);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(Tiling, ITiling);
+WIRECELL_NAMEDFACTORY(Tiling) {
+    WIRECELL_NAMEDFACTORY_INTERFACE(Tiling, ITiling);
+}
 
 
 Tiling::Tiling()

@@ -9,8 +9,9 @@
 using namespace WireCell;
 using namespace std;
 
-WIRECELL_NAMEDFACTORY(WireGenerator);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(WireGenerator, IWireGenerator);
+WIRECELL_NAMEDFACTORY(WireGenerator) {
+    WIRECELL_NAMEDFACTORY_INTERFACE(WireGenerator, IWireGenerator);
+}
 
 namespace WireCell {
 class GenWire : public IWire {

@@ -14,8 +14,9 @@ using namespace std;
 
 using namespace WireCell;
 
-WIRECELL_NAMEDFACTORY(BoundCells);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(BoundCells, ICellMaker);
+WIRECELL_NAMEDFACTORY(BoundCells) {
+    WIRECELL_NAMEDFACTORY_INTERFACE(BoundCells, ICellMaker);
+}
 
 struct AngularSort {
     Point center;

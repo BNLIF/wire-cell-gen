@@ -31,11 +31,6 @@ int main(int argc, char* argv[])
 {
     TimeKeeper tk("test cells");
 
-    // These are here to force the linker to give us the symbols
-    WIRECELL_NAMEDFACTORY_USE(WireParams);
-    WIRECELL_NAMEDFACTORY_USE(WireGenerator);
-    WIRECELL_NAMEDFACTORY_USE(BoundCells);
-
     cout << tk("factories made") << endl;
 
     // fixme: this C++ dance to wire up the interfaces may eventually

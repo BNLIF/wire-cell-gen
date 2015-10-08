@@ -10,8 +10,9 @@ using namespace std;
 using namespace WireCell;
 
 
-WIRECELL_NAMEDFACTORY(Digitizer);
-WIRECELL_NAMEDFACTORY_ASSOCIATE(Digitizer, IDigitizer);
+WIRECELL_NAMEDFACTORY(Digitizer) {
+    WIRECELL_NAMEDFACTORY_INTERFACE(Digitizer, IDigitizer);
+}
 
 Digitizer::Digitizer()
 {

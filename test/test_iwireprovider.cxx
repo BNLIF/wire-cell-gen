@@ -31,11 +31,6 @@ int main(int argc, char* argv[])
     TimeKeeper tk("test wires");
     MemUsage mu("test wires");
 
-    // These are here to force the linker to give us the symbols.  We
-    // do not compile against this code!
-    WIRECELL_NAMEDFACTORY_USE(WireParams);
-    WIRECELL_NAMEDFACTORY_USE(WireGenerator);
-    WIRECELL_NAMEDFACTORY_USE(WireSummarizer);
 
     cout << tk("factories made") << endl;
     cout << mu("factories made") << endl;
