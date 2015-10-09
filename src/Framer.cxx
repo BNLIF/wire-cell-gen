@@ -9,9 +9,10 @@ using namespace std;
 using namespace WireCell;
 
 
-WIRECELL_NAMEDFACTORY(Framer) {
-    WIRECELL_NAMEDFACTORY_INTERFACE(Framer, IFramer);
-}
+WIRECELL_NAMEDFACTORY_BEGIN(Framer)
+WIRECELL_NAMEDFACTORY_INTERFACE(Framer, IFramer);
+WIRECELL_NAMEDFACTORY_END(Framer)
+
 
 Framer::Framer()		// fixme: needed for factory
     : m_nticks(100)

@@ -5,9 +5,9 @@
 
 using namespace WireCell;
 
-WIRECELL_NAMEDFACTORY(WireSummarizer) {
-    WIRECELL_NAMEDFACTORY_INTERFACE(WireSummarizer, IWireSummarizer);
-}
+WIRECELL_NAMEDFACTORY_BEGIN(WireSummarizer)
+WIRECELL_NAMEDFACTORY_INTERFACE(WireSummarizer, IWireSummarizer);
+WIRECELL_NAMEDFACTORY_END(WireSummarizer)
 
 WireSummarizer::WireSummarizer()
 {

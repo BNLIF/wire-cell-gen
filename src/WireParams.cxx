@@ -6,10 +6,10 @@
 using namespace WireCell;
 using namespace std;
 
-WIRECELL_NAMEDFACTORY(WireParams) {
-    WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IConfigurable);
-    WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IWireParameters);
-}
+WIRECELL_NAMEDFACTORY_BEGIN(WireParams)
+WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IConfigurable);
+WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IWireParameters);
+WIRECELL_NAMEDFACTORY_END(WireParams)
 
 
 
