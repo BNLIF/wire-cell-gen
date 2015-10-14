@@ -58,9 +58,9 @@ void test2()
     for (int ind=0; pitches[ind] > 0.0; ++ind) {
 	WireParams *params = new WireParams;
 	Configuration cfg = params->default_configuration();
-	cfg.put("pitch_mm.u", pitches[ind]);
-	cfg.put("pitch_mm.v", pitches[ind]);
-	cfg.put("pitch_mm.w", pitches[ind]);
+	put(cfg, "pitch_mm.u", pitches[ind]);
+	put(cfg, "pitch_mm.v", pitches[ind]);
+	put(cfg, "pitch_mm.w", pitches[ind]);
 	params->configure(cfg);
 	IWireParameters::pointer iwp(params);
 	WireGenerator wg;

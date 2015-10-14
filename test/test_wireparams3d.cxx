@@ -123,9 +123,9 @@ int main(int argc, char** argv)
     double pitch = 10.0;
     WireParams params;
     auto cfg = params.default_configuration();
-    cfg.put("pitch_mm.u", pitch);
-    cfg.put("pitch_mm.v", pitch);
-    cfg.put("pitch_mm.w", pitch);
+    put(cfg, "pitch_mm.u", pitch);
+    put(cfg, "pitch_mm.v", pitch);
+    put(cfg, "pitch_mm.w", pitch);
     params.configure(cfg);
 
     c.cd(3);

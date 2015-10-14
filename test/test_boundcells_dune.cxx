@@ -103,13 +103,13 @@ int main(int argc, char** argv)
     double angle_deg = 35.0;	   // approx
     double full_width = 1.0*units::meter;
     auto cfg = params->default_configuration();
-    cfg.put("pitch_mm.u", pitch);
-    cfg.put("pitch_mm.v", pitch);
-    cfg.put("pitch_mm.w", pitch);
-    cfg.put("angle_deg.u", angle_deg);
-    cfg.put("angle_deg.v", -angle_deg);
-    cfg.put("size_mm.y", full_width);
-    cfg.put("size_mm.z", full_width);
+    put(cfg, "pitch_mm.u", pitch);
+    put(cfg, "pitch_mm.v", pitch);
+    put(cfg, "pitch_mm.w", pitch);
+    put(cfg, "angle_deg.u", angle_deg);
+    put(cfg, "angle_deg.v", -angle_deg);
+    put(cfg, "size_mm.y", full_width);
+    put(cfg, "size_mm.z", full_width);
     params->configure(cfg);
 
     WireGenerator wiregen;

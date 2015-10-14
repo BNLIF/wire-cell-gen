@@ -23,9 +23,9 @@ void test3D(bool interactive)
     WireParams* params = new WireParams;
     double pitch = 10.0;
     auto cfg = params->default_configuration();
-    cfg.put("pitch_mm.u", pitch);
-    cfg.put("pitch_mm.v", pitch);
-    cfg.put("pitch_mm.w", pitch);
+    put(cfg, "pitch_mm.u", pitch);
+    put(cfg, "pitch_mm.v", pitch);
+    put(cfg, "pitch_mm.w", pitch);
     params->configure(cfg);
 
     IWireParameters::pointer iwp(params);

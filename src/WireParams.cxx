@@ -12,8 +12,6 @@ WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IWireParameters);
 WIRECELL_NAMEDFACTORY_END(WireParams)
 
 
-
-
 //static int n_wireparams = 0;
 
 WireParams::WireParams()
@@ -46,32 +44,32 @@ Configuration WireParams::default_configuration() const
 void WireParams::configure(const Configuration& cfg)
 {
     // The local origin about which all else is measured.
-    double cx = cfg.get<double>("center_mm.x")*units::mm;
-    double cy = cfg.get<double>("center_mm.y")*units::mm;
-    double cz = cfg.get<double>("center_mm.z")*units::mm;
+    double cx = get<double>(cfg, "center_mm.x")*units::mm;
+    double cy = get<double>(cfg,"center_mm.y")*units::mm;
+    double cz = get<double>(cfg, "center_mm.z")*units::mm;
     const Point center(cx,cy,cz);
     
     // The full width sizes
-    double dx = cfg.get<double>("size_mm.x")*units::mm;
-    double dy = cfg.get<double>("size_mm.y")*units::mm;
-    double dz = cfg.get<double>("size_mm.z")*units::mm;
+    double dx = get<double>(cfg, "size_mm.x")*units::mm;
+    double dy = get<double>(cfg, "size_mm.y")*units::mm;
+    double dz = get<double>(cfg, "size_mm.z")*units::mm;
     const Point deltabb(dx,dy,dz);
     const Point bbmax = center + 0.5*deltabb;
     const Point bbmin = center - 0.5*deltabb;
 
     // The angles of the wires w.r.t. the positive Y axis
-    double angU = cfg.get<double>("angle_deg.u")*units::degree;
-    double angV = cfg.get<double>("angle_deg.v")*units::degree;
-    double angW = cfg.get<double>("angle_deg.w")*units::degree;
+    double angU = get<double>(cfg, "angle_deg.u")*units::degree;
+    double angV = get<double>(cfg, "angle_deg.v")*units::degree;
+    double angW = get<double>(cfg, "angle_deg.w")*units::degree;
 
     const Vector wU(0, std::cos(angU), std::sin(angU));
     const Vector wV(0, std::cos(angV), std::sin(angV));
     const Vector wW(0, std::cos(angW), std::sin(angW));
 
     // The pitch magnitudes.
-    double pitU = cfg.get<double>("pitch_mm.u")*units::mm;
-    double pitV = cfg.get<double>("pitch_mm.v")*units::mm;
-    double pitW = cfg.get<double>("pitch_mm.w")*units::mm;
+    double pitU = get<double>(cfg, "pitch_mm.u")*units::mm;
+    double pitV = get<double>(cfg, "pitch_mm.v")*units::mm;
+    double pitW = get<double>(cfg, "pitch_mm.w")*units::mm;
 
     // Pitch vectors
     const Vector xaxis(1,0,0);
@@ -80,18 +78,18 @@ void WireParams::configure(const Configuration& cfg)
     const Vector pW = pitW*xaxis.cross(wW);
 
     // The offset in the pitch direction from the center to a wire
-    double offU = cfg.get<double>("offset_mm.u")*units::mm;
-    double offV = cfg.get<double>("offset_mm.v")*units::mm;
-    double offW = cfg.get<double>("offset_mm.w")*units::mm;
+    double offU = get<double>(cfg, "offset_mm.u")*units::mm;
+    double offV = get<double>(cfg, "offset_mm.v")*units::mm;
+    double offW = get<double>(cfg, "offset_mm.w")*units::mm;
 
     Point oU = center + pU.norm() * offU;
     Point oV = center + pV.norm() * offV;
     Point oW = center + pW.norm() * offW;
 
     // Force X location of plane along the X axis.
-    oU.x(cfg.get<double>("plane_mm.u")*units::mm);
-    oV.x(cfg.get<double>("plane_mm.v")*units::mm);
-    oW.x(cfg.get<double>("plane_mm.w")*units::mm);
+    oU.x(get<double>(cfg, "plane_mm.u")*units::mm);
+    oV.x(get<double>(cfg, "plane_mm.v")*units::mm);
+    oW.x(get<double>(cfg, "plane_mm.w")*units::mm);
 
 
     const Ray bounds(bbmin, bbmax);

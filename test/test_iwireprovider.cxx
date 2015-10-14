@@ -44,9 +44,9 @@ int main(int argc, char* argv[])
 
     auto cfg = wp_cfg->default_configuration();
     double pitch = 10.0;
-    cfg.put("pitch_mm.u", pitch);
-    cfg.put("pitch_mm.v", pitch);
-    cfg.put("pitch_mm.w", pitch);
+    put(cfg, "pitch_mm.u", pitch);
+    put(cfg, "pitch_mm.v", pitch);
+    put(cfg, "pitch_mm.w", pitch);
     wp_cfg->configure(cfg);
 
     auto wp = WireCell::Factory::lookup<IWireParameters>("WireParams");

@@ -41,9 +41,9 @@ int main(int argc, char* argv[])
     AssertMsg(wp_cfg, "Failed to get IConfigurable from default WireParams");
     auto cfg = wp_cfg->default_configuration();
     double pitch_mm = 100.0;
-    cfg.put("pitch_mm.u", pitch_mm);
-    cfg.put("pitch_mm.v", pitch_mm);
-    cfg.put("pitch_mm.w", pitch_mm);
+    put(cfg, "pitch_mm.u", pitch_mm);
+    put(cfg, "pitch_mm.v", pitch_mm);
+    put(cfg, "pitch_mm.w", pitch_mm);
     wp_cfg->configure(cfg);
     cout << tk("Configured WireParams") << endl;
 
