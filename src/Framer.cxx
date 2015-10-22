@@ -43,7 +43,7 @@ void Framer::flush()
 
 }
 
-bool Framer::insert(const input_type& channel_slice)
+bool Framer::insert(const input_pointer& channel_slice)
 {
     if (!channel_slice) {
 	flush();
@@ -99,7 +99,7 @@ void Framer::process(bool flush)
     }
 }
 
-bool Framer::extract(output_type& frame)
+bool Framer::extract(output_pointer& frame)
 {
     if (m_output.empty()) {
 	return false;

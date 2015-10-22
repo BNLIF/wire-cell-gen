@@ -54,7 +54,7 @@ void Digitizer::flush()
     m_output.push_back(nullptr);
     return;			// no input buffer
 }
-bool Digitizer::insert(const input_type& plane_slice_vector)
+bool Digitizer::insert(const input_pointer& plane_slice_vector)
 {
     if (!plane_slice_vector) {
 	flush();
@@ -96,7 +96,7 @@ bool Digitizer::insert(const input_type& plane_slice_vector)
     return true;
 }
 
-bool Digitizer::extract(output_type& channel_slice)
+bool Digitizer::extract(output_pointer& channel_slice)
 {
     if (m_output.empty()) {
 	return false;

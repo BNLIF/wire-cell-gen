@@ -57,7 +57,7 @@ WireCell::IDepo::pointer TrackDepos::operator()()
     return p;
 }
 
-bool TrackDepos::extract(output_type& out)
+bool TrackDepos::extract(output_pointer& out)
 {
     out = (*this)();
     return true;

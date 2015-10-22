@@ -33,7 +33,7 @@ void test3D(bool interactive)
     WireGenerator wg;
     Assert(wg.insert(iwp));
 
-    WireGenerator::output_type wires;
+    WireGenerator::output_pointer wires;
     Assert(wg.extract(wires));
     Assert(wires);
     AssertMsg(wires->size(), "Got no wires");

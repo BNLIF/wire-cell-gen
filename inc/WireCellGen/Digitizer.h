@@ -24,8 +24,8 @@ namespace WireCell {
 	 */
         virtual bool set_wires(const IWire::shared_vector& wires);
 	virtual void reset();
-	virtual bool insert(const input_type& plane_slice_vector);
-	virtual bool extract(output_type& channel_slice);
+	virtual bool insert(const input_pointer& plane_slice_vector);
+	virtual bool extract(output_pointer& channel_slice);
 
     private:
 	void flush();
@@ -34,7 +34,7 @@ namespace WireCell {
 	IWire::vector m_wires[3];
 
 	// no input buffering
-	std::deque<output_type> m_output;
+	std::deque<output_pointer> m_output;
     };
 
 }

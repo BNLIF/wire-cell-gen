@@ -40,7 +40,7 @@ void Drifter::flush()
     m_output.push_back(nullptr);
 }
 
-bool Drifter::insert(const input_type& depo)
+bool Drifter::insert(const input_pointer& depo)
 {
     if (!depo) {
 	flush();
@@ -65,7 +65,7 @@ bool Drifter::insert(const input_type& depo)
     return true;
 }
 
-bool Drifter::extract(output_type& depo)
+bool Drifter::extract(output_pointer& depo)
 {
     if (m_output.empty()) {
 	return false;

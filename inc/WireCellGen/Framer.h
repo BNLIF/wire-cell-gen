@@ -17,14 +17,14 @@ namespace WireCell {
 	virtual ~Framer();
 
 	virtual void reset();
-	virtual bool insert(const input_type& in);
-	virtual bool extract(output_type& out);
+	virtual bool insert(const input_pointer& in);
+	virtual bool extract(output_pointer& out);
 
     private:
 	void flush();
 
-	std::deque<input_type> m_input;
-	std::deque<output_type> m_output;
+	std::deque<input_pointer> m_input;
+	std::deque<output_pointer> m_output;
 
 	int m_nticks;
 	int m_count;

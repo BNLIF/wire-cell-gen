@@ -53,8 +53,8 @@ namespace WireCell {
 	virtual ~PlaneDuctor();
 
 	virtual void reset();
-	virtual bool insert(const input_type& diffusion);
-	virtual bool extract(output_type& plane_slice);
+	virtual bool insert(const input_pointer& diffusion);
+	virtual bool extract(output_pointer& plane_slice);
 
 
 	// internal

@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 
     Assert(wg->insert(wp));
 
-    IWireGenerator::output_type wires;
+    IWireGenerator::output_pointer wires;
     Assert(wg->extract(wires));
     Assert(wires);
 

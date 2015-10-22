@@ -17,15 +17,15 @@ namespace WireCell {
 	BoundCells();
 	virtual ~BoundCells();
 
-	virtual bool insert(const input_type& wire_vector);
+	virtual bool insert(const input_pointer& wire_vector);
 
-	virtual bool extract(output_type& cell_vector) {
+	virtual bool extract(output_pointer& cell_vector) {
 	    cell_vector = m_output;
 	    return true;
 	}
 
     private:
-	output_type m_output;
+	output_pointer m_output;
 
     };
 }

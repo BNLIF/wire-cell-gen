@@ -47,7 +47,7 @@ void PlaneDuctor::flush()
     m_output.push_back(nullptr);
 }
 
-bool PlaneDuctor::insert(const input_type& diff) 
+bool PlaneDuctor::insert(const input_pointer& diff) 
 {
     if (!diff) {
 	flush();
@@ -76,7 +76,7 @@ void PlaneDuctor::latch_one()
 }
 
 
-bool PlaneDuctor::extract(output_type& plane_slice) 
+bool PlaneDuctor::extract(output_pointer& plane_slice) 
 {
     if (m_output.empty()) {
 	return false;

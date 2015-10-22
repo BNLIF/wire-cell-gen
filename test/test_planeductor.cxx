@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     int nslices = 0;
     int time_index = 0;
     while (true) {
-	PlaneDuctor::output_type ps;
+	PlaneDuctor::output_pointer ps;
 	Assert(pd.extract(ps));
 	if (!ps) {
 	    cerr << "Reached EOS from plane ductor" << endl;

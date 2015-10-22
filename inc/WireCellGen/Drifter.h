@@ -23,8 +23,8 @@ namespace WireCell {
 
 	/// WireCell::IDrifter interface.
 	virtual void reset();
-	virtual bool insert(const input_type& depo);
-	virtual bool extract(output_type& depo);
+	virtual bool insert(const input_pointer& depo);
+	virtual bool extract(output_pointer& depo);
 
 	int ninput() const { return m_input.size(); }
 	int noutput() const { return m_output.size(); }

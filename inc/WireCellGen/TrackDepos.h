@@ -2,7 +2,6 @@
 #define WIRECELL_TRACKDEPOS
 
 #include "WireCellIface/IDepoSource.h"
-#include "WireCellIface/ISource.h"
 #include "WireCellUtil/Units.h"
 
 namespace WireCell {
@@ -27,7 +26,7 @@ namespace WireCell {
 	WireCell::IDepo::pointer operator()();
 
 	/// ISource
-	bool extract(output_type& out);
+	bool extract(output_pointer& out);
 
 	/// Utility: access entire deposition store.
 	//WireCell::IDepo::shared_vector depositions();

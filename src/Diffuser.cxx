@@ -50,7 +50,7 @@ void Diffuser::flush()
     }
     m_output.push_back(nullptr);
 }
-bool Diffuser::insert(const input_type& depo)
+bool Diffuser::insert(const input_pointer& depo)
 {
     if (!depo) {
 	flush();
@@ -74,7 +74,7 @@ bool Diffuser::insert(const input_type& depo)
     return true;
 }
 
-bool Diffuser::extract(output_type& diffusion)
+bool Diffuser::extract(output_pointer& diffusion)
 {
     while (m_input.size() > 2) {
 	auto first = *m_input.begin();

@@ -129,7 +129,7 @@ static void make_one_plane(IWire::vector& returned_wires,
 }
 
 
-bool WireGenerator::insert(const input_type& wp)
+bool WireGenerator::insert(const input_pointer& wp)
 {
     if (!wp) {
 	m_output = nullptr;
@@ -139,7 +139,7 @@ bool WireGenerator::insert(const input_type& wp)
     make_one_plane(*wires, WirePlaneId(kUlayer), wp->bounds(), wp->pitchU());
     make_one_plane(*wires, WirePlaneId(kVlayer), wp->bounds(), wp->pitchV());
     make_one_plane(*wires, WirePlaneId(kWlayer), wp->bounds(), wp->pitchW());
-    m_output = output_type (wires);
+    m_output = output_pointer (wires);
     return true;
 }
 

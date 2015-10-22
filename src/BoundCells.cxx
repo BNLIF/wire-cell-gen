@@ -121,7 +121,7 @@ bool is_point_inside_w_lane(const Point& point, const double& w_lane_center, con
 }
 
 
-bool BoundCells::insert(const input_type& wires)
+bool BoundCells::insert(const input_pointer& wires)
 {
     ICell::vector* res_cells = new ICell::vector;
 
@@ -299,7 +299,7 @@ bool BoundCells::insert(const input_type& wires)
         } // v wires
     } // u wires
 
-    m_output = output_type(res_cells);
+    m_output = output_pointer(res_cells);
     return true;
 }
 

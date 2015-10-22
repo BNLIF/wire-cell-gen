@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     cout << "Got WireGenerator IWireGenerator interface @ " << pw_gen << endl;
     Assert(pw_gen->insert(wp_wps));
 
-    IWireGenerator::output_type wires;
+    IWireGenerator::output_pointer wires;
     Assert(pw_gen->extract(wires));
 
     int nwires = wires->size();
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 
     Assert(bc->insert(wires));
 
-    ICellMaker::output_type cells;
+    ICellMaker::output_pointer cells;
     Assert(bc->extract(cells));
     cout << tk("BoundCells generated") << endl;
 
