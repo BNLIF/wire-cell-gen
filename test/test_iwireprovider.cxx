@@ -11,6 +11,7 @@
 #include "WireCellUtil/BoundingBox.h"
 #include "WireCellUtil/Point.h"
 
+#include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
 
 #include "TApplication.h"
@@ -31,9 +32,9 @@ int main(int argc, char* argv[])
     TimeKeeper tk("test wires");
     MemUsage mu("test wires");
 
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
 
-    cout << tk("factories made") << endl;
-    cout << mu("factories made") << endl;
 
     // fixme: this C++ dance to wire up the interfaces may eventually
     // be done inside a workflow engine.

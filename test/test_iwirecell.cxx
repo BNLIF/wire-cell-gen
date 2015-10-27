@@ -10,6 +10,7 @@
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/TimeKeeper.h"
 
+#include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
 
 #include "TApplication.h"
@@ -31,7 +32,8 @@ int main(int argc, char* argv[])
 {
     TimeKeeper tk("test cells");
 
-    cout << tk("factories made") << endl;
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
 
     // fixme: this C++ dance to wire up the interfaces may eventually
     // be done inside a workflow engine.
