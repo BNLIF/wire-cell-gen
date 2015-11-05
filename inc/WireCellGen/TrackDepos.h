@@ -31,11 +31,13 @@ namespace WireCell {
 	/// Utility: access entire deposition store.
 	//WireCell::IDepo::shared_vector depositions();
 
+	WireCell::IDepo::vector& depos() { return m_depos; }
+
     private:
 	const double m_stepsize;
 	const double m_clight;
 	WireCell::IDepo::vector m_depos;
-    
+	bool m_eos;
     };
 
 }

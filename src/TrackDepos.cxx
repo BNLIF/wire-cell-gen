@@ -10,6 +10,7 @@ using namespace WireCell;
 TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
+    , m_eos(false)
 {
 }
 
@@ -59,7 +60,11 @@ WireCell::IDepo::pointer TrackDepos::operator()()
 
 bool TrackDepos::extract(output_pointer& out)
 {
+    if (m_eos) { return false; }
+
     out = (*this)();
+
+    if (!out) { m_eos = true; }
     return true;
 }
 
