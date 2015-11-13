@@ -23,10 +23,9 @@ void test1()
     IWireParameters::pointer iwp(params);
 
     WireGenerator wg;
-    Assert(wg.insert(iwp));
-
     IWire::shared_vector wires;
-    Assert(wg.extract(wires));
+    bool ok = wg(iwp, wires);
+    Assert(ok);
     Assert(wires);
 
     cerr << "Got " << wires->size() << " wires" <<endl;
@@ -64,10 +63,9 @@ void test2()
 	params->configure(cfg);
 	IWireParameters::pointer iwp(params);
 	WireGenerator wg;
-	Assert(wg.insert(iwp));
-
 	IWire::shared_vector wires;
-	Assert(wg.extract(wires));
+	bool ok = wg(iwp, wires);
+	Assert(ok);
 	Assert(wires);
 
 	int nwires = wires->size();
@@ -82,10 +80,9 @@ void test3D(bool interactive)
     WireParams* params = new WireParams;
     IWireParameters::pointer iwp(params);
     WireGenerator wg;
-    Assert(wg.insert(iwp));
-
     IWire::shared_vector wires;
-    Assert(wg.extract(wires));
+    bool ok = wg(iwp, wires);
+    Assert(ok);
     Assert(wires);
     AssertMsg(wires->size(), "Got no wires");
 

@@ -32,10 +32,10 @@ int main(int argc, char* argv[])
 {
     IWireParameters::pointer iwp(new WireParams);
     WireGenerator wg;
-    Assert(wg.insert(iwp));
-
     IWire::shared_vector wires;
-    Assert(wg.extract(wires));
+
+    bool ok = wg(iwp, wires);
+    Assert(ok);
     Assert(wires);
     Assert(wires->size());
 
@@ -52,10 +52,9 @@ int main(int argc, char* argv[])
 		make_planeslice(WirePlaneId(kWlayer), the_time)}));
 
 
-    Assert(digitizer.insert(psv));
-
     IChannelSlice::pointer cs;
-    Assert(digitizer.extract(cs));
+    ok = digitizer(psv, cs);
+    Assert(ok);
     Assert(cs);
 
     ChannelCharge cc = cs->charge();
@@ -76,11 +75,12 @@ int main(int argc, char* argv[])
 	cerr << endl;
     }
 
-    Assert(digitizer.insert(nullptr));
-    IChannelSlice::pointer eos;
-    Assert(digitizer.extract(eos));
-    Assert(!eos);
+    // should pass EOS
+    Assert(digitizer(nullptr, cs));
+    Assert(cs);
 
+    // should fail to go past EOS
+    Assert(!digitizer(nullptr, cs));
 
     return 0;
 }

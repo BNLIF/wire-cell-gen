@@ -13,14 +13,8 @@ namespace WireCell {
 	WireSummarizer();
 	virtual ~WireSummarizer();
 
-	virtual bool insert(const input_pointer& in);
-	virtual bool extract(output_pointer& out) {
-	    out = m_output;
-	    return true;
-	}
+	virtual bool operator()(const input_pointer& in, output_pointer& out);
 
-    private:
-	output_pointer m_output;
     };
 
 }

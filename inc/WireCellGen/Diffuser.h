@@ -61,6 +61,7 @@ namespace WireCell {
 	// IConverter interface
 
 	virtual void reset();
+
 	virtual bool insert(const input_pointer& depo);
 	virtual bool extract(output_pointer& diffusion);
 

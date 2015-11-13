@@ -50,6 +50,7 @@ void Diffuser::flush()
     }
     m_output.push_back(nullptr);
 }
+
 bool Diffuser::insert(const input_pointer& depo)
 {
     if (!depo) {

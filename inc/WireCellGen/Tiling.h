@@ -9,10 +9,6 @@ namespace WireCell {
 
 
     /** The reference implementation of WireCell::ITiling.
-     *
-     * This the internal buffering of this processor is of depth 1.
-     * Any newly sunk cells produce a new summary.  The most recent
-     * summary is kept for any subsequent sourcing.
      */
     class Tiling : public ITiling
     {
@@ -20,14 +16,8 @@ namespace WireCell {
 	Tiling();
 	virtual ~Tiling();
 
-	virtual bool insert(const input_pointer& cell_vector);
-	virtual bool extract(output_pointer& cell_summary) {
-	    cell_summary = m_output;
-	    return true;
-	}
+	virtual bool operator()(const input_pointer& cell_vector, output_pointer& cell_summary);
 
-    private:
-	output_pointer m_output;
     };
 
 } // namespace WireCell

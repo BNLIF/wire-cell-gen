@@ -17,15 +17,8 @@ namespace WireCell {
 	BoundCells();
 	virtual ~BoundCells();
 
-	virtual bool insert(const input_pointer& wire_vector);
+	virtual bool operator()(const input_pointer& wires, output_pointer& cells);
 
-	virtual bool extract(output_pointer& cell_vector) {
-	    cell_vector = m_output;
-	    return true;
-	}
-
-    private:
-	output_pointer m_output;
 
     };
 }

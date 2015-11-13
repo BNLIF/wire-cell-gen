@@ -45,19 +45,10 @@ public:
     virtual ChannelCharge charge() const { return m_cc; }
 };
 
-void Digitizer::reset()
-{
-    m_output.clear();
-}
-void Digitizer::flush()
-{
-    m_output.push_back(nullptr);
-    return;			// no input buffer
-}
-bool Digitizer::insert(const input_pointer& plane_slice_vector)
+bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
 {
     if (!plane_slice_vector) {
-	flush();
+	channel_slice = nullptr;
 	return true;
     }
 
@@ -91,17 +82,7 @@ bool Digitizer::insert(const input_pointer& plane_slice_vector)
     }
     // fixme: maybe add check for consistent times between planes....
 
-    IChannelSlice::pointer next(new SimpleChannelSlice(the_time, cc));
-    m_output.push_back(next);
-    return true;
-}
 
-bool Digitizer::extract(output_pointer& channel_slice)
-{
-    if (m_output.empty()) {
-	return false;
-    }
-    channel_slice = m_output.front();
-    m_output.pop_front();
+    channel_slice = IChannelSlice::pointer(new SimpleChannelSlice(the_time, cc));
     return true;
 }

@@ -17,13 +17,13 @@ WireSummarizer::~WireSummarizer()
 {
 }
 
-bool WireSummarizer::insert(const input_pointer& wires)
+bool WireSummarizer::operator()(const input_pointer& wires, output_pointer& ws)
 {
     if (!wires) {
-	m_output = nullptr;
+	ws = nullptr;
 	return true;
     }
-    m_output = output_pointer(new WireSummary(*wires));
+    ws = output_pointer(new WireSummary(*wires));
     return true;
 }
 

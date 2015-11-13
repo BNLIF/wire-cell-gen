@@ -23,13 +23,11 @@ namespace WireCell {
 	 * slice vector but will invalidate any previously sunk wires.
 	 */
         virtual bool set_wires(const IWire::shared_vector& wires);
-	virtual void reset();
-	virtual bool insert(const input_pointer& plane_slice_vector);
-	virtual bool extract(output_pointer& channel_slice);
+
+	virtual bool operator()(const input_pointer& plane_slice_vector,
+				output_pointer& channel_slice);
 
     private:
-	void flush();
-
 	// wires, organized by plane
 	IWire::vector m_wires[3];
 

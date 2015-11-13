@@ -73,10 +73,9 @@ int main(int argc, char *argv[])
 
     IWireParameters::pointer iwp(params);
     WireGenerator wg;
-    Assert(wg.insert(iwp));
-
     IWire::shared_vector wires;
-    Assert(wg.extract(wires));
+    bool ok = wg(iwp, wires);
+    Assert(ok);
     Assert(wires);
 
     IWire::vector u_wires, v_wires, w_wires;
@@ -91,26 +90,23 @@ int main(int argc, char *argv[])
     IWire::vector* uvw_wires[3] = { &u_wires, &v_wires, &w_wires };
 
     WireSummarizer wser;
-    Assert(wser.insert(wires));
-
     WireSummary::pointer ws;
-    Assert(wser.extract(ws));
+    ok = wser(wires, ws);
+    Assert(ok);
     Assert(ws);
 
     BoundCells bc;
-    Assert(bc.insert(wires));
-
     ICell::shared_vector cells;
-    Assert(bc.extract(cells));
+    ok = bc(wires, cells);
+    Assert(ok);
     Assert(cells);
 
     tk("made cells"); mu("made cells");
 
     Tiling til;
-    Assert(til.insert(cells));
-
     ICellSummary::pointer csum;
-    Assert(til.extract(csum));
+    ok = til(cells, csum);
+    Assert(ok);
     Assert(csum);
 
 

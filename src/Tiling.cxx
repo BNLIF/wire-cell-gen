@@ -21,13 +21,13 @@ Tiling::~Tiling()
 {
 }
 
-bool Tiling::insert(const input_pointer& cell_vector)
+bool Tiling::operator()(const input_pointer& cell_vector, output_pointer& cell_summary)
 {
     if (!cell_vector) {
-	m_output = nullptr;
+	cell_summary = nullptr;
 	return true;
     }
-    m_output = output_pointer(new TilingGraph(*cell_vector));
+    cell_summary = output_pointer(new TilingGraph(*cell_vector));
     return true;
 }
 

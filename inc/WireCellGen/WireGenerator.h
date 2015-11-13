@@ -20,15 +20,7 @@ namespace WireCell {
 	WireGenerator();
 	virtual ~WireGenerator();
 
-	virtual bool insert(const input_pointer& in);
-	virtual bool extract(output_pointer& out) {
-	    out = m_output;
-	    return true;
-	}
-
-    private:
-
-	output_pointer m_output;
+	virtual bool operator()(const input_pointer& params, output_pointer& wires);
     };
 
 

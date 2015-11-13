@@ -58,10 +58,10 @@ int main(int argc, char* argv[])
     auto pw_gen = WireCell::Factory::lookup<IWireGenerator>("WireGenerator");
     AssertMsg(pw_gen, "Failed to get IWireGenerator from default WireGenerator");
     cout << "Got WireGenerator IWireGenerator interface @ " << pw_gen << endl;
-    Assert(pw_gen->insert(wp_wps));
 
     IWireGenerator::output_pointer wires;
-    Assert(pw_gen->extract(wires));
+    bool ok = (*pw_gen)(wp_wps, wires);
+    Assert(ok);
 
     int nwires = wires->size();
     cout << "Got " << nwires << " wires" << endl;
@@ -73,10 +73,9 @@ int main(int argc, char* argv[])
     AssertMsg(bc, "Failed to get ICellMaker from default BoundCells");
     cout << "Got BoundCells ICellMaker interface @ " << bc << endl;
 
-    Assert(bc->insert(wires));
-
     ICellMaker::output_pointer cells;
-    Assert(bc->extract(cells));
+    ok = (*bc)(wires, cells);
+    Assert(ok);
     cout << tk("BoundCells generated") << endl;
 
     int ncells = cells->size();
