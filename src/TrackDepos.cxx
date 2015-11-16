@@ -51,14 +51,14 @@ void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
 
 bool TrackDepos::extract(output_pointer& out)
 {
+    if (m_eos) {
+	return false;
+    }
+
     if (m_depos.empty()) {
 	m_eos = true;
 	out = nullptr;
 	return true;
-    }
-
-    if (m_eos) {
-	return false;
     }
 
     out = m_depos.back();
