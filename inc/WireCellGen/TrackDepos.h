@@ -22,14 +22,8 @@ namespace WireCell {
 	/// deposition.
 	void add_track(double time, const WireCell::Ray& ray, double dedx=-1.0);
 
-	/// Pop the next available deposition in time-order.
-	WireCell::IDepo::pointer operator()();
-
 	/// ISource
 	bool extract(output_pointer& out);
-
-	/// Utility: access entire deposition store.
-	//WireCell::IDepo::shared_vector depositions();
 
 	WireCell::IDepo::vector& depos() { return m_depos; }
 

@@ -48,29 +48,21 @@ void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
     std::sort(m_depos.begin(), m_depos.end(), descending_time);
 }
 
-WireCell::IDepo::pointer TrackDepos::operator()()
-{
-    // fixme: should only return eos once, and then start failing.
-    if (!m_depos.size()) { return nullptr; }
-
-    WireCell::IDepo::pointer p = m_depos.back();
-    m_depos.pop_back();
-    return p;
-}
 
 bool TrackDepos::extract(output_pointer& out)
 {
-    if (m_eos) { return false; }
+    if (m_depos.empty()) {
+	m_eos = true;
+	out = nullptr;
+	return true;
+    }
 
-    out = (*this)();
+    if (m_eos) {
+	return false;
+    }
 
-    if (!out) { m_eos = true; }
+    out = m_depos.back();
+    m_depos.pop_back();
     return true;
 }
-
-
-// std::shared_ptr<WireCell::IDepo::vector> TrackDepos::depositions()
-// {
-//     return m_depos;
-// }
 

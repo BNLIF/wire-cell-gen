@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 
     // should pass EOS
     Assert(digitizer(nullptr, cs));
-    Assert(cs);
+    Assert(!cs);
 
     // should fail to go past EOS
     Assert(!digitizer(nullptr, cs));
