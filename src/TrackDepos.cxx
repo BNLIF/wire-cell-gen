@@ -1,5 +1,6 @@
 #include "WireCellGen/TrackDepos.h"
 #include "WireCellIface/SimpleDepo.h"
+#include "WireCellUtil/NamedFactory.h"
 
 #include "WireCellUtil/Units.h"
 
@@ -7,6 +8,10 @@
 using namespace std;
 using namespace WireCell;
     
+WIRECELL_NAMEDFACTORY_BEGIN(TrackDepos)
+WIRECELL_NAMEDFACTORY_INTERFACE(TrackDepos, IDepoSource);
+WIRECELL_NAMEDFACTORY_END(TrackDepos)
+
 TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
