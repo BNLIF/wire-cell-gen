@@ -15,6 +15,8 @@ WIRECELL_NAMEDFACTORY_INTERFACE(Digitizer, IDigitizer);
 WIRECELL_NAMEDFACTORY_END(Digitizer)
 
 Digitizer::Digitizer()
+    : m_nin(0)
+    , m_nout(0)
 {
 }
 Digitizer::~Digitizer()
@@ -47,14 +49,19 @@ public:
 
 bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
 {
-    if (!plane_slice_vector) {
-	channel_slice = nullptr;
-	return true;
-    }
-
     if (!m_wires[0].size()) {
 	cerr << "Digitizer::insert: no wires" << endl;
 	return false;
+    }
+
+    // need eos processing
+
+    ++m_nin;
+    ++m_nout;
+
+    if (!plane_slice_vector) {
+	channel_slice = nullptr;
+	return true;
     }
 
     WireCell::ChannelCharge cc;
