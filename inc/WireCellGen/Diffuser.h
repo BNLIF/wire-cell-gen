@@ -96,6 +96,8 @@ namespace WireCell {
 				 const Diffuser::bounds_type& bounds);
 
 
+	virtual int nin() { return m_nin; }
+	virtual int nout() { return m_nout; }
 
     private:
 	void flush();
@@ -115,6 +117,7 @@ namespace WireCell {
 	IDiffusionSet m_input;	// to allow for proper output ordering
 	std::deque<IDiffusion::pointer> m_output;
 
+	int m_nin, m_nout;
     };
 
 }

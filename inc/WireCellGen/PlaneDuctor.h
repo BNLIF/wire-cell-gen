@@ -73,6 +73,9 @@ namespace WireCell {
 	int ninput() const { return m_input.size(); }
 	int noutput() const { return m_output.size(); }
 
+	virtual int nin() { return m_nin; }
+	virtual int nout() { return m_nout; }
+
     private:
 	void flush();
 
@@ -84,7 +87,7 @@ namespace WireCell {
 	// internal buffering
 	IDiffusionSet m_input;
 	std::deque<IPlaneSlice::pointer> m_output;
-
+	int m_nin, m_nout;
     };
 
 }

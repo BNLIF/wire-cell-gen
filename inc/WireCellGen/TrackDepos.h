@@ -27,11 +27,14 @@ namespace WireCell {
 
 	WireCell::IDepo::vector& depos() { return m_depos; }
 
+	virtual int nout() { return m_nout; }
+
     private:
 	const double m_stepsize;
 	const double m_clight;
 	WireCell::IDepo::vector m_depos;
 	bool m_eos;
+	int m_nout;
     };
 
 }

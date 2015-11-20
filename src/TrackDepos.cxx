@@ -16,6 +16,7 @@ TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
     , m_eos(false)
+    , m_nout(0)
 {
 }
 
@@ -59,6 +60,8 @@ bool TrackDepos::extract(output_pointer& out)
     if (m_eos) {
 	return false;
     }
+
+    ++m_nout;
 
     if (m_depos.empty()) {
 	m_eos = true;

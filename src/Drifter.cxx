@@ -15,6 +15,8 @@ Drifter::Drifter(double location,
     : m_location(location)
     , m_drift_velocity(drift_velocity)
     , m_input(IDepoDriftCompare(drift_velocity))
+    , m_nin(0)
+    , m_nout(0)
 {
 }
 
@@ -42,6 +44,7 @@ void Drifter::flush()
 
 bool Drifter::insert(const input_pointer& depo)
 {
+    ++m_nin;
     if (!depo) {
 	flush();
 	return true;
@@ -65,6 +68,8 @@ bool Drifter::insert(const input_pointer& depo)
     return true;
 }
 
+#include <sstream>
+
 bool Drifter::extract(output_pointer& depo)
 {
     if (m_output.empty()) {
@@ -72,5 +77,16 @@ bool Drifter::extract(output_pointer& depo)
     }
     depo = m_output.front();
     m_output.pop_front();
+
+    // stringstream msg;
+    // if (depo) {
+    // 	msg << "Drifter: @" << depo->time() << " --> " << depo->pos() << "\n";
+    // }
+    // else {
+    // 	msg << "Drifter: EOS\n";
+    // }
+    // cerr << msg.str();
+
+    ++m_nout;
     return true;
 }

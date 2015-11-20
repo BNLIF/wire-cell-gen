@@ -31,6 +31,8 @@ Diffuser::Diffuser(const Ray& pitch,
     , m_drift_velocity(drift_velocity)
     , m_max_sigma_l(max_sigma_l)
     , m_nsigma(nsigma)
+    , m_nin(0)
+    , m_nout(0)
 {
 }
 
@@ -53,6 +55,8 @@ void Diffuser::flush()
 
 bool Diffuser::insert(const input_pointer& depo)
 {
+    ++m_nin;
+
     if (!depo) {
 	flush();
 	return true;
@@ -97,6 +101,7 @@ bool Diffuser::extract(output_pointer& diffusion)
     }
     diffusion = m_output.front();
     m_output.pop_front();
+    ++m_nout;
     return true;
 }
 

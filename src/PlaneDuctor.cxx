@@ -21,6 +21,8 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_tbin(tbin)
     , m_lpos(lpos0)
     , m_tpos0(tpos0)
+    , m_nin(0)
+    , m_nout(0)
 {
     cerr << "PlaneDuctor(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
 }
@@ -49,6 +51,7 @@ void PlaneDuctor::flush()
 
 bool PlaneDuctor::insert(const input_pointer& diff) 
 {
+    ++m_nin;
     if (!diff) {
 	flush();
 	return true;
@@ -83,6 +86,7 @@ bool PlaneDuctor::extract(output_pointer& plane_slice)
     }
     plane_slice = m_output.front();
     m_output.pop_front();
+    ++m_nout;
     return true;
 }
 
