@@ -88,6 +88,7 @@ namespace WireCell {
 	IDiffusionSet m_input;
 	std::deque<IPlaneSlice::pointer> m_output;
 	int m_nin, m_nout;
+	bool m_eos;
     };
 
 }

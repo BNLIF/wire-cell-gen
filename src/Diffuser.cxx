@@ -33,6 +33,7 @@ Diffuser::Diffuser(const Ray& pitch,
     , m_nsigma(nsigma)
     , m_nin(0)
     , m_nout(0)
+    , m_eos(false)
 {
 }
 
@@ -55,10 +56,14 @@ void Diffuser::flush()
 
 bool Diffuser::insert(const input_pointer& depo)
 {
+    if (m_eos) {
+	return false;
+    }
     ++m_nin;
 
     if (!depo) {
 	flush();
+	m_eos = true;
 	return true;
     }
 

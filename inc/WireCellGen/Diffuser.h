@@ -118,6 +118,7 @@ namespace WireCell {
 	std::deque<IDiffusion::pointer> m_output;
 
 	int m_nin, m_nout;
+	bool m_eos;
     };
 
 }

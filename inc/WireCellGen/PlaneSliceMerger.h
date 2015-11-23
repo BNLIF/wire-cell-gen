@@ -25,6 +25,7 @@ namespace WireCell {
 	output_queue m_output;
 
 	int m_nin, m_nout;
+	bool m_eos;
     };
 }
 

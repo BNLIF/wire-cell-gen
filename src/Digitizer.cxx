@@ -17,6 +17,7 @@ WIRECELL_NAMEDFACTORY_END(Digitizer)
 Digitizer::Digitizer()
     : m_nin(0)
     , m_nout(0)
+    , m_eos(false)
 {
 }
 Digitizer::~Digitizer()
@@ -53,6 +54,9 @@ bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_point
 	cerr << "Digitizer::insert: no wires" << endl;
 	return false;
     }
+    if (m_eos) {
+	return false;
+    }
 
     // need eos processing
 
@@ -61,6 +65,7 @@ bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_point
 
     if (!plane_slice_vector) {
 	channel_slice = nullptr;
+	m_eos = true;
 	return true;
     }
 

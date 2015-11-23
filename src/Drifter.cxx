@@ -17,6 +17,7 @@ Drifter::Drifter(double location,
     , m_input(IDepoDriftCompare(drift_velocity))
     , m_nin(0)
     , m_nout(0)
+    , m_eos(false)
 {
 }
 
@@ -44,9 +45,14 @@ void Drifter::flush()
 
 bool Drifter::insert(const input_pointer& depo)
 {
+    if (m_eos) {
+	return false;
+    }
+
     ++m_nin;
     if (!depo) {
 	flush();
+	m_eos = true;
 	return true;
     }
 

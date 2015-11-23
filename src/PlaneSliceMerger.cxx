@@ -2,6 +2,7 @@
 #include "WireCellUtil/Units.h"
 
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 using namespace WireCell;
@@ -10,10 +11,12 @@ PlaneSliceMerger::PlaneSliceMerger()
     : m_input(3)
     , m_nin(0)
     , m_nout(0)
+    , m_eos(false)
 {
 }
 bool PlaneSliceMerger::insert(const input_pointer& in, int port)
 {
+    if (m_eos) { return false; }
     if (port < 0 || port >= 3) { return false; }
     ++m_nin;
 
@@ -38,22 +41,44 @@ bool PlaneSliceMerger::insert(const input_pointer& in, int port)
 	if (n_eos == 3) {
 	    delete psv;
 	    m_output.push_back(nullptr);
+	    m_eos = true;
 	    return true;
 	}
 
 	if (n_eos > 0) {
-	    cerr << "PlaneSliceMerger: EOS out of sync!\n";
-	    return true;
+	    stringstream msg;
+	    msg << "PlaneSliceMerger: EOS out of sync! #eos=" << n_eos << "\n";
+	    string uvw="UVW";
+	    for (int ind=0; ind<3; ++ind) {
+		if (psv->at(ind)) {
+		    msg << "\t:have "<<uvw[ind]<<"\n";
+		}
+		else {
+		    msg << "\t:miss "<<uvw[ind]<<"\n";
+		}
+	    }
+	    cerr << msg.str();
+	    m_eos = true;
+	    return true;	// fixme: this is ditching data!
 	}
 
 	if (std::abs(psv->at(0)->time() - psv->at(1)->time()) > units::nanosecond ||
 	    std::abs(psv->at(0)->time() - psv->at(2)->time()) > units::nanosecond)
 	{
-	    cerr << "PlaneSliceMerger: out of sync! "
+	    stringstream msg;
+	    msg << "PlaneSliceMerger: out of sync! "
 		 << "\tU plane @ " << psv->at(0)->time() << "\n"
 		 << "\tV plane @ " << psv->at(1)->time() << "\n"
 		 << "\tW plane @ " << psv->at(2)->time() << "\n";
+	    cerr << msg.str();
 	}
+
+	// stringstream msg;
+	// msg << "PlaneSliceMerger: "
+	//      << "U plane @ " << psv->at(0)->time() << ", "
+	//      << "V plane @ " << psv->at(1)->time() << ", "
+	//      << "W plane @ " << psv->at(2)->time() << "\n";
+	// cerr << msg.str();
 
 	m_output.push_back(IPlaneSlice::shared_vector(psv));
     }

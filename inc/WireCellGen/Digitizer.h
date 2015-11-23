@@ -38,6 +38,7 @@ namespace WireCell {
 	std::deque<output_pointer> m_output;
 
     	int m_nin, m_nout;
+	bool m_eos;
     };
 
 }

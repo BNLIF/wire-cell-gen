@@ -47,6 +47,7 @@ namespace WireCell {
 	double proper_time(IDepo::pointer depo);
 
 	int m_nin, m_nout;
+	bool m_eos;
     };
 
 

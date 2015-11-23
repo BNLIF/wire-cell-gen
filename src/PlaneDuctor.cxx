@@ -5,6 +5,7 @@
 
 
 #include <iostream>
+#include <sstream>
 using namespace std;		// debugging
 using namespace WireCell;
 
@@ -23,6 +24,7 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_tpos0(tpos0)
     , m_nin(0)
     , m_nout(0)
+    , m_eos(false)
 {
     cerr << "PlaneDuctor(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
 }
@@ -51,15 +53,25 @@ void PlaneDuctor::flush()
 
 bool PlaneDuctor::insert(const input_pointer& diff) 
 {
+    if (m_eos) {
+	return false;
+    }
+
     ++m_nin;
     if (!diff) {
 	flush();
+	m_eos = true;
+	// stringstream msg;
+	// msg << "PlaneDuctor: EOS for " << m_wpid.layer() << " after " << m_nin << " inputs, " << m_nout << " outputs, " << 
+	// cerr << msg.str();
 	return true;
     }
 
-    // cerr << m_wpid.ident() << " " << diff.get() << "\tinsert at t="
-    // 	 << m_lpos << " diff: [" << diff->lbegin() << " --> "
-    // 	 << diff->lend() << "]" << endl;
+    // stringstream msg;
+    // msg << m_wpid.ident() << " " << diff.get() << "\tinsert at t="
+    // 	<< m_lpos << " diff: [" << diff->lbegin() << " --> "
+    // 	<< diff->lend() << "]\n";
+    // cerr << msg.str();
     m_input.insert(diff);
     while (true) {
 	purge_bygone();
@@ -87,6 +99,17 @@ bool PlaneDuctor::extract(output_pointer& plane_slice)
     plane_slice = m_output.front();
     m_output.pop_front();
     ++m_nout;
+
+    // stringstream msg;
+    // msg << "PlaneDuctor: " << m_wpid.layer() << "\t#" << m_nout;
+    // if (plane_slice) {
+    // 	msg << " @ " << plane_slice->time() << "\n";
+    // }
+    // else {
+    // 	msg << " @ EOS\n";
+    // }
+    // cerr << msg.str();
+	
     return true;
 }
 
@@ -107,7 +130,7 @@ void PlaneDuctor::purge_bygone()
     }
 
     for (auto diff : to_kill) {
-	// cerr << m_wpid.ident() << " " << diff.get()
+	// cerr << m_wpid.layer() << " " << diff.get()
 	//      << "\tpurge lpos=" << m_lpos
 	//      << " diff=[" << diff->lbegin() << " --> " << diff->lend() << "]@" << diff->lbin() << "*" << diff->lsize()
 	//      << endl;
