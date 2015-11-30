@@ -15,7 +15,7 @@ namespace WireCell {
 	virtual bool insert(const input_pointer& in, int port);
 	virtual bool extract(output_pointer& out);
 
-	virtual int nin() { return m_nin; }
+	virtual int nin() { return m_nin[0]+m_nin[1]+m_nin[2]; }
 	virtual int nout() { return m_nout; }
 
     private:
@@ -24,7 +24,7 @@ namespace WireCell {
 	std::vector< input_queue > m_input;
 	output_queue m_output;
 
-	int m_nin, m_nout;
+	int m_nin[3], m_nout;
 	bool m_eos;
     };
 }

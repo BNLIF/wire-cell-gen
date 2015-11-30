@@ -27,8 +27,8 @@ namespace WireCell {
 	virtual bool operator()(const input_pointer& plane_slice_vector,
 				output_pointer& channel_slice);
 
-	virtual int nin() { return m_nin; }
-	virtual int nout() { return m_nout; }
+	virtual int nin() { return m_count; }
+	virtual int nout() { return m_count; }
 
     private:
 	// wires, organized by plane
@@ -37,8 +37,7 @@ namespace WireCell {
 	// no input buffering
 	std::deque<output_pointer> m_output;
 
-    	int m_nin, m_nout;
-	bool m_eos;
+    	int m_count;
     };
 
 }

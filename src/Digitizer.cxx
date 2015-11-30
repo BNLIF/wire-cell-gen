@@ -6,6 +6,7 @@
 
 
 #include <iostream>		// debugging
+#include <sstream>		// debugging
 using namespace std;
 using namespace WireCell;
 
@@ -15,9 +16,7 @@ WIRECELL_NAMEDFACTORY_INTERFACE(Digitizer, IDigitizer);
 WIRECELL_NAMEDFACTORY_END(Digitizer)
 
 Digitizer::Digitizer()
-    : m_nin(0)
-    , m_nout(0)
-    , m_eos(false)
+    : m_count(0)
 {
 }
 Digitizer::~Digitizer()
@@ -50,27 +49,24 @@ public:
 
 bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
 {
+    ++m_count;
+
+    channel_slice = nullptr;
     if (!m_wires[0].size()) {
-	cerr << "Digitizer::insert: no wires" << endl;
+	cerr << "Digitizer: no wires after " << m_count << endl;
 	return false;
     }
-    if (m_eos) {
-	return false;
-    }
-
-    // need eos processing
-
-    ++m_nin;
-    ++m_nout;
 
     if (!plane_slice_vector) {
-	channel_slice = nullptr;
-	m_eos = true;
+	cerr << "Digitizer: nullptr at " << m_count << endl;
 	return true;
     }
 
     WireCell::ChannelCharge cc;
     double the_time = -1;
+
+    stringstream msg;
+    msg << "Digitizer: " << m_count << " t=" << plane_slice_vector->at(0)->time()<< "\n";
 
     int nplanes = plane_slice_vector->size();
     for (int iplane = 0; iplane < nplanes; ++iplane) {
@@ -83,16 +79,21 @@ bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_point
 	IWire::vector& wires = m_wires[wpid.index()];
 	the_time = ps->time();
 
+	double qtot = 0.0;
 	for (auto wcr : ps->charge_runs()) {
 	    int index = wcr.first;
 	    for (auto q : wcr.second) {
 		IWire::pointer wire = wires[index];
 		cc[wire->channel()] += Quantity(q, sqrt(q));
 		++index;
+		qtot += q;
 	    }
 	}
+	msg << "\t" << iplane << " q=" << qtot << " @ t=" << the_time << "\n";
     }
     // fixme: maybe add check for consistent times between planes....
+
+    cerr << msg.str();
 
 
     channel_slice = IChannelSlice::pointer(new SimpleChannelSlice(the_time, cc));

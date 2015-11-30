@@ -9,18 +9,29 @@ using namespace WireCell;
 
 PlaneSliceMerger::PlaneSliceMerger()
     : m_input(3)
-    , m_nin(0)
     , m_nout(0)
     , m_eos(false)
 {
+    m_nin[0] = m_nin[1] = m_nin[2] = 0;
 }
 bool PlaneSliceMerger::insert(const input_pointer& in, int port)
 {
     if (m_eos) { return false; }
     if (port < 0 || port >= 3) { return false; }
-    ++m_nin;
+    ++m_nin[port];
 
     m_input[port].push_back(in);
+    {
+	stringstream msg;
+	msg << "PlaneSliceMerger: " << m_nin[port] << "[" << port << "]\tinsert ";
+	if (in) {
+	    msg << "at " << in->time() << "\n";
+	}
+	else {
+	    msg << "@ EOS\n";
+	}
+	cerr << msg.str();
+    }
 
     while (true) {
 	for (int ind = 0; ind < 3; ++ind) {
@@ -51,7 +62,7 @@ bool PlaneSliceMerger::insert(const input_pointer& in, int port)
 	    string uvw="UVW";
 	    for (int ind=0; ind<3; ++ind) {
 		if (psv->at(ind)) {
-		    msg << "\t:have "<<uvw[ind]<<"\n";
+		    msg << "\t:have "<<uvw[ind]<<" at t=" << psv->at(ind)->time() << "\n";
 		}
 		else {
 		    msg << "\t:miss "<<uvw[ind]<<"\n";
@@ -59,6 +70,7 @@ bool PlaneSliceMerger::insert(const input_pointer& in, int port)
 	    }
 	    cerr << msg.str();
 	    m_eos = true;
+	    m_output.push_back(nullptr);
 	    return true;	// fixme: this is ditching data!
 	}
 
@@ -73,13 +85,6 @@ bool PlaneSliceMerger::insert(const input_pointer& in, int port)
 	    cerr << msg.str();
 	}
 
-	// stringstream msg;
-	// msg << "PlaneSliceMerger: "
-	//      << "U plane @ " << psv->at(0)->time() << ", "
-	//      << "V plane @ " << psv->at(1)->time() << ", "
-	//      << "W plane @ " << psv->at(2)->time() << "\n";
-	// cerr << msg.str();
-
 	m_output.push_back(IPlaneSlice::shared_vector(psv));
     }
 
@@ -93,5 +98,20 @@ bool PlaneSliceMerger::extract(output_pointer& out)
     out = m_output.front();
     m_output.pop_front();
     ++m_nout;
+    {
+	stringstream msg;
+	msg << "PlaneSliceMerger: " << m_nout << "\textract";
+	if (out) {
+	    msg << " planes @ "
+		<< out->at(0)->time() << ", "
+		<< out->at(1)->time() << ", "
+		<< out->at(2)->time() << "\n";
+	}
+	else {
+	    msg << " @ EOS\n";
+	}
+	cerr << msg.str();
+    }
+
     return true;
 }

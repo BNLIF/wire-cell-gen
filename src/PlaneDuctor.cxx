@@ -61,17 +61,17 @@ bool PlaneDuctor::insert(const input_pointer& diff)
     if (!diff) {
 	flush();
 	m_eos = true;
-	// stringstream msg;
-	// msg << "PlaneDuctor: EOS for " << m_wpid.layer() << " after " << m_nin << " inputs, " << m_nout << " outputs, " << 
-	// cerr << msg.str();
+	stringstream msg;
+	msg << "PlaneDuctor: EOS for " << m_wpid.layer() << " after " << m_nin << " inputs, " << m_nout << " outputs, " << 
+	cerr << msg.str();
 	return true;
     }
 
-    // stringstream msg;
-    // msg << m_wpid.ident() << " " << diff.get() << "\tinsert at t="
-    // 	<< m_lpos << " diff: [" << diff->lbegin() << " --> "
-    // 	<< diff->lend() << "]\n";
-    // cerr << msg.str();
+    stringstream msg;
+    msg << "PlaneDuctor: " << m_wpid.layer() << " " << m_nin << "\tinsert at t="
+    	<< m_lpos << "+"<<m_lbin << " diff: [" << diff->lbegin() << " --> "
+    	<< diff->lend() << "]\n";
+    cerr << msg.str();
     m_input.insert(diff);
     while (true) {
 	purge_bygone();
@@ -100,15 +100,15 @@ bool PlaneDuctor::extract(output_pointer& plane_slice)
     m_output.pop_front();
     ++m_nout;
 
-    // stringstream msg;
-    // msg << "PlaneDuctor: " << m_wpid.layer() << "\t#" << m_nout;
-    // if (plane_slice) {
-    // 	msg << " @ " << plane_slice->time() << "\n";
-    // }
-    // else {
-    // 	msg << " @ EOS\n";
-    // }
-    // cerr << msg.str();
+    stringstream msg;
+    msg << "PlaneDuctor: " << m_wpid.layer() << " " << m_nout << "\textract ";
+    if (plane_slice) {
+    	msg << "at t=" << plane_slice->time() << "+" << m_lbin << "\n";
+    }
+    else {
+    	msg << "@ EOS\n";
+    }
+    cerr << msg.str();
 	
     return true;
 }
