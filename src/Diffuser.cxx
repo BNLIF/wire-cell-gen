@@ -31,8 +31,6 @@ Diffuser::Diffuser(const Ray& pitch,
     , m_drift_velocity(drift_velocity)
     , m_max_sigma_l(max_sigma_l)
     , m_nsigma(nsigma)
-    , m_nin(0)
-    , m_nout(0)
     , m_eos(false)
 {
 }
@@ -44,25 +42,18 @@ Diffuser::~Diffuser()
 void Diffuser::reset()
 {
     m_input.clear();
-    m_output.clear();
-}
-void Diffuser::flush()
-{
-    for (auto diff : m_input) {
-	m_output.push_back(diff);
-    }
-    m_output.push_back(nullptr);
 }
 
-bool Diffuser::insert(const input_pointer& depo)
+bool Diffuser::operator()(const input_pointer& depo, output_queue& outq)
 {
     if (m_eos) {
 	return false;
     }
-    ++m_nin;
-
-    if (!depo) {
-	flush();
+    if (!depo) {		// EOS flush
+	for (auto diff : m_input) {
+	    outq.push_back(diff);
+	}
+	outq.push_back(nullptr);
 	m_eos = true;
 	return true;
     }
@@ -81,11 +72,7 @@ bool Diffuser::insert(const input_pointer& depo)
     IDiffusion::pointer diff = this->diffuse(m_time_offset + depo->time(), pitch_distance,
 					     sigmaL, sigmaT, depo->charge(), depo);
     m_input.insert(diff);
-    return true;
-}
 
-bool Diffuser::extract(output_pointer& diffusion)
-{
     while (m_input.size() > 2) {
 	auto first = *m_input.begin();
 	auto last = *m_input.rbegin();
@@ -97,16 +84,10 @@ bool Diffuser::extract(output_pointer& diffusion)
 	// now we are guaranteed no newly added diffusion can have a
 	// leading edge long enough to surpass that of the current
 	// leader.
-	m_output.push_back(first);
+	outq.push_back(first);
 	m_input.erase(first);
     }
-	
-    if (m_output.empty()) {
-	return false;
-    }
-    diffusion = m_output.front();
-    m_output.pop_front();
-    ++m_nout;
+
     return true;
 }
 

@@ -16,7 +16,6 @@ WIRECELL_NAMEDFACTORY_INTERFACE(Digitizer, IDigitizer);
 WIRECELL_NAMEDFACTORY_END(Digitizer)
 
 Digitizer::Digitizer()
-    : m_count(0)
 {
 }
 Digitizer::~Digitizer()
@@ -49,16 +48,14 @@ public:
 
 bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
 {
-    ++m_count;
-
     channel_slice = nullptr;
     if (!m_wires[0].size()) {
-	cerr << "Digitizer: no wires after " << m_count << endl;
+	cerr << "Digitizer: no wires\n";
 	return false;
     }
 
     if (!plane_slice_vector) {
-	cerr << "Digitizer: nullptr at " << m_count << endl;
+	cerr << "Digitizer: nullptr\n";
 	return true;
     }
 
@@ -66,13 +63,13 @@ bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_point
     double the_time = -1;
 
     stringstream msg;
-    msg << "Digitizer: " << m_count << " t=" << plane_slice_vector->at(0)->time()<< "\n";
+    msg << "Digitizer: t=" << plane_slice_vector->at(0)->time()<< "\n";
 
     int nplanes = plane_slice_vector->size();
     for (int iplane = 0; iplane < nplanes; ++iplane) {
 	IPlaneSlice::pointer ps = plane_slice_vector->at(iplane);
 	if (!ps) {
-	    //cerr << "Digitizer::insert: ignoring null PlaneSlice" << endl;
+	    //cerr << "Digitizer: ignoring null PlaneSlice" << endl;
 	    continue;
 	}
 	WirePlaneId wpid = ps->planeid();

@@ -17,19 +17,16 @@ namespace WireCell {
 	virtual ~Framer();
 
 	virtual void reset();
-	virtual bool insert(const input_pointer& in);
-	virtual bool extract(output_pointer& out);
+	virtual bool operator()(const input_pointer& in, output_queue& outq);
 
     private:
-	void flush();
 
 	std::deque<input_pointer> m_input;
-	std::deque<output_pointer> m_output;
 
 	int m_nticks;
 	int m_count;
 
-	void process(bool flush = false);
+	void process(output_queue& outq, bool flush = false);
 
     };
 }

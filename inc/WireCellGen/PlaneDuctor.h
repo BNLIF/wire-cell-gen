@@ -53,8 +53,7 @@ namespace WireCell {
 	virtual ~PlaneDuctor();
 
 	virtual void reset();
-	virtual bool insert(const input_pointer& diffusion);
-	virtual bool extract(output_pointer& plane_slice);
+	virtual bool operator()(const input_pointer& diffusion, output_queue& outq);
 
 
 	// internal
@@ -64,20 +63,12 @@ namespace WireCell {
 	// produce a plane slice from all diffusions that overlap "now"
 	IPlaneSlice::pointer latch_hits();
 	// purge + latch
-	void latch_one();
+	void latch_one(output_queue& outq);
 	// return true if we have not buffered enough to assure we see
 	// all diffusion patches for the current "now" time.
 	bool starved();
 
-	// debugging
-	int ninput() const { return m_input.size(); }
-	int noutput() const { return m_output.size(); }
-
-	virtual int nin() { return m_nin; }
-	virtual int nout() { return m_nout; }
-
     private:
-	void flush();
 
 	WirePlaneId m_wpid;
 	int m_nwires;
@@ -86,8 +77,6 @@ namespace WireCell {
 
 	// internal buffering
 	IDiffusionSet m_input;
-	std::deque<IPlaneSlice::pointer> m_output;
-	int m_nin, m_nout;
 	bool m_eos;
     };
 

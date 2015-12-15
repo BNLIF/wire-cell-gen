@@ -16,7 +16,6 @@ TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
     , m_eos(false)
-    , m_nout(0)
 {
 }
 
@@ -55,13 +54,11 @@ void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
 }
 
 
-bool TrackDepos::extract(output_pointer& out)
+bool TrackDepos::operator()(output_pointer& out)
 {
     if (m_eos) {
 	return false;
     }
-
-    ++m_nout;
 
     if (m_depos.empty()) {
 	m_eos = true;

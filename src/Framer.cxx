@@ -33,29 +33,22 @@ Framer::~Framer()
 void Framer::reset()
 {
     m_input.clear();
-    m_output.clear();
 }
 
-void Framer::flush()
+bool Framer::operator()(const input_pointer& channel_slice, output_queue& outq)
 {
-    process(true);
-    m_output.push_back(nullptr);
-
-}
-
-bool Framer::insert(const input_pointer& channel_slice)
-{
-    if (!channel_slice) {
-	flush();
+    if (!channel_slice) { // EOS flush
+	process(outq, true);
+	outq.push_back(nullptr);
 	return true;
     }
 
     m_input.push_back(channel_slice);
-    process(false);
+    process(outq, false);
     return true;
 }
 
-void Framer::process(bool flush)
+void Framer::process(output_queue& outq, bool flush)
 {
     // make as many frames as we can, including final drain
     while (m_input.size() && (flush || m_input.size() >= m_nticks)) {
@@ -95,17 +88,7 @@ void Framer::process(bool flush)
 	    traces.push_back(ITrace::pointer(trace));
 	}
 	IFrame::pointer newframe(new SimpleFrame(m_count++, time, traces));
-	m_output.push_back(newframe);
+	outq.push_back(newframe);
     }
-}
-
-bool Framer::extract(output_pointer& frame)
-{
-    if (m_output.empty()) {
-	return false;
-    }
-    frame = m_output.front();
-    m_output.pop_front();
-    return true;
 }
 

@@ -5,9 +5,9 @@
 #include "WireCellUtil/Units.h"
 
 namespace WireCell {
-/// A producer of depositions created from some number of simple, linear tracks.
-    class TrackDepos 
-	: public IDepoSource
+
+    /// A producer of depositions created from some number of simple, linear tracks.
+    class TrackDepos : public IDepoSource
     {
     public:    
 	/// Create tracks with depositions every stepsize and assumed
@@ -22,19 +22,16 @@ namespace WireCell {
 	/// deposition.
 	void add_track(double time, const WireCell::Ray& ray, double dedx=-1.0);
 
-	/// ISource
-	bool extract(output_pointer& out);
+	/// ISourceNode
+	bool operator()(output_pointer& out);
 
 	WireCell::IDepo::vector& depos() { return m_depos; }
-
-	virtual int nout() { return m_nout; }
 
     private:
 	const double m_stepsize;
 	const double m_clight;
 	WireCell::IDepo::vector m_depos;
 	bool m_eos;
-	int m_nout;
     };
 
 }

@@ -27,17 +27,9 @@ namespace WireCell {
 	virtual bool operator()(const input_pointer& plane_slice_vector,
 				output_pointer& channel_slice);
 
-	virtual int nin() { return m_count; }
-	virtual int nout() { return m_count; }
-
     private:
 	// wires, organized by plane
 	IWire::vector m_wires[3];
-
-	// no input buffering
-	std::deque<output_pointer> m_output;
-
-    	int m_count;
     };
 
 }

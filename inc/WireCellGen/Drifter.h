@@ -23,17 +23,9 @@ namespace WireCell {
 
 	/// WireCell::IDrifter interface.
 	virtual void reset();
-	virtual bool insert(const input_pointer& depo);
-	virtual bool extract(output_pointer& depo);
-
-	int ninput() const { return m_input.size(); }
-	int noutput() const { return m_output.size(); }
-
-	virtual int nin() { return m_nin; }
-	virtual int nout() { return m_nout; }
+	virtual bool operator()(const input_pointer& depo, output_queue& outq);
 
     private:
-	void flush();
 
 	double m_location, m_drift_velocity;
 	bool m_eoi;		// end of input
@@ -41,12 +33,8 @@ namespace WireCell {
 	// Input buffer sorted by proper time
 	DepoTauSortedSet m_input;
 
-	// Output buffer of depos safe to remove from input
-	std::deque<IDepo::pointer> m_output;
-
 	double proper_time(IDepo::pointer depo);
 
-	int m_nin, m_nout;
 	bool m_eos;
     };
 

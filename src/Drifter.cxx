@@ -15,8 +15,6 @@ Drifter::Drifter(double location,
     : m_location(location)
     , m_drift_velocity(drift_velocity)
     , m_input(IDepoDriftCompare(drift_velocity))
-    , m_nin(0)
-    , m_nout(0)
     , m_eos(false)
 {
 }
@@ -29,29 +27,23 @@ double Drifter::proper_time(IDepo::pointer depo)
 void Drifter::reset()
 {
     m_input.clear();
-    m_output.clear();
 }
 
-void Drifter::flush()
-{
-    while (!m_input.empty()) {	
-	IDepo::pointer top = *m_input.begin();
-	m_input.erase(top);
-	IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
-	m_output.push_back(ret);
-    }
-    m_output.push_back(nullptr);
-}
-
-bool Drifter::insert(const input_pointer& depo)
+bool Drifter::operator()(const input_pointer& depo, output_queue& outq)
 {
     if (m_eos) {
 	return false;
     }
 
-    ++m_nin;
-    if (!depo) {
-	flush();
+    if (!depo) {		// EOS flush
+	while (!m_input.empty()) {	
+	    IDepo::pointer top = *m_input.begin();
+	    m_input.erase(top);
+	    IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
+	    outq.push_back(ret);
+	}
+	outq.push_back(nullptr);
+
 	m_eos = true;
 	return true;
     }
@@ -69,30 +61,8 @@ bool Drifter::insert(const input_pointer& depo)
 
 	IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
 	m_input.erase(top);
-	m_output.push_back(ret);
+	outq.push_back(ret);
     }
     return true;
 }
 
-#include <sstream>
-
-bool Drifter::extract(output_pointer& depo)
-{
-    if (m_output.empty()) {
-	return false;
-    }
-    depo = m_output.front();
-    m_output.pop_front();
-
-    // stringstream msg;
-    // if (depo) {
-    // 	msg << "Drifter: @" << depo->time() << " --> " << depo->pos() << "\n";
-    // }
-    // else {
-    // 	msg << "Drifter: EOS\n";
-    // }
-    // cerr << msg.str();
-
-    ++m_nout;
-    return true;
-}

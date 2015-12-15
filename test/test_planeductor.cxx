@@ -97,8 +97,9 @@ int main(int argc, char* argv[])
     const int nwires = tpos0/tbin + ntrans;
     PlaneDuctor pd(wpid, nwires, lbin, tbin); // start at lpos=tpos=0.0.
 
-    Assert(pd.insert(idiff));
-    Assert(pd.insert(nullptr));	// EOS
+    IPlaneDuctor::output_queue psq;
+    Assert(pd(idiff, psq));
+    Assert(pd(nullptr, psq));	// EOS flush
 
     TH2F* pshist = new TH2F("ps","PlaneSlices vs Time",
 			    100, 0, 100,
@@ -109,9 +110,7 @@ int main(int argc, char* argv[])
     double now = 0.0;
     int nslices = 0;
     int time_index = 0;
-    while (true) {
-	PlaneDuctor::output_pointer ps;
-	Assert(pd.extract(ps));
+    for (auto ps : psq) {
 	if (!ps) {
 	    cerr << "Reached EOS from plane ductor" << endl;
 	    break;

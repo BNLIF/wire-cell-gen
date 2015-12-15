@@ -38,7 +38,7 @@ IDepo::shared_vector get_depos()
     IDepo::vector* ret = new IDepo::vector;
     while (true) {
 	IDepo::pointer depo;
-	Assert(td.extract(depo));
+	Assert(td(depo));
 	if (!depo) {
 	    break;
 	}
@@ -92,25 +92,25 @@ void test_feed()
 
 IDepo::vector test_drifted()
 {
-    IDepo::vector activity(*get_depos()), result;
+    IDepo::vector result, activity(*get_depos());
+    activity.push_back(nullptr); // EOS
 
     WireCell::Drifter drifter;
     int count = 0;
 
-    for (auto depo : activity) {
-	bool accepted_depo = drifter.insert(depo);
-	Assert(accepted_depo);
-    }
-    Assert(drifter.insert(nullptr)); // flush with EOS
-
-    while (true) {
-	WireCell::IDepo::pointer depo;
-	Assert(drifter.extract(depo)); // should be eos-flushed
-	if (!depo) {
-	    break;		// EOS
+    WireCell::IDrifter::output_queue outq;
+    for (auto in : activity) {
+	bool ok = drifter(in, outq);
+	Assert(ok);
+	for (auto d : outq) {
+	    result.push_back(d);
 	}
-	result.push_back(depo);
-	WireCell::IDepo::vector vec = depo_chain(depo);
+    }
+    Assert(!result.back());
+
+    for (auto out : result) {
+	if (!out) { break; }
+	WireCell::IDepo::vector vec = depo_chain(out);
 	AssertMsg(vec.size() > 1, "The history of the drifted deposition is truncated.");
     }
 

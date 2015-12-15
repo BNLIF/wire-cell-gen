@@ -58,12 +58,10 @@ namespace WireCell {
 
 	virtual ~Diffuser();
 	
-	// IConverter interface
-
 	virtual void reset();
 
-	virtual bool insert(const input_pointer& depo);
-	virtual bool extract(output_pointer& diffusion);
+	// IQueuedoutNode.
+	virtual bool operator()(const input_pointer& depo, output_queue& outq);
 
 	/** Diffuse a point charge.
 	 *
@@ -96,11 +94,7 @@ namespace WireCell {
 				 const Diffuser::bounds_type& bounds);
 
 
-	virtual int nin() { return m_nin; }
-	virtual int nout() { return m_nout; }
-
     private:
-	void flush();
 
 	const Point m_pitch_origin;
 	const Vector m_pitch_direction;
@@ -115,9 +109,7 @@ namespace WireCell {
 	const double m_nsigma;
 
 	IDiffusionSet m_input;	// to allow for proper output ordering
-	std::deque<IDiffusion::pointer> m_output;
 
-	int m_nin, m_nout;
 	bool m_eos;
     };
 

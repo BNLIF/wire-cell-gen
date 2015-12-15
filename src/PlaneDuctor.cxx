@@ -22,8 +22,6 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_tbin(tbin)
     , m_lpos(lpos0)
     , m_tpos0(tpos0)
-    , m_nin(0)
-    , m_nout(0)
     , m_eos(false)
 {
     cerr << "PlaneDuctor(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
@@ -36,39 +34,32 @@ PlaneDuctor::~PlaneDuctor()
 void PlaneDuctor::reset()
 {
     m_input.clear();
-    m_output.clear();
 }
 
-void PlaneDuctor::flush() 
-{
-    while (true) {
-	purge_bygone();
-	if (m_input.empty()) {	// don't care if starving here.
-	    break;
-	}	    
-	latch_one();
-    }
-    m_output.push_back(nullptr);
-}
-
-bool PlaneDuctor::insert(const input_pointer& diff) 
+bool PlaneDuctor::operator()(const input_pointer& diff, output_queue& outq)
 {
     if (m_eos) {
 	return false;
     }
 
-    ++m_nin;
-    if (!diff) {
-	flush();
+    if (!diff) {		// flush EOS
+	while (true) {
+	    purge_bygone();
+	    if (m_input.empty()) {	// don't care if starving here.
+		break;
+	    }	    
+	    latch_one(outq);
+	}
+	outq.push_back(nullptr);
 	m_eos = true;
 	stringstream msg;
-	msg << "PlaneDuctor: EOS for " << m_wpid.layer() << " after " << m_nin << " inputs, " << m_nout << " outputs, " << 
+	msg << "PlaneDuctor: EOS for " << m_wpid.layer();
 	cerr << msg.str();
 	return true;
     }
 
     stringstream msg;
-    msg << "PlaneDuctor: " << m_wpid.layer() << " " << m_nin << "\tinsert at t="
+    msg << "PlaneDuctor: " << m_wpid.layer() << " " << "\tinsert at t="
     	<< m_lpos << "+"<<m_lbin << " diff: [" << diff->lbegin() << " --> "
     	<< diff->lend() << "]\n";
     cerr << msg.str();
@@ -78,40 +69,19 @@ bool PlaneDuctor::insert(const input_pointer& diff)
 	if (starved()) {
 	    break;
 	}
-	latch_one();
+	latch_one(outq);
     }
+
     return true;
 }
 
-void PlaneDuctor::latch_one()
+void PlaneDuctor::latch_one(output_queue& outq)
 {
     IPlaneSlice::pointer ps = latch_hits();
-    m_output.push_back(ps);
+    outq.push_back(ps);
     m_lpos += m_lbin;		// on to next.
 }
 
-
-bool PlaneDuctor::extract(output_pointer& plane_slice) 
-{
-    if (m_output.empty()) {
-	return false;
-    }
-    plane_slice = m_output.front();
-    m_output.pop_front();
-    ++m_nout;
-
-    stringstream msg;
-    msg << "PlaneDuctor: " << m_wpid.layer() << " " << m_nout << "\textract ";
-    if (plane_slice) {
-    	msg << "at t=" << plane_slice->time() << "+" << m_lbin << "\n";
-    }
-    else {
-    	msg << "@ EOS\n";
-    }
-    cerr << msg.str();
-	
-    return true;
-}
 
 void PlaneDuctor::purge_bygone()
 {

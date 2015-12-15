@@ -22,11 +22,11 @@ int main()
     const double the_time = 11.0*units::microsecond;
     IChannelSlice::pointer cs(new SimpleChannelSlice(the_time, cc));
 
-    Assert(framer.insert(cs));
-    Assert(framer.insert(nullptr));
+    IFramer::output_queue frameq;
+    Assert(framer(cs,frameq));
+    Assert(frameq.size() == 1);
 
-    IFrame::pointer frame;
-    Assert(framer.extract(frame));
+    IFrame::pointer frame = frameq.front();
     Assert(frame);
 
     Assert(frame->time() == the_time);
@@ -47,9 +47,10 @@ int main()
 	     << endl;
     }
 
-    IFrame::pointer eos;
-    Assert(framer.extract(eos));
+    frameq.clear();
+    Assert(framer(nullptr,frameq));
+    Assert(frameq.size() == 1);
+    IFrame::pointer eos = frameq.front();
     Assert(!eos);
-
     return 0;
 }
