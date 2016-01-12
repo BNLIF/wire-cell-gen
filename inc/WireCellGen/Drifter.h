@@ -2,6 +2,7 @@
 #define WIRECELL_DRIFTER
 
 #include "WireCellIface/IDrifter.h"
+#include "WireCellIface/IConfigurable.h"
 #include "WireCellUtil/Units.h"
 
 #include <deque>
@@ -12,18 +13,22 @@ namespace WireCell {
      * needed and reproduces new depositions drifted to a new
      * location.
      */
-    class Drifter : public IDrifter {
+    class Drifter : public IDrifter, public IConfigurable {
     public:
 	/// Create a drifter that will drift charge to a given
 	/// location at a given drift velocity.
 
-	Drifter(double x_location=0*units::meter,
+	Drifter(double x_location = 0*units::meter,
 		double drift_velocity = 1.6*units::mm/units::microsecond);
 	// fixme: make configureable
 
 	/// WireCell::IDrifter interface.
 	virtual void reset();
 	virtual bool operator()(const input_pointer& depo, output_queue& outq);
+
+	/// WireCell::IConfigurable interface.
+	virtual void configure(const WireCell::Configuration& config);
+	virtual WireCell::Configuration default_configuration() const;
 
     private:
 

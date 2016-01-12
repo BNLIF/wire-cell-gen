@@ -19,6 +19,25 @@ Drifter::Drifter(double location,
 {
 }
 
+void Drifter::configure(const WireCell::Configuration& cfg)
+{
+    m_location = get<double>(cfg, "location_mm", m_location/units::mm)*units::mm;
+    const double mmus = units::mm/units::microsecond;
+    m_drift_velocity = get<double>(cfg, "drift_velocity_mm/us", m_drift_velocity/mmus)*mmus;
+}
+
+WireCell::Configuration Drifter::default_configuration() const
+{
+    std::string json = R"(
+{
+"location_mm":0.0,
+"drift_velocity_mm/us":1.6
+}
+)";
+    return configuration_loads(json, "json");
+}
+
+
 double Drifter::proper_time(IDepo::pointer depo)
 {
     return depo->time() + depo->pos().x()/m_drift_velocity;
