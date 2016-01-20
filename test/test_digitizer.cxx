@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     WireSummary ws(*wires);
 
     Digitizer digitizer;
-    digitizer.set_wires(wires);
+    //digitizer.set_wires(wires);
 
     const double the_time = 11.0*units::microsecond;
 
@@ -51,9 +51,9 @@ int main(int argc, char* argv[])
 		make_planeslice(WirePlaneId(kVlayer), the_time),
 		make_planeslice(WirePlaneId(kWlayer), the_time)}));
 
-
+    auto todigi = make_tuple(psv, wires);
     IChannelSlice::pointer cs;
-    ok = digitizer(psv, cs);
+    ok = digitizer(todigi, cs);
     Assert(ok);
     Assert(cs);
 
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     }
 
     // should pass EOS
-    Assert(digitizer(nullptr, cs));
+    Assert(digitizer(IDigitizer::input_tuple_type(nullptr, nullptr), cs));
     Assert(!cs);
 
     // should fail to go past EOS

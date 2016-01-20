@@ -3,6 +3,7 @@
 
 #include "WireCellIface/IDiffuser.h"
 #include "WireCellIface/IDiffusion.h"
+#include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IDepo.h"
 
 #include <vector>
@@ -27,7 +28,7 @@ namespace WireCell {
      * 2) Applies arbitrary time offset.
      * 3) Diffuses the deposition.
      */
-    class Diffuser : public IDiffuser {
+    class Diffuser : public IDiffuser, public IConfigurable {
     public:
 
 	typedef std::pair<double,double> bounds_type;
@@ -58,6 +59,10 @@ namespace WireCell {
 
 	virtual ~Diffuser();
 	
+	virtual void configure(const WireCell::Configuration& config);
+	virtual WireCell::Configuration default_configuration() const;
+
+
 	virtual void reset();
 
 	// IQueuedoutNode.
@@ -96,17 +101,17 @@ namespace WireCell {
 
     private:
 
-	const Point m_pitch_origin;
-	const Vector m_pitch_direction;
-	const double m_time_offset;
-	const double m_origin_l;
-	const double m_origin_t;
-	const double m_binsize_l;
-	const double m_binsize_t;
-	const double m_DL, m_DT;
-	const double m_drift_velocity;
-	const double m_max_sigma_l;
-	const double m_nsigma;
+	Point m_pitch_origin;
+	Vector m_pitch_direction;
+	double m_time_offset;
+	double m_origin_l;
+	double m_origin_t;
+	double m_binsize_l;
+	double m_binsize_t;
+	double m_DL, m_DT;
+	double m_drift_velocity;
+	double m_max_sigma_l;
+	double m_nsigma;
 
 	IDiffusionSet m_input;	// to allow for proper output ordering
 

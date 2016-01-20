@@ -22,16 +22,16 @@ Digitizer::~Digitizer()
 {
 }
 
-bool Digitizer::set_wires(const IWire::shared_vector& wires)
-{
-    for (int ind=0; ind<3; ++ind) {
-	m_wires[ind].clear();
-	copy_if(wires->begin(), wires->end(),
-		back_inserter(m_wires[ind]), select_uvw_wires[ind]);
-	std::sort(m_wires[ind].begin(), m_wires[ind].end(), ascending_index);
-    }
-    return true;
-}
+// bool Digitizer::set_wires(const IWire::shared_vector& wires)
+// {
+//     for (int ind=0; ind<3; ++ind) {
+// 	m_wires[ind].clear();
+// 	copy_if(wires->begin(), wires->end(),
+// 		back_inserter(m_wires[ind]), select_uvw_wires[ind]);
+// 	std::sort(m_wires[ind].begin(), m_wires[ind].end(), ascending_index);
+//     }
+//     return true;
+// }
 
 
 class SimpleChannelSlice : public IChannelSlice {
@@ -46,18 +46,25 @@ public:
     virtual ChannelCharge charge() const { return m_cc; }
 };
 
-bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
+//bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
+bool Digitizer::operator()(const input_tuple_type& intup, output_pointer& channel_slice)
 {
-    channel_slice = nullptr;
-    if (!m_wires[0].size()) {
-	cerr << "Digitizer: no wires\n";
-	return false;
-    }
-
+    const IPlaneSlice::shared_vector& plane_slice_vector = std::get<0>(intup);
     if (!plane_slice_vector) {
-	cerr << "Digitizer: nullptr\n";
+	cerr << "Digitizer: got EOS\n";
+	channel_slice = nullptr;
 	return true;
     }
+
+    const IWire::shared_vector& all_wires = std::get<1>(intup);
+    // fixme: this probably needs optimization to not run each call.
+    IWire::vector plane_wires[3];
+    for (int ind=0; ind<3; ++ind) {
+	copy_if(all_wires->begin(), all_wires->end(),
+		back_inserter(plane_wires[ind]), select_uvw_wires[ind]);
+	std::sort(plane_wires[ind].begin(), plane_wires[ind].end(), ascending_index);
+    }
+
 
     WireCell::ChannelCharge cc;
     double the_time = -1;
@@ -73,7 +80,7 @@ bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_point
 	    continue;
 	}
 	WirePlaneId wpid = ps->planeid();
-	IWire::vector& wires = m_wires[wpid.index()];
+	IWire::vector& wires = plane_wires[wpid.index()];
 	the_time = ps->time();
 
 	double qtot = 0.0;

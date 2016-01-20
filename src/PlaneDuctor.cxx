@@ -31,6 +31,32 @@ PlaneDuctor::~PlaneDuctor()
 //    cerr << "~PlaneDuctor("<<m_wpid<<","<<m_nwires<<","<<m_lbin<<","<<m_tbin<<")" << endl;
 }
 
+
+Configuration PlaneDuctor::default_configuration() const
+{
+    std::string json = R"(
+{
+"wpid":[1,0,0],
+"nwires":100,
+"lbin_us":0.5,
+"tbin_mm":5.0,
+"lpos0_us":0.0,
+"tpos0_mm":0.0
+}
+)";
+    return configuration_loads(json, "json");
+}
+
+void PlaneDuctor::configure(const Configuration& cfg)
+{
+    m_wpid = get<WirePlaneId>(cfg, "wpid", m_wpid);
+    m_nwires = get<int>(cfg, "nwires", m_nwires);
+    m_lbin  = get<double>(cfg, "lbin_us",   m_lbin/units::microsecond)*units::microsecond;
+    m_lpos  = get<double>(cfg, "lpos0_us",  m_lpos/units::microsecond)*units::microsecond;
+    m_tbin  = get<double>(cfg, "tbin_mm",   m_tbin/units::millimeter)*units::millimeter;
+    m_tpos0 = get<double>(cfg, "tpos0_mm", m_tpos0/units::millimeter)*units::millimeter;
+}
+
 void PlaneDuctor::reset()
 {
     m_input.clear();

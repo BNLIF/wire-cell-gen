@@ -39,6 +39,50 @@ Diffuser::~Diffuser()
 {
 }
 
+Configuration Diffuser::default_configuration() const
+{
+    std::string json = R"(
+{
+"pitch_origin_mm":[0.0,0.0,0.0],
+"pitch_direction":[0.0,0.0,1.0],
+"pitch_distance_mm":5.0,
+"timesslice_ms":2.0,
+"timesoffset_ms":0.0,
+"starttime_ms":0.0,
+"origin_mm":0.0,
+"DL_ccps":5.3,
+"DT_ccps":12.8,
+"drift_velocity_mmpus":1.6,
+"max_sigma_l_us":5.0,
+"nsigma":3.0
+}
+)";
+    return configuration_loads(json, "json");
+}
+
+void Diffuser::configure(const Configuration& cfg)
+{
+    m_pitch_origin = get<Point>(cfg, "pitch_origin_mm", m_pitch_origin/units::mm)*units::mm;
+    m_pitch_direction = get<Point>(cfg, "pitch_direction", m_pitch_direction).norm();
+    m_time_offset = get<double>(cfg, "timeoffset_ms", m_time_offset/units::ms)*units::ms;
+
+    m_origin_l = get<double>(cfg, "starttime_ms", m_origin_l/units::ms)*units::ms;
+    m_origin_t = get<double>(cfg, "origin_mm", m_origin_t/units::mm)*units::mm;
+
+    m_binsize_l = get<double>(cfg, "timeslice_ms", m_binsize_l/units::mm)*units::mm;
+    m_binsize_t = get<double>(cfg, "pitch_distance_mm", m_binsize_t/units::mm)*units::mm;
+
+    const double ccps = units::centimeter2/units::second;
+    m_DL = get<double>(cfg, "DL_ccps", m_DL/ccps)*ccps;
+    m_DT = get<double>(cfg, "DT_ccps", m_DT/ccps)*ccps;
+
+    const double mmpus = units::millimeter/units::microsecond;
+    m_drift_velocity = get<double>(cfg, "drift_velocity_mmpus", m_drift_velocity/mmpus)*mmpus;
+
+    m_max_sigma_l = get<double>(cfg, "max_sigma_l_us", m_max_sigma_l);
+    m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
+}
+
 void Diffuser::reset()
 {
     m_input.clear();

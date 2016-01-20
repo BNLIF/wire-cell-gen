@@ -22,14 +22,16 @@ namespace WireCell {
 	 * Calling it does not invalidate a previously sunk plane
 	 * slice vector but will invalidate any previously sunk wires.
 	 */
-        virtual bool set_wires(const IWire::shared_vector& wires);
+        //virtual bool set_wires(const IWire::shared_vector& wires);
 
-	virtual bool operator()(const input_pointer& plane_slice_vector,
-				output_pointer& channel_slice);
+	virtual bool operator()(const input_tuple_type& intup, output_pointer& out);
+
+//	virtual bool operator()(const input_pointer& plane_slice_vector,
+//				output_pointer& channel_slice);
 
     private:
 	// wires, organized by plane
-	IWire::vector m_wires[3];
+//	IWire::vector m_wires[3];
     };
 
 }

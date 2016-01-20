@@ -2,19 +2,23 @@
 #define WIRECELL_TRACKDEPOS
 
 #include "WireCellIface/IDepoSource.h"
+#include "WireCellIface/IConfigurable.h"
 #include "WireCellUtil/Units.h"
 
 namespace WireCell {
 
     /// A producer of depositions created from some number of simple, linear tracks.
-    class TrackDepos : public IDepoSource
+    class TrackDepos : public IDepoSource, public IConfigurable
     {
     public:    
 	/// Create tracks with depositions every stepsize and assumed
 	/// to be traveling at clight.
 	TrackDepos(double stepsize=1.0*units::millimeter,
-		   double clight=units::clight);
+		   double clight=1.0);
 	virtual ~TrackDepos();
+
+	virtual void configure(const WireCell::Configuration& config);
+	virtual WireCell::Configuration default_configuration() const;
 
 	/// Add track starting at given <time> and stretching across given
 	/// ray.  The <dedx> gives a uniform charge/distance and if < 0
@@ -28,8 +32,8 @@ namespace WireCell {
 	WireCell::IDepo::vector& depos() { return m_depos; }
 
     private:
-	const double m_stepsize;
-	const double m_clight;
+	double m_stepsize;
+	double m_clight;
 	WireCell::IDepo::vector m_depos;
 	bool m_eos;
     };
