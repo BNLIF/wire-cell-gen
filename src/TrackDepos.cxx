@@ -6,12 +6,11 @@
 #include "WireCellUtil/Units.h"
 
 #include <iostream>		// debug
+
+WIRECELL_FACTORY(TrackDepos, WireCell::TrackDepos, WireCell::IDepoSource);
+
 using namespace std;
 using namespace WireCell;
-    
-WIRECELL_NAMEDFACTORY_BEGIN(TrackDepos)
-WIRECELL_NAMEDFACTORY_INTERFACE(TrackDepos, IDepoSource);
-WIRECELL_NAMEDFACTORY_END(TrackDepos)
 
 TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)

@@ -7,13 +7,11 @@
 #include <sstream>
 #include <iostream>
 
+WIRECELL_FACTORY(Drifter, WireCell::Drifter, WireCell::IDrifter, WireCell::IConfigurable);
+
 using namespace std;
 using namespace WireCell;
 
-WIRECELL_NAMEDFACTORY_BEGIN(Drifter)
-WIRECELL_NAMEDFACTORY_INTERFACE(Drifter, IDrifter);
-WIRECELL_NAMEDFACTORY_INTERFACE(Drifter, IConfigurable);
-WIRECELL_NAMEDFACTORY_END(Drifter)
 
 
 Drifter::Drifter(double location,

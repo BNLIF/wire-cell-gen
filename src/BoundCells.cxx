@@ -10,14 +10,11 @@
 #include <iterator>
 
 #include <iostream>		// debug
+
+WIRECELL_FACTORY(BoundCells, WireCell::BoundCells, WireCell::ICellMaker);
+
 using namespace std;
-
 using namespace WireCell;
-
-WIRECELL_NAMEDFACTORY_BEGIN(BoundCells)
-WIRECELL_NAMEDFACTORY_INTERFACE(BoundCells, ICellMaker);
-WIRECELL_NAMEDFACTORY_END(BoundCells)
-
 
 struct AngularSort {
     Point center;

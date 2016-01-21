@@ -6,11 +6,10 @@
 #include <vector>
 #include <iostream>
 
+WIRECELL_FACTORY(Tiling, WireCell::Tiling, WireCell::ITiling);
+
 using namespace WireCell;
 
-WIRECELL_NAMEDFACTORY_BEGIN(Tiling) 
-WIRECELL_NAMEDFACTORY_INTERFACE(Tiling, ITiling);
-WIRECELL_NAMEDFACTORY_END(Tiling) 
 
 
 Tiling::Tiling()

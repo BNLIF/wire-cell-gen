@@ -5,13 +5,11 @@
 #include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
+
+WIRECELL_FACTORY(Framer, WireCell::Framer, WireCell::IFramer);
+
 using namespace std;
 using namespace WireCell;
-
-
-WIRECELL_NAMEDFACTORY_BEGIN(Framer)
-WIRECELL_NAMEDFACTORY_INTERFACE(Framer, IFramer);
-WIRECELL_NAMEDFACTORY_END(Framer)
 
 
 Framer::Framer()		// fixme: needed for factory

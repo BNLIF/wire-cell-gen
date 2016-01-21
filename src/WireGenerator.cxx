@@ -6,12 +6,11 @@
 #include <iostream> 		// debugging
 #include <vector>
 
+WIRECELL_FACTORY(WireGenerator, WireCell::WireGenerator, WireCell::IWireGenerator);
+
 using namespace WireCell;
 using namespace std;
 
-WIRECELL_NAMEDFACTORY_BEGIN(WireGenerator)
-WIRECELL_NAMEDFACTORY_INTERFACE(WireGenerator, IWireGenerator);
-WIRECELL_NAMEDFACTORY_END(WireGenerator)
 
 
 namespace WireCell {

@@ -4,18 +4,13 @@
 #include "WireCellIface/WirePlaneId.h"
 #include "WireCellUtil/NamedFactory.h"
 
-
 #include <iostream>
 #include <sstream>
+
+WIRECELL_FACTORY(PlaneDuctor, WireCell::PlaneDuctor, WireCell::IPlaneDuctor, WireCell:: IConfigurable);
+
 using namespace std;		// debugging
 using namespace WireCell;
-
-
-WIRECELL_NAMEDFACTORY_BEGIN(PlaneDuctor)
-WIRECELL_NAMEDFACTORY_INTERFACE(PlaneDuctor, IPlaneDuctor);
-WIRECELL_NAMEDFACTORY_INTERFACE(PlaneDuctor, IConfigurable);
-WIRECELL_NAMEDFACTORY_END(PlaneDuctor)
-
 
 PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
 			 int nwires,

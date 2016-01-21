@@ -3,13 +3,11 @@
 #include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
+
+WIRECELL_FACTORY(WireParams, WireCell::WireParams, WireCell::IWireParameters, WireCell::IConfigurable);
+
 using namespace WireCell;
 using namespace std;
-
-WIRECELL_NAMEDFACTORY_BEGIN(WireParams)
-WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IConfigurable);
-WIRECELL_NAMEDFACTORY_INTERFACE(WireParams, IWireParameters);
-WIRECELL_NAMEDFACTORY_END(WireParams)
 
 
 //static int n_wireparams = 0;

@@ -5,14 +5,10 @@
 #include <iostream>
 #include <sstream>
 
+WIRECELL_FACTORY(PlaneSliceMerger, WireCell::PlaneSliceMerger, WireCell::IPlaneSliceMerger);
+
 using namespace std;
 using namespace WireCell;
-
-
-WIRECELL_NAMEDFACTORY_BEGIN(PlaneSliceMerger)
-WIRECELL_NAMEDFACTORY_INTERFACE(PlaneSliceMerger, IPlaneSliceMerger);
-WIRECELL_NAMEDFACTORY_END(PlaneSliceMerger)
-
 
 PlaneSliceMerger::PlaneSliceMerger()
 {
