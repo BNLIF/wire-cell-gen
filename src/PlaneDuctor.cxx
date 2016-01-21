@@ -2,12 +2,19 @@
 
 #include "WireCellIface/SimplePlaneSlice.h"
 #include "WireCellIface/WirePlaneId.h"
+#include "WireCellUtil/NamedFactory.h"
 
 
 #include <iostream>
 #include <sstream>
 using namespace std;		// debugging
 using namespace WireCell;
+
+
+WIRECELL_NAMEDFACTORY_BEGIN(PlaneDuctor)
+WIRECELL_NAMEDFACTORY_INTERFACE(PlaneDuctor, IPlaneDuctor);
+WIRECELL_NAMEDFACTORY_INTERFACE(PlaneDuctor, IConfigurable);
+WIRECELL_NAMEDFACTORY_END(PlaneDuctor)
 
 
 PlaneDuctor::PlaneDuctor(WirePlaneId wpid,

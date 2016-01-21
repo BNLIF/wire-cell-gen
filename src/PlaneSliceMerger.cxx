@@ -1,11 +1,18 @@
 #include "WireCellGen/PlaneSliceMerger.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
 #include <sstream>
 
 using namespace std;
 using namespace WireCell;
+
+
+WIRECELL_NAMEDFACTORY_BEGIN(PlaneSliceMerger)
+WIRECELL_NAMEDFACTORY_INTERFACE(PlaneSliceMerger, IPlaneSliceMerger);
+WIRECELL_NAMEDFACTORY_END(PlaneSliceMerger)
+
 
 PlaneSliceMerger::PlaneSliceMerger()
 {

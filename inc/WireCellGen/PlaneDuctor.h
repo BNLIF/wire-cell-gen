@@ -43,7 +43,8 @@ namespace WireCell {
 	 * quantitatively and conceptually to be the same as used to
 	 * form the input diffusion patches.
 	 */
-	PlaneDuctor(WirePlaneId wpid, int nwires,
+	PlaneDuctor(WirePlaneId wpid = WirePlaneId(kUnknownLayer),
+		    int nwires = 100,
 		    double lbin = 0.5*units::microsecond,
 		    double tbin = 5.0*units::millimeter,
 		    double lpos0 = 0.0*units::microsecond,

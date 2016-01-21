@@ -1,4 +1,5 @@
 #include "WireCellGen/Drifter.h"
+#include "WireCellUtil/NamedFactory.h"
 #include "TransportedDepo.h"
 
 #include <boost/range.hpp>
@@ -8,6 +9,11 @@
 
 using namespace std;
 using namespace WireCell;
+
+WIRECELL_NAMEDFACTORY_BEGIN(Drifter)
+WIRECELL_NAMEDFACTORY_INTERFACE(Drifter, IDrifter);
+WIRECELL_NAMEDFACTORY_INTERFACE(Drifter, IConfigurable);
+WIRECELL_NAMEDFACTORY_END(Drifter)
 
 
 Drifter::Drifter(double location,

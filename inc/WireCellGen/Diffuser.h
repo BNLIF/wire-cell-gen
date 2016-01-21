@@ -47,8 +47,8 @@ namespace WireCell {
 	 * \param max_sigma_l is the largest possible longitudinal diffusion. 
 	 * \param nsigma defines the number of sigma at which to truncate the Gaussian.
 	 */
-	Diffuser(const Ray& pitch,
-		 double binsize_l,
+	Diffuser(const Ray& pitch = Ray(Point(0.0,0.0,0.0),Point(0.0,0.0,5*units::millimeter)),
+		 double binsize_l = 2.0*units::millimeter,
 		 double time_offset = 0.0*units::microsecond,
 		 double origin_l = 0.0*units::microsecond,
 		 double DL=5.3*units::centimeter2/units::second,

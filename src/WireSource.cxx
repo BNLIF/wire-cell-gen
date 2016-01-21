@@ -1,6 +1,11 @@
 #include "WireCellGen/WireSource.h"
+#include "WireCellUtil/NamedFactory.h"
 
 using namespace WireCell;
+
+WIRECELL_NAMEDFACTORY_BEGIN(WireSource)
+WIRECELL_NAMEDFACTORY_INTERFACE(WireSource, IWireSource);
+WIRECELL_NAMEDFACTORY_END(WireSource)
 
 WireSource::WireSource()
     : m_params(new WireParams)

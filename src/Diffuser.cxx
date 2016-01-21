@@ -1,5 +1,6 @@
 #include "WireCellGen/Diffuser.h"
 #include "WireCellGen/Diffusion.h"
+#include "WireCellUtil/NamedFactory.h"
 
 #include "WireCellUtil/Point.h"
 
@@ -9,6 +10,11 @@
 using namespace std;		// debugging
 
 using namespace WireCell;
+
+WIRECELL_NAMEDFACTORY_BEGIN(Diffuser)
+WIRECELL_NAMEDFACTORY_INTERFACE(Diffuser, IDiffuser);
+WIRECELL_NAMEDFACTORY_INTERFACE(Diffuser, IConfigurable);
+WIRECELL_NAMEDFACTORY_END(Diffuser)
 
 Diffuser::Diffuser(const Ray& pitch,
 		   double binsize_l,
