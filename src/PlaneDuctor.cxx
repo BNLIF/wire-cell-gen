@@ -26,7 +26,6 @@ PlaneDuctor::PlaneDuctor(WirePlaneId wpid,
     , m_tpos0(tpos0)
     , m_eos(false)
 {
-    cerr << "PlaneDuctor(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
 }
 PlaneDuctor::~PlaneDuctor()
 {
@@ -39,7 +38,7 @@ Configuration PlaneDuctor::default_configuration() const
     std::string json = R"(
 {
 "wpid":[1,0,0],
-"nwires":100,
+"nwires":0,
 "lbin_us":0.5,
 "tbin_mm":5.0,
 "lpos0_us":0.0,
@@ -57,6 +56,9 @@ void PlaneDuctor::configure(const Configuration& cfg)
     m_lpos  = get<double>(cfg, "lpos0_us",  m_lpos/units::microsecond)*units::microsecond;
     m_tbin  = get<double>(cfg, "tbin_mm",   m_tbin/units::millimeter)*units::millimeter;
     m_tpos0 = get<double>(cfg, "tpos0_mm", m_tpos0/units::millimeter)*units::millimeter;
+
+    cerr << "PlaneDuctor::configure(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
+
 }
 
 void PlaneDuctor::reset()
@@ -66,6 +68,13 @@ void PlaneDuctor::reset()
 
 bool PlaneDuctor::operator()(const input_pointer& diff, output_queue& outq)
 {
+    if (m_wpid.layer() == kUnknownLayer) {
+	throw runtime_error("PlaneDuctor configured with undefined wire plane layer");
+    }
+    if (!m_nwires) {
+	throw runtime_error("PlaneDuctor configured with not wire count");
+    }
+
     if (m_eos) {
 	return false;
     }
