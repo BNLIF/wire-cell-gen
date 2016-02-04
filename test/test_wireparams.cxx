@@ -1,5 +1,6 @@
 #include "WireCellGen/WireParams.h"
 #include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Configuration.h"
 
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -13,7 +14,9 @@ using namespace std;
 int main(int argc, char** argv)
 {
     WireParams wp;
-
+    auto cfg = wp.default_configuration();
+    cerr << configuration_dumps(cfg) << endl;
+    
     TApplication* theApp = 0;
     if (argc > 1) {
 	theApp = new TApplication ("test_iwireprovider",0,0);
