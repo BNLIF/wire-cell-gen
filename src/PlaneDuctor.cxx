@@ -50,14 +50,26 @@ Configuration PlaneDuctor::default_configuration() const
 
 void PlaneDuctor::configure(const Configuration& cfg)
 {
-    m_wpid = get<WirePlaneId>(cfg, "wpid", m_wpid);
+    switch (convert<int>(cfg["wpid"][0])) {
+    case 1:
+	m_wpid = WirePlaneId(kUlayer, convert<int>(cfg["wpid"][1]), convert<int>(cfg["wpid"][2]));
+	break;
+    case 2:
+	m_wpid = WirePlaneId(kVlayer, convert<int>(cfg["wpid"][1]), convert<int>(cfg["wpid"][2]));
+	break;
+    case 4:
+	m_wpid = WirePlaneId(kWlayer, convert<int>(cfg["wpid"][1]), convert<int>(cfg["wpid"][2]));
+	break;
+    default:
+	throw runtime_error("PlaneDuctor configured with unknown wire plane layer");
+    }
     m_nwires = get<int>(cfg, "nwires", m_nwires);
     m_lbin  = get<double>(cfg, "lbin_us",   m_lbin/units::microsecond)*units::microsecond;
     m_lpos  = get<double>(cfg, "lpos0_us",  m_lpos/units::microsecond)*units::microsecond;
     m_tbin  = get<double>(cfg, "tbin_mm",   m_tbin/units::millimeter)*units::millimeter;
     m_tpos0 = get<double>(cfg, "tpos0_mm", m_tpos0/units::millimeter)*units::millimeter;
 
-    cerr << "PlaneDuctor::configure(wpid="<<m_wpid.ident()<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
+    cerr << "PlaneDuctor::configure(wpid="<<m_wpid<<",nwires="<<m_nwires<<",lbin="<<m_lbin<<",tbin="<<m_tbin<<",lpos="<<m_lpos<<",tpos="<<m_tpos0<<")" << endl;
 
 }
 
@@ -72,7 +84,7 @@ bool PlaneDuctor::operator()(const input_pointer& diff, output_queue& outq)
 	throw runtime_error("PlaneDuctor configured with undefined wire plane layer");
     }
     if (!m_nwires) {
-	throw runtime_error("PlaneDuctor configured with not wire count");
+	throw runtime_error("PlaneDuctor configured with zero wire count");
     }
 
     if (m_eos) {
