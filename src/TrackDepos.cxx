@@ -27,13 +27,9 @@ Configuration TrackDepos::default_configuration() const
 {
     std::string json = R"(
 {
-"step_size_mm":1.0,
+"step_size":0,
 "clight":1.0,
-"tracks":[{
-  "time_s":0.0,
-  "dedx":-1.0,
-  "ray_mm":[[0.0,0.0,0.0],[1.0,1.0,1.0]]
-}]
+"tracks":[]
 }
 )";
     return configuration_loads(json, "json");
@@ -41,21 +37,23 @@ Configuration TrackDepos::default_configuration() const
 
 void TrackDepos::configure(const Configuration& cfg)
 {
-    m_stepsize = get<double>(cfg, "step_size_mm", m_stepsize/units::mm)*units::mm;
+    m_stepsize = get<double>(cfg, "step_size", m_stepsize);
     m_clight = get<double>(cfg, "clight", m_clight);
     for (auto track : cfg["tracks"]) {
-	double time = get<double>(track, "time_s", 0.0);
-	double dedx = get<double>(track, "dedx", -1.0);
-	Ray rmm = get<Ray>(track, "ray_mm");
-	Ray ray(rmm.first*units::millimeter, rmm.second*units::millimeter);
-	add_track(time, ray, dedx);
+	double time = get<double>(track, "time", 0.0);
+	double charge = get<double>(track, "charge", -1.0);
+	Ray ray = get<Ray>(track, "ray");
+	add_track(time, ray, charge);
     }
 }
 
-void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
+void TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
-    cerr << "TrackDepos.add_track(" << time / units::microsecond << "us "
-	 << ray.first << " -->  " << ray.second << ")" << endl;
+    double time_us = time / units::microsecond;
+    // cerr << "TrackDepos.add_track(" << time_us << "us "
+    // 	 << "[" << ray.first << " --> " << ray.second << "])" << endl;
+    // fixme: why do I get compile error if I just put "ray" here???
+
 
     const WireCell::Vector dir = WireCell::ray_unit(ray);
     const double length = WireCell::ray_length(ray);
@@ -63,11 +61,11 @@ void TrackDepos::add_track(double time, const WireCell::Ray& ray, double dedx)
     int count = 0;
 
     double charge_per_depo = 1.0;
-    if (dedx > 0) {
-	charge_per_depo = dedx / (length / m_stepsize);
+    if (charge > 0) {
+	charge_per_depo = charge / (length / m_stepsize);
     }
-    else if (dedx < 0) {
-	charge_per_depo = -dedx;
+    else if (charge < 0) {
+	charge_per_depo = -charge;
     }
 
     while (step < length) {
