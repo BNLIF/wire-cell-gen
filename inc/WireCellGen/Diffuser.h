@@ -116,6 +116,8 @@ namespace WireCell {
 	IDiffusionSet m_input;	// to allow for proper output ordering
 
 	bool m_eos;
+
+	void dump(const std::string& msg);
     };
 
 }

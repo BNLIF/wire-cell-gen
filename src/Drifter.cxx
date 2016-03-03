@@ -27,7 +27,7 @@ void Drifter::configure(const WireCell::Configuration& cfg)
 {
     m_location = get<double>(cfg, "location", m_location);
     m_drift_velocity = get<double>(cfg, "drift_velocity", m_drift_velocity);
-    cerr << "Drifter: location=" << m_location << " drift_velocity=" << m_drift_velocity << endl;
+    //cerr << "Drifter: location=" << m_location << " drift_velocity=" << m_drift_velocity << endl;
 }
 
 WireCell::Configuration Drifter::default_configuration() const

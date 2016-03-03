@@ -1,18 +1,20 @@
 #include "WireCellGen/Diffuser.h"
 #include "WireCellGen/Diffusion.h"
 #include "WireCellUtil/NamedFactory.h"
-
+#include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
 
+#include <boost/format.hpp> 
 #include <cmath>
 
+#include <sstream>
 #include <iostream>
 
 WIRECELL_FACTORY(Diffuser, WireCell::Diffuser, WireCell::IDiffuser, WireCell::IConfigurable);
 
 using namespace std;		// debugging
 using namespace WireCell;
-
+using boost::format;
 
 Diffuser::Diffuser(const Ray& pitch,
 		   double binsize_l,
@@ -37,6 +39,7 @@ Diffuser::Diffuser(const Ray& pitch,
     , m_nsigma(nsigma)
     , m_eos(false)
 {
+    dump("Diffuser created");
 }
 
 Diffuser::~Diffuser()
@@ -45,52 +48,70 @@ Diffuser::~Diffuser()
 
 Configuration Diffuser::default_configuration() const
 {
-    std::string json = R"(
-{
-"pitch_origin_mm":[0.0,0.0,0.0],
-"pitch_direction":[0.0,0.0,1.0],
-"pitch_distance_mm":5.0,
-"timesslice_ms":2.0,
-"timesoffset_ms":0.0,
-"starttime_ms":0.0,
-"origin_mm":0.0,
-"DL_ccps":5.3,
-"DT_ccps":12.8,
-"drift_velocity_mmpus":1.6,
-"max_sigma_l_us":5.0,
-"nsigma":3.0
-}
-)";
-    return configuration_loads(json, "json");
+    stringstream ss;
+    ss << "{\n"
+       << "\"pitch_origin\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\n"
+       << "\"pitch_direction\":{\"x\":0.0,\"y\":0.0,\"z\":1.0},\n"
+       << "\"pitch_distance\":" << 5.0*units::mm << ",\n"
+       << "\"timeslice\":" << 2.0 * units::us << ",\n"
+       << "\"timeoffset\":0.0,\n"
+       << "\"starttime\":0.0,\n"
+       << "\"origin\":0.0,\n"
+       << "\"DL\":" << 5.3*units::centimeter2/units::second << ",\n"
+       << "\"DT\":"<<12.8*units::centimeter2/units::second <<",\n"
+       << "\"drift_velocity\":" << 1.6 * units::mm/units::us << ",\n"
+       << "\"max_sigma_l\":" << 5.0 * units::us << ",\n"
+       << "\"nsigma\":3.0\n"
+       << "}\n";
+    return configuration_loads(ss.str(), "json");
 }
 
 void Diffuser::configure(const Configuration& cfg)
 {
-    m_pitch_origin = get<Point>(cfg, "pitch_origin_mm", m_pitch_origin/units::mm)*units::mm;
+    m_pitch_origin = get<Point>(cfg, "pitch_origin", m_pitch_origin);
     m_pitch_direction = get<Point>(cfg, "pitch_direction", m_pitch_direction).norm();
-    m_time_offset = get<double>(cfg, "timeoffset_ms", m_time_offset/units::ms)*units::ms;
+    m_time_offset = get<double>(cfg, "timeoffset", m_time_offset);
 
-    m_origin_l = get<double>(cfg, "starttime_ms", m_origin_l/units::ms)*units::ms;
-    m_origin_t = get<double>(cfg, "origin_mm", m_origin_t/units::mm)*units::mm;
+    m_origin_l = get<double>(cfg, "starttime", m_origin_l);
+    m_origin_t = get<double>(cfg, "origin", m_origin_t);
 
-    m_binsize_l = get<double>(cfg, "timeslice_ms", m_binsize_l/units::mm)*units::mm;
-    m_binsize_t = get<double>(cfg, "pitch_distance_mm", m_binsize_t/units::mm)*units::mm;
+    m_binsize_l = get<double>(cfg, "timeslice", m_binsize_l);
+    m_binsize_t = get<double>(cfg, "pitch_distance", m_binsize_t);
 
-    const double ccps = units::centimeter2/units::second;
-    m_DL = get<double>(cfg, "DL_ccps", m_DL/ccps)*ccps;
-    m_DT = get<double>(cfg, "DT_ccps", m_DT/ccps)*ccps;
+    m_DL = get<double>(cfg, "DL", m_DL);
+    m_DT = get<double>(cfg, "DT", m_DT);
 
-    const double mmpus = units::millimeter/units::microsecond;
-    m_drift_velocity = get<double>(cfg, "drift_velocity_mmpus", m_drift_velocity/mmpus)*mmpus;
+    m_drift_velocity = get<double>(cfg, "drift_velocity", m_drift_velocity);
 
-    m_max_sigma_l = get<double>(cfg, "max_sigma_l_us", m_max_sigma_l);
+    m_max_sigma_l = get<double>(cfg, "max_sigma_l", m_max_sigma_l);
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
+
+    dump("Diffuser configured");
 }
 
 void Diffuser::reset()
 {
     m_input.clear();
 }
+
+void Diffuser::dump(const std::string& msg)
+{
+    stringstream ss;
+    ss << msg << endl
+       << "\tpitch origin " << m_pitch_origin << endl
+       << "\tpitch direction " << m_pitch_direction << endl
+       << "\ttime offset " << m_time_offset << endl
+       << "\torigin l " << m_origin_l << endl
+       << "\torigin t " << m_origin_t << endl
+       << "\tbinsize l " << m_binsize_l << endl
+       << "\tbinsize t " << m_binsize_t << endl
+       << "\tDL = " << m_DL << " DT = " << m_DT << endl
+       << "\tdrift velocity = " << m_drift_velocity << endl
+       << "\tmax sigma l = " << m_max_sigma_l << endl
+       << "\tnsigma = " << m_nsigma;
+    cerr << ss.str() << endl;;
+}
+
 
 bool Diffuser::operator()(const input_pointer& depo, output_queue& outq)
 {
@@ -116,6 +137,12 @@ bool Diffuser::operator()(const input_pointer& depo, output_queue& outq)
 	
     const Vector to_depo = depo->pos() - m_pitch_origin;
     const double pitch_distance = m_pitch_direction.dot(to_depo);
+
+    cerr << "Diffuser: "
+	 << " drift distance=" << drift_distance
+	 << " drift time=" << drift_time
+	 << " pitch distance = " << pitch_distance
+	 << endl;
 
     IDiffusion::pointer diff = this->diffuse(m_time_offset + depo->time(), pitch_distance,
 					     sigmaL, sigmaT, depo->charge(), depo);
