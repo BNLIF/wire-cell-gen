@@ -19,6 +19,12 @@ namespace WireCell {
 
 	/** Create a PlaneDuctor that produces plane slices from diffusions.
 	 *
+	 * Note, this class does not apply any field nor electronics
+	 * response functions.  It provides a kind of "truth" measure
+	 * as if all drifted and diffused charge is perfectly
+	 * "collected" by a wire from each plane.  For a more
+	 * realistic IPlaneDuctor see the class SignalInducer.
+	 *
 	 * \param wpid is the wire plane ID given to the resulting
 	 * plane slice.
 	 *
