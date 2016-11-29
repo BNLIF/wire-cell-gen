@@ -1,6 +1,6 @@
 #include "WireCellGen/Drifter.h"
 #include "WireCellUtil/NamedFactory.h"
-#include "TransportedDepo.h"
+#include "WireCellGen/TransportedDepo.h"
 
 #include <boost/range.hpp>
 
@@ -58,7 +58,7 @@ bool Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	while (!m_input.empty()) {	
 	    IDepo::pointer top = *m_input.begin();
 	    m_input.erase(top);
-	    IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
+	    auto ret = std::make_shared<Gen::TransportedDepo>(top, m_location, m_drift_velocity);
 	    outq.push_back(ret);
 	}
 	outq.push_back(nullptr);
@@ -78,7 +78,7 @@ bool Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	    return true;       // bail when we reach unknown territory
 	}
 
-	IDepo::pointer ret(new TransportedDepo(top, m_location, m_drift_velocity));
+	auto ret = std::make_shared<Gen::TransportedDepo>(top, m_location, m_drift_velocity);
 	m_input.erase(top);
 	outq.push_back(ret);
     }

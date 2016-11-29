@@ -1,5 +1,5 @@
-#ifndef WIRECELL_DIFUSER
-#define WIRECELL_DIFUSER
+#ifndef WIRECELL_DIFFUSER
+#define WIRECELL_DIFFUSER
 
 #include "WireCellIface/IDiffuser.h"
 #include "WireCellIface/IDiffusion.h"
