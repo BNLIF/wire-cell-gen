@@ -24,7 +24,28 @@ void test_depoplanex()
 	std::cerr << "^ t=" << t/tunit << "us, fot=" << dpx.freezeout_time()/tunit << "us\n";
     }
     dpx.freezeout();
-    std::cerr << "frozen with fot=" << dpx.freezeout_time()/tunit << "us\n";
+    double fot = dpx.freezeout_time();
+    std::cerr << dpx.frozen_queue().size() << " frozen with fot=" << fot/tunit << "us, " << dpx.working_queue().size() << " working\n";
+
+    auto removed = dpx.pop(fot/2.0);
+    std::cerr << "Popped " << removed.size() << " at " << fot/2.0/tunit << std::endl;
+    for (auto depo : removed) {
+	std::cerr << "\tx=" << depo->pos().x()/units::cm << "cm, t=" << depo->time()/tunit << "us";
+	std::cerr << " <--- ";
+	std::cerr << "x=" << depo->prior()->pos().x()/units::cm << "cm, t=" << depo->prior()->time()/tunit << "us\n";
+    }
+    std::cerr << "Frozen " << dpx.frozen_queue().size() << std::endl;
+    for (auto depo : dpx.frozen_queue()) {
+	std::cerr << "\tx=" << depo->pos().x()/units::cm << "cm, t=" << depo->time()/tunit << "us";
+	std::cerr << " <--- ";
+	std::cerr << "x=" << depo->prior()->pos().x()/units::cm << "cm, t=" << depo->prior()->time()/tunit << "us\n";
+    }
+    std::cerr << "Left " << dpx.working_queue().size() << std::endl;
+    for (auto depo : dpx.working_queue()) {
+	std::cerr << "\tx=" << depo->pos().x()/units::cm << "cm, t=" << depo->time()/tunit << "us";
+	std::cerr << " <--- ";
+	std::cerr << "x=" << depo->prior()->pos().x()/units::cm << "cm, t=" << depo->prior()->time()/tunit << "us\n";
+    }
 }
 
 int main()

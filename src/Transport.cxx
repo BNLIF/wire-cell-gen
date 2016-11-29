@@ -44,3 +44,12 @@ void Gen::DepoPlaneX::freezeout()
 	m_queue.erase(depo);
     }
 }
+
+IDepo::vector Gen::DepoPlaneX::pop(double time)
+{
+    drain(time);
+    auto found = std::find_if_not (m_frozen.begin(), m_frozen.end(), [time](IDepo::pointer p){return p->time() <= time;} );
+    IDepo::vector ret(m_frozen.begin(), found);
+    m_frozen.erase(m_frozen.begin(), found);
+    return ret;
+}
