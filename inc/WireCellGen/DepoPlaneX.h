@@ -1,5 +1,5 @@
-#ifndef WIRECELLGEN_TRANSPORT
-#define WIRECELLGEN_TRANSPORT
+#ifndef WIRECELLGEN_DEPOPLANEX
+#define WIRECELLGEN_DEPOPLANEX
 
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Units.h"
@@ -70,46 +70,8 @@ namespace WireCell {
 	};
 
 
+    } // Gen
 
-	/**  A BinnedDiffusion takes IDepo objects and "paints"
-	 *  them onto bins in time and pitch direction.
-	 *
-	 *  Partial results are provided inside a window of fixed
-	 *  width in the pitch direction.
-	 *
-	 *  Results are either provided in time or frequency domain.
-	 *
-	 */
-	class BinnedDiffusion {
-	public:
-	    BinnedDiffusion(const Ray& pitch_bin,
-			    int ntime_bins, double min_time, double max_time,
-			    double nsigma=3.0);
-
-	    // Add a deposition with given longitudinal (temporal) and
-	    // transverse (spatial) widths (sigmas).  These should be
-	    // calculated based on some diffusion model.
-	    void add(const IDepo::pointer& depo, double sigmaL, double sigmaT);
-
-	    // Set the window to be between two pitches.  This should
-	    // be called after all IDepo objects have been added.
-	    void set_window(double pitch_min, double pitch_max);
-
-	    // Access the time domain waveform at the given pitch inside the pitch window.
-	    //const Waveform::realseq_t& waveform(double pitch);
-	    // Access the frequency domain spectrum at the given pitch inside the pitch window.
-	    //const Waveform::compseq_t& spectrum(double pitch);	    
-
-	private:
-
-	    
-		
-			 
-	};
-
-
-    }
-
-}
+} // WireCell
 
 #endif

@@ -1,4 +1,4 @@
-#include "WireCellGen/Transport.h"
+#include "WireCellGen/DepoPlaneX.h"
 #include "WireCellGen/TransportedDepo.h"
 
 using namespace WireCell;
