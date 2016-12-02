@@ -9,6 +9,51 @@
 namespace WireCell {
     namespace Gen {
 
+	/// Describe a binned and truncated Gaussian
+	struct GausDesc {
+	    double center;
+	    double sigma;
+	    double sample_size;
+	    int nsamples;
+	    int sample_begin;
+
+	    GausDesc(double center,double sigma,double sample_size,int nsamples,int sample_begin)
+		: center(center)
+		, sigma(sigma)
+		, sample_size(sample_size)
+		, nsamples(nsamples)
+		, sample_begin(sample_begin)
+		{ }
+		
+	    // The [begin,end) half open relative sample index range.
+	    std::pair<int,int> relative_range() const {
+		return std::make_pair(0, nsamples);
+	    }
+	    // The [begin,end) half open absolute sample index range.
+	    std::pair<int,int> absolute_range() const {
+		return std::make_pair(sample_begin, sample_begin + nsamples);
+	    }
+	    // The center-to-center extent of sampling
+	    std::pair<double,double> sampled_extent() const {
+		auto bb = absolute_range();
+		return std::make_pair(bb.first*sample_size, bb.second*sample_size);
+	    }
+	    // The edge-to-edge extent of the sampling.
+	    std::pair<double,double> binned_extent() const {
+		auto bb = absolute_range();
+		return std::make_pair((bb.first-0.5)*sample_size, (bb.second-0.5)*sample_size);
+	    }
+	    std::vector<double> sample() const {
+		std::vector<double> ret(nsamples);
+		const double vmin = sample_begin * sample_size;
+		for (int ind=0; ind<nsamples; ++ind) {
+		    const double rel = (vmin + ind*sample_size - center)/sigma;
+		    ret[ind] = exp(-0.5*rel*rel);
+		}
+		return ret;
+	    }
+	};
+
 	class GaussianDiffusion {
 	  public:
 
@@ -24,40 +69,32 @@ namespace WireCell {
 
 	    /** Create a diffused deposition.
 	     */
-	    GaussianDiffusion(const IDepo::pointer& depo,
-			      double p_sigma, double t_sigma,
-			      const Point& p_origin, const Vector& p_dir, double p_bin,
-			      double torigin, double t_bin,
-			      double nsigma=3.0, bool fluctuate = false);
+	    // GaussianDiffusion(const IDepo::pointer& depo,
+	    // 		      double p_sigma, double t_sigma,
+	    // 		      const Point& p_origin, const Vector& p_dir, double p_bin,
+	    // 		      double torigin, double t_bin,
+	    // 		      double nsigma=3.0, bool fluctuate = false);
 
-	    /// Get the (np X nt) binned patch with a 2D extent of
-	    /// +/-nsigma*(sigmaP X sigmaT).
+	    GaussianDiffusion(const IDepo::pointer& depo,
+			      const GausDesc& time_desc, 
+			      const GausDesc& pitch_desc,
+			      bool fluctuate = false);
+
+	    /// Get the diffusion patch as an array of N_pitch rows X
+	    /// N_time columns.  Index as patch(i_pitch, i_time).
 	    const patch_t& patch() const;
 
 	    /// Access depositing.
 	    IDepo::pointer depo() const { return m_deposition; }
 	    
-	    int npitches() const { return m_np; }
-	    int ntimes() const { return m_nt; }
-
-	    /// The first and last pitches in the patch, relative to pitch origin.
-	    std::pair<double,double> minmax_pitch() const;
-
-	    /// The first and last times in the patch, relative to time origin.
-	    std::pair<double,double> minmax_time() const;
-
-	    /// Return actual center in (time,pitch) relative to given origin.
-	    std::pair<double,double> center() const;
+	    const GausDesc pitch_desc() { return m_pitch_desc; }
+	    const GausDesc time_desc() { return m_time_desc; }
 
 	  private:
 	    IDepo::pointer m_deposition; // just for provenance
 
-	    double m_sigma_pitch, m_sigma_time;
-	    double m_pitch_center, m_time_center;
-	    double m_pitch_binsize,   m_time_binsize;
-	    int m_np, m_nt;
-	    int m_pitch_bin0, m_time_bin0;
-	    double m_nsigma;
+	    GausDesc m_time_desc, m_pitch_desc;
+
 	    bool m_fluctuate;
 	    mutable patch_t m_patch;
 	};

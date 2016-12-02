@@ -17,69 +17,61 @@
 using namespace WireCell;
 using namespace std;
 
-void test_gd()
+void test_gd(bool fluctuate)
 {
-    const double tdepo = 1*units::ms;
+    const double nsigma = 3.0;
+
+    const double t_center = 1*units::ms;
+    const double t_sigma = 1*units::us;
+    const double t_sample = 0.5*units::us;
+    const double t_min = t_center - nsigma*t_sigma;
+    const int nt_start = int(round(t_min/t_sample));
+    const int nt = int(2*nsigma*t_sigma/t_sample);
+
+    Gen::GausDesc tdesc(t_center, t_sigma, t_sample, nt, nt_start);
+
+    const double p_center = 1*units::m;
+    const double p_sigma = 1*units::mm;
+    const double p_sample = 0.3*units::mm;
+    const double p_min = p_center - nsigma*p_sigma;
+    const int np_start = int(round(p_min/p_sample));
+    const int np = int(2*nsigma*p_sigma/p_sample);
+
+    Gen::GausDesc pdesc(p_center, p_sigma, p_sample, np, np_start);
+
+    cerr << "nt=" << nt << " np=" << np << endl;
+
     const double qdepo = 1000.0;
-    const Point pdepo(10*units::cm, 0.0, 0.0);
-    auto depo = std::make_shared<SimpleDepo>(tdepo, pdepo, qdepo);
+    const Point pdepo(10*units::cm, 0.0, p_center);
+    auto depo = std::make_shared<SimpleDepo>(t_center, pdepo, qdepo);
 
-    const Point w_origin(-3*units::mm, 0.0, -5*units::m);
-    const Vector w_pdir(0.0, 0.0, 1.0);
-    const double pbin = 0.3*units::mm;
-
-    const double torigin = 0.0*units::us;
-    const double tbin = 0.5*units::us;
-    
-
-
-    Gen::GaussianDiffusion gd(depo,
-			      1.0*units::mm, 1.0*units::us,
-			      w_origin, w_pdir, pbin,
-			      0.0, tbin);
+    Gen::GaussianDiffusion gd(depo, tdesc, pdesc, fluctuate);
 			 
     auto patch = gd.patch();
 
-    int np = gd.npitches();
-    int nt = gd.ntimes();
-
-    Assert (np == patch.rows());
+    cerr << "rows=" << patch.rows() << " cols=" << patch.cols() << endl;
     Assert (nt == patch.cols());
+    Assert (np == patch.rows());
 
-    auto pdom = gd.minmax_pitch();
-    pdom.first /= units::mm;	// put into explicit units
-    pdom.second /= units::mm;	// put into explicit units
-    auto tdom = gd.minmax_time();
-    tdom.first /= units::us;	// put into explicit units
-    tdom.second /= units::us;	// put into explicit units
-
-    auto tpcenter = gd.center();
-    tpcenter.first /= units::us;
-    tpcenter.second /= units::mm;
-
-    cerr << "time : " << nt << "@" << tpcenter.first << ": [" << tdom.first << "," << tdom.second << "] us\n";
-    cerr << "pitch: " << np << "@" << tpcenter.second << ": [" << pdom.first << "," << pdom.second << "] mm\n";
+    const double tunit = units::us;	// for display
+    const double punit = units::mm;	// for display
 
     TPolyMarker* marker = new TPolyMarker(1);
-    marker->SetPoint(0, tpcenter.first, tpcenter.second);
+    marker->SetPoint(0, t_center/tunit, p_center/punit);
     marker->SetMarkerStyle(5);
+    cerr << "center t=" << t_center/tunit << ", p=" << p_center/punit << endl;
 
-    // UNIT CHANGE
-    const double tbinus = tbin/units::us;
-    const double pbinmm = pbin/units::mm;
+    auto tbinning = tdesc.binned_extent();
+    auto pbinning = pdesc.binned_extent();
+    TH2F* hist = new TH2F("patch1","Diffusion Patch",    
+			  nt, tbinning.first/tunit, tbinning.second/tunit,
+			  np, pbinning.first/punit, pbinning.second/punit);// we will leak this.
 
-    // we will leak this.
-    TH2F* hist = new TH2F("patch1","Diffusion Patch",
-			  nt, tdom.first-0.5*tbinus, tdom.second+0.5*tbinus,
-			  np, pdom.first-0.5*pbinmm, pdom.second+0.5*pbinmm);
     hist->SetXTitle("time (us)");
     hist->SetYTitle("pitch (mm)");
     for (int it=0; it < nt; ++it) {
-	const double time = tdom.first + float(it)*tbinus;
 	for (int ip=0; ip < np; ++ip) {
-	    const double pitch = pdom.first + float(ip)*pbinmm;
 	    const double value = patch(ip,it);
-	    //hist->Fill(time, pitch, value);
 	    hist->SetBinContent(it+1, ip+1, value);
 	}
     }
@@ -101,7 +93,9 @@ int main(int argc, char* argv[])
     canvas.Print(Form("%s.pdf[", me),"pdf");
     gStyle->SetOptStat(0);
 
-    test_gd();
+    test_gd(false);
+    canvas.Print(Form("%s.pdf",me),"pdf");
+    test_gd(true);
     canvas.Print(Form("%s.pdf",me),"pdf");
 
     if (theApp) {

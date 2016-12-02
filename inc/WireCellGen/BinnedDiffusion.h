@@ -13,8 +13,9 @@ namespace WireCell {
     namespace Gen {
 
 
-	/**  A BinnedDiffusion takes IDepo objects and "paints" them
-	 *  onto bins in time and pitch direction (impact position).
+	/**  A BinnedDiffusion takes IDepo objects and "paints" their
+	 *  diffusion onto bins in time and pitch direction (impact
+	 *  position).
 	 *
 	 *  Partial results are provided inside a window of fixed
 	 *  width in the pitch direction.
@@ -22,12 +23,24 @@ namespace WireCell {
 	 *  Results are either provided in time or frequency domain.
 	 *
 	 */
-	// fixme: this class is too much of a kitchen sink.
 	class BinnedDiffusion {
 	public:
-	    BinnedDiffusion(const Ray& pitch_bin,
-			    int ntime_bins, double min_time, double max_time,
-			    double nsigma=3.0);
+
+	    /** Created a BinnedDiffusion. 
+	     *	
+	     * - pitch_coordinate :: ray perpendicular to and iwth
+	     * tail on center of first wire and with length of one
+	     * impact position.
+	     *
+	     * - ntime_samples :: number of samples in time
+	     * - time_0 :: time of first sample
+	     * - time_f :: time of final sample
+	     * - nsigma :: number of sigma the 2D (transverse X longitudinal) Gaussian extends.
+	     * - fluctuate :: set to true if charge-preserving Poisson fluctuations are applied.
+	     */
+	    BinnedDiffusion(const Ray& pitch_coordinate,
+			    int ntime_samples, double time_0, double time_f,
+			    double nsigma=3.0, bool fluctuate=false);
 
 
 	    /// Add a diffusion.
@@ -55,21 +68,22 @@ namespace WireCell {
 	    
 	    // current window set by user.
 	    std::pair<int,int> m_window;
-	    // actual extent needed to handle diffusion atomically.
-	    std::pair<int,int> m_extent;
 	    // the content of the current window
 	    std::map<int, ImpactData::mutable_pointer> m_impacts;
 
 	    // 3-point that is the origin of the pitch measurement
-	    Point m_origin;
+	    Point m_pitch_origin;
 	    // unit vector pointing in pitch direction
 	    Vector m_pitch_axis;
 	    // distance between impact positions
-	    double m_impact_bin;
+	    double m_pitch_binsize;
 	    
-	    std::tuple<int, double, double> m_time_bins;
-	    double m_nsigma;
+	    int m_ntimes;
+	    double m_time_origin;
+	    double m_time_binsize;
 
+	    double m_nsigma;
+	    bool m_fluctuate;
 	};
 
 
