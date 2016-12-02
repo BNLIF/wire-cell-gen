@@ -43,29 +43,28 @@ void Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double si
     Gen::GausDesc pitch_desc(pitch_center, sigma_pitch, m_pitch_binsize, np, pitch_bin0);
 
     auto gd = std::make_shared<GaussianDiffusion>(depo, time_desc, pitch_desc, m_fluctuate);
-    
+    this->add(gd);
 
-
-    // do:
-    //
-    // 1) get pitch distance from depo
-    //
-    // 2) get mean time from depo->time()
-    //
-    // 3) get np, nt
-
-    // 	    GaussianDiffusion(const IDepo::pointer& depo,
-    // 			      double mean_p, double mean_t,
-    // 			      double sigma_p, double sigma_t,
-    // 			      int np, int nt,
-    // 			      double nsigma=3.0, bool fluctuate = false);
-
-
-    // auto diff = std::make_shared<Gen::GaussianDiffusion>(deposition, sigma_time, sigma_pitch);
-    ///
 }
 
+void Gen::BinnedDiffusion::add(std::shared_ptr<GaussianDiffusion> gd)
+{
+    auto pd = gd->pitch_desc();
+    auto arange = pd.absolute_range();
+    for (int ind=arange.first; ind<arange.second; ++ind) {
+	this->add(gd, ind);
+    }
+}
 
+void Gen::BinnedDiffusion::add(std::shared_ptr<GaussianDiffusion> gd, int impact)
+{
+    auto id = m_impacts[impact];
+    if (id == nullptr) {
+	id = std::make_shared<ImpactData>(impact, impact*m_pitch_binsize); // fixme: maybe include origin?
+	m_impacts[impact] = id;
+    }
+    id->add(gd);
+}
 
 void Gen::BinnedDiffusion::set_window(int begin_impact_number, int end_impact_number)
 {

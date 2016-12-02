@@ -52,6 +52,7 @@ namespace WireCell {
 		}
 		return ret;
 	    }
+	    
 	};
 
 	class GaussianDiffusion {

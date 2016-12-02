@@ -44,8 +44,15 @@ namespace WireCell {
 
 
 	    /// Add a diffusion.
-	    // Fixme: this is not an IDiffusion! Do not want a large binned object here.
 	    void add(IDepo::pointer deposition, double sigma_time, double sigma_pitch);
+
+	    /// Add a already build GaussianDiffusion to all relevant impacts.
+	    // Fixme: this is not an IDiffusion! Do not want a large binned object here.
+	    void add(std::shared_ptr<GaussianDiffusion> gd);
+
+	    /// Add a already build GaussianDiffusion to one impact.
+	    // Fixme: this is not an IDiffusion! Do not want a large binned object here.
+	    void add(std::shared_ptr<GaussianDiffusion> gd, int impact);
 
 	    /// Set the window coverage to the half-open range.  This
 	    /// should be called after all IDepo objects have been

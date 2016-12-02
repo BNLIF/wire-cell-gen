@@ -62,3 +62,5 @@ const Gen::GaussianDiffusion::patch_t& Gen::GaussianDiffusion::patch() const
     m_patch = ret;
     return m_patch;
 }
+
+
