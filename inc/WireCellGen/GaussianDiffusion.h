@@ -11,11 +11,11 @@ namespace WireCell {
 
 	/// Describe a binned and truncated Gaussian
 	struct GausDesc {
-	    double center;
-	    double sigma;
-	    double sample_size;
-	    int nsamples;
-	    int sample_begin;
+	    double center;	// Gaussian mean location
+	    double sigma;	// Gaussian sigma width
+	    double sample_size;	// distance between consecutive samples 
+	    int nsamples;	// number of samples over the domain
+	    int sample_begin;	// sample number of start of sample domain
 
 	    GausDesc(double center,double sigma,double sample_size,int nsamples,int sample_begin)
 		: center(center)

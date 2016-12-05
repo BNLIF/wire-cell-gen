@@ -13,15 +13,9 @@ namespace WireCell {
     namespace Gen {
 
 
-	/**  A BinnedDiffusion takes IDepo objects and "paints" their
-	 *  diffusion onto bins in time and pitch direction (impact
-	 *  position).
-	 *
-	 *  Partial results are provided inside a window of fixed
-	 *  width in the pitch direction.
-	 *
-	 *  Results are either provided in time or frequency domain.
-	 *
+	/**  A BinnedDiffusion maintains an association between impact
+	 *  positions along the pitch direction of a wire plane and
+	 *  the diffused depositions that drift to them.
 	 */
 	class BinnedDiffusion {
 	public:
@@ -54,12 +48,8 @@ namespace WireCell {
 	    // Fixme: this is not an IDiffusion! Do not want a large binned object here.
 	    void add(std::shared_ptr<GaussianDiffusion> gd, int impact);
 
-	    /// Set the window coverage to the half-open range.  This
-	    /// should be called after all IDepo objects have been
-	    /// added.  Any impact positions seen in the last window
-	    /// are not recalculated so sliding the window is optimal,
-	    /// random access will lose optimization.
-	    void set_window(int begin_impact_number, int end_impact_number);
+	    /// Drop associations to conserve memory.
+	    void erase(int begin_impact_number, int end_impact_number);
 
 	    /// Return the data at the give impact position.
 	    ImpactData::pointer impact_data(int number) const;
@@ -85,7 +75,7 @@ namespace WireCell {
 	    // distance between impact positions
 	    double m_pitch_binsize;
 	    
-	    int m_ntimes;
+	    int m_nticks;
 	    double m_time_origin;
 	    double m_time_binsize;
 
