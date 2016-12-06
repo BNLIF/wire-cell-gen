@@ -50,22 +50,22 @@ const double impact_pitch = wire_pitch/nimpacts_per_wire_pitch;
 
 
 
-void test_track(Meta& meta, double charge, double t0, const Ray& track, double stepsize, bool fluctuate)
+void test_track(Meta& meta, double charge, double t0, double track_time, const Ray& track_ray, double stepsize, bool fluctuate)
 {
 
     const Point w_origin(-3*units::mm, 0.0, -1*units::m);
     const Vector impact_step(0.0, 0.0, impact_pitch);
     const Ray impact_ray(w_origin, w_origin+impact_step);
 
-    const double min_time = 0.0;
+    const double min_time = t0;
     const double max_time = min_time + nticks*tick;
     const int ndiffision_sigma = 3.0;
     
     Gen::BinnedDiffusion bd(impact_ray, nticks, min_time, max_time, ndiffision_sigma, fluctuate);
 
-    auto track_start = track.first;
-    auto track_dir = ray_unit(track);
-    auto track_length = ray_length(track);
+    auto track_start = track_ray.first;
+    auto track_dir = ray_unit(track_ray);
+    auto track_length = ray_length(track_ray);
 
     const double DL=5.3*units::centimeter2/units::second;
     const double DT=12.8*units::centimeter2/units::second;
@@ -163,8 +163,9 @@ void test_track(Meta& meta, double charge, double t0, const Ray& track, double s
 	double max_time_us = (max_tick+0.5)*tick/units::us;
 	double num_ticks = max_tick - min_tick + 1;
 
-	//cerr << "Histogram: t=[" << min_time_us << "," << max_time_us << "]x" << num_ticks << " "
-	//     << "p=[" << min_pitch_mm << "," << max_pitch_mm << "]x" << collect.size() << "\n";
+	cerr << "Tick range: [" << min_tick << "," << max_tick << "]\n";
+	cerr << "Histogram: t=[" << min_time_us << "," << max_time_us << "]x" << num_ticks << " "
+	     << "p=[" << min_pitch_mm << "," << max_pitch_mm << "]x" << collect.size() << "\n";
 
 	TH2F hist("h","h", num_ticks, min_time_us, max_time_us, collect.size(), min_pitch_mm, max_pitch_mm);
 	hist.SetTitle(Form("Diffused charge for wire %d", iwire));
@@ -195,13 +196,14 @@ int main(int argc, char* argv[])
     Meta meta(me);
     gStyle->SetOptStat(0);
 
-    const double t0 = 0*units::us;
+    const double t0 = 1.0*units::s;
+    const double track_time = t0+10*units::ns;
     const double delta = 100*units::mm;
-    Ray track(Point(1*units::m-delta, 0, -delta),
-	      Point(1*units::m+delta, 0, +delta));
+    Ray track_ray(Point(1*units::m-delta, 0, -delta),
+		  Point(1*units::m+delta, 0, +delta));
     const double stepsize = 1*units::mm;
     const double charge = 1e5;
-    test_track(meta, charge, t0, track, stepsize, true);
+    test_track(meta, charge, t0, track_time, track_ray, stepsize, true);
 
     meta.print("]");
 
