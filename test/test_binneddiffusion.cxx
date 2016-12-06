@@ -34,38 +34,38 @@ struct Meta {
 
     void print(const char* extra = "") {
 	string fname = Form("%s.pdf%s", name, extra);
-	cerr << "Printing: " << fname << endl;
+	//cerr << "Printing: " << fname << endl;
 	canvas->Print(fname.c_str(), "pdf");
     }
 };
 
-void test_track(Meta& meta, double t0, const Ray& track, double stepsize, bool fluctuate)
+const int nticks = 9600;
+const double tick = 0.5*units::us;
+const double drift_speed = 1.0*units::mm/units::us;
+const int nwires = 1000;
+const int npmwires = 10;	// effective induction range in # of wire pitches
+const double wire_pitch = 3*units::mm;
+const int nimpacts_per_wire_pitch = 10;
+const double impact_pitch = wire_pitch/nimpacts_per_wire_pitch;
+
+
+
+void test_track(Meta& meta, double charge, double t0, const Ray& track, double stepsize, bool fluctuate)
 {
-    const int nwires = 1000;
-    const int npmwires = 10;	// effective induction range in # of wire pitches
-    const double wire_pitch = 3*units::mm;
-    const int nimpacts_per_wire_pitch = 10;
-    const double impact_pitch = wire_pitch/nimpacts_per_wire_pitch;
 
     const Point w_origin(-3*units::mm, 0.0, -1*units::m);
     const Vector impact_step(0.0, 0.0, impact_pitch);
     const Ray impact_ray(w_origin, w_origin+impact_step);
 
-    const int nticks = 9600;
-    const double tick = 0.5*units::us;
     const double min_time = 0.0;
     const double max_time = min_time + nticks*tick;
     const int ndiffision_sigma = 3.0;
     
-    const double drift_speed = 1.0*units::mm/units::us;
-
     Gen::BinnedDiffusion bd(impact_ray, nticks, min_time, max_time, ndiffision_sigma, fluctuate);
 
     auto track_start = track.first;
     auto track_dir = ray_unit(track);
     auto track_length = ray_length(track);
-
-    const double charge = 1000;
 
     const double DL=5.3*units::centimeter2/units::second;
     const double DT=12.8*units::centimeter2/units::second;
@@ -81,6 +81,7 @@ void test_track(Meta& meta, double t0, const Ray& track, double stepsize, bool f
 	
 	auto depo = std::make_shared<SimpleDepo>(t0+drift_time, pt, charge);
 	bd.add(depo, sigmaL, sigmaT);
+	cerr << "dist: " <<dist/units::mm << "mm, drift: " << drift_time/units::us << "us depo:" << depo->pos() << " @ " << depo->time()/units::us << "us\n";
     }
 
 
@@ -135,8 +136,8 @@ void test_track(Meta& meta, double t0, const Ray& track, double stepsize, bool f
 	double max_time_us = (max_tick+0.5)*tick/units::us;
 	double num_ticks = max_tick - min_tick + 1;
 
-	cerr << "Histogram: t=[" << min_time_us << "," << max_time_us << "]x" << num_ticks << " "
-	     << "p=[" << min_pitch_mm << "," << max_pitch_mm << "]x" << collect.size() << "\n";
+	//cerr << "Histogram: t=[" << min_time_us << "," << max_time_us << "]x" << num_ticks << " "
+	//     << "p=[" << min_pitch_mm << "," << max_pitch_mm << "]x" << collect.size() << "\n";
 
 	TH2F hist("h","h", num_ticks, min_time_us, max_time_us, collect.size(), min_pitch_mm, max_pitch_mm);
 	hist.SetTitle(Form("Diffused charge for wire %d", iwire));
@@ -146,7 +147,7 @@ void test_track(Meta& meta, double t0, const Ray& track, double stepsize, bool f
 	for (auto id : collect) {
 	    auto wave = id->waveform();
 	    double pitch_distance_mm = id->pitch_distance()/units::mm;
-	    cerr << "\t" << id->impact_number() << "@" << pitch_distance_mm << " x " << wave.size() <<  endl;
+	    //cerr << "\t" << id->impact_number() << "@" << pitch_distance_mm << " x " << wave.size() <<  endl;
 	    Assert (wave.size() == nticks);
 	    auto mm = id->tick_bounds();
 	    for (int itick=mm.first; itick<mm.second; ++itick) {
@@ -167,10 +168,12 @@ int main(int argc, char* argv[])
     gStyle->SetOptStat(0);
 
     const double t0 = 0*units::us;
-    Ray track(Point(1*units::m, -1*units::cm, -1*units::cm),
-	      Point(1*units::m, +1*units::cm, +1*units::cm));
-    const double stepsize = 1*units::cm;
-    test_track(meta, t0, track, stepsize, false);
+    const double delta = 100*units::mm;
+    Ray track(Point(1*units::m-delta, 0, -delta),
+	      Point(1*units::m+delta, 0, +delta));
+    const double stepsize = 1*units::mm;
+    const double charge = 1e5;
+    test_track(meta, charge, t0, track, stepsize, true);
 
     meta.print("]");
 
