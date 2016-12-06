@@ -70,6 +70,7 @@ void test_track(Meta& meta, double charge, double t0, const Ray& track, double s
     const double DL=5.3*units::centimeter2/units::second;
     const double DT=12.8*units::centimeter2/units::second;
 
+    meta.em("begin adding depos");
     for (double dist=0.0; dist < track_length; dist += stepsize) {
 	auto pt = track_start + dist*track_dir;
 	double drift_time = pt.x()/drift_speed;
@@ -84,6 +85,7 @@ void test_track(Meta& meta, double charge, double t0, const Ray& track, double s
 	cerr << "dist: " <<dist/units::mm << "mm, drift: " << drift_time/units::us << "us depo:" << depo->pos() << " @ " << depo->time()/units::us << "us\n";
     }
 
+    meta.em("begin swiping wires");
 
     for (int iwire = 0; iwire < nwires; ++iwire) {
 
@@ -106,6 +108,31 @@ void test_track(Meta& meta, double charge, double t0, const Ray& track, double s
 	}
 	
 	bd.erase(0, lo_impact);
+
+	if (false) {		
+	    continue;
+	    /* Skip here to avoid ROOT histogramming.  Get:
+
+	       TICK: 20 ms (this: 20 ms) begin adding depos
+	       TICK: 30 ms (this: 9 ms) begin swiping wires
+	       TICK: 422 ms (this: 392 ms) done
+
+	       MEM: total: size=392752K, res=107476K increment: size=5384K, res=1880K begin adding depos
+	       MEM: total: size=395260K, res=110192K increment: size=2508K, res=2716K begin swiping wires
+	       MEM: total: size=428468K, res=145084K increment: size=33208K, res=34892K done
+
+	     */
+	}
+	/* With the following:
+	   TICK: 20 ms (this: 20 ms) begin adding depos
+	   TICK: 30 ms (this: 9 ms) begin swiping wires
+	   TICK: 7498 ms (this: 7468 ms) done
+
+	   MEM: total: size=392756K, res=106964K increment: size=5496K, res=1868K begin adding depos
+	   MEM: total: size=395264K, res=109636K increment: size=2508K, res=2672K begin swiping wires
+	   MEM: total: size=438400K, res=155664K increment: size=43136K, res=46028K done
+
+	 */
 
 	auto one = collect.front();
 
@@ -158,6 +185,7 @@ void test_track(Meta& meta, double charge, double t0, const Ray& track, double s
 	hist.Draw("colz");
 	meta.print();
     }
+    meta.em("done");
 }
 
 int main(int argc, char* argv[])
@@ -177,5 +205,6 @@ int main(int argc, char* argv[])
 
     meta.print("]");
 
+    cerr << meta.em.summary() << endl;
     return 0;
 }
