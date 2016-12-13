@@ -27,9 +27,9 @@ namespace WireCell {
 
 	    /** Created a BinnedDiffusion. 
 	     *	
-	     * - pitch_coordinate :: ray perpendicular to and iwth
-	     * tail on center of first wire and with length of one
-	     * impact position.
+	     * - pitch_coordinate :: ray perpendicular to and with its
+	     *   tail on the center of first wire and with length of
+	     *   one impact position.
 	     *
 	     * - ntime_samples :: number of samples in time
 	     * - time_0 :: time of first sample
@@ -64,6 +64,12 @@ namespace WireCell {
 
 	    // return the impact number closest to the given pitch distance.
 	    int impact_number(double pitch) const;
+
+            int nsamples() const { return m_nticks;}
+            std::pair<double,double> time_range() const {
+                return std::make_pair(m_time_origin,
+                                      m_time_origin+m_nticks*m_time_binsize);
+            }
 
 
 	private:
