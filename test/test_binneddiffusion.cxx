@@ -49,19 +49,23 @@ const int nimpacts_per_wire_pitch = 10;
 const double impact_pitch = wire_pitch/nimpacts_per_wire_pitch;
 
 
-
 void test_track(Meta& meta, double charge, double t0, double track_time, const Ray& track_ray, double stepsize, bool fluctuate)
 {
+    const int nimpacts = nwires*npmwires;
+    const double z_half_width = wire_pitch*0.5*nwires;
 
-    const Point w_origin(-3*units::mm, 0.0, -1*units::m);
-    const Vector impact_step(0.0, 0.0, impact_pitch);
-    const Ray impact_ray(w_origin, w_origin+impact_step);
+    const Point w_origin(-3*units::mm, 0.0, -z_half_width);
+    const Vector w_pitchdir(0.0, 0.0, 1.0);
+
 
     const double min_time = t0;
     const double max_time = min_time + nticks*tick;
     const int ndiffision_sigma = 3.0;
     
-    Gen::BinnedDiffusion bd(impact_ray, nticks, min_time, max_time, ndiffision_sigma, fluctuate);
+    Gen::BinnedDiffusion bd(w_origin, w_pitchdir,
+                            nimpacts, -z_half_width, z_half_width,
+                            nticks, t0, t0 + nticks*tick,
+                            ndiffision_sigma, fluctuate);
 
     auto track_start = track_ray.first;
     auto track_dir = ray_unit(track_ray);
@@ -111,28 +115,7 @@ void test_track(Meta& meta, double charge, double t0, double track_time, const R
 
 	if (false) {		
 	    continue;
-	    /* Skip here to avoid ROOT histogramming.  Get:
-
-	       TICK: 20 ms (this: 20 ms) begin adding depos
-	       TICK: 30 ms (this: 9 ms) begin swiping wires
-	       TICK: 422 ms (this: 392 ms) done
-
-	       MEM: total: size=392752K, res=107476K increment: size=5384K, res=1880K begin adding depos
-	       MEM: total: size=395260K, res=110192K increment: size=2508K, res=2716K begin swiping wires
-	       MEM: total: size=428468K, res=145084K increment: size=33208K, res=34892K done
-
-	     */
 	}
-	/* With the following:
-	   TICK: 20 ms (this: 20 ms) begin adding depos
-	   TICK: 30 ms (this: 9 ms) begin swiping wires
-	   TICK: 7498 ms (this: 7468 ms) done
-
-	   MEM: total: size=392756K, res=106964K increment: size=5496K, res=1868K begin adding depos
-	   MEM: total: size=395264K, res=109636K increment: size=2508K, res=2672K begin swiping wires
-	   MEM: total: size=438400K, res=155664K increment: size=43136K, res=46028K done
-
-	 */
 
 	auto one = collect.front();
 
@@ -142,9 +125,9 @@ void test_track(Meta& meta, double charge, double t0, double track_time, const R
 	int min_tick = 0;
 	int max_tick = 0;
 	for (int ind=0; ind < collect.size(); ++ind ){
-	    auto id = collect[ind];
-	    auto mm = id->tick_bounds();
-	    double pitch = id->pitch_distance();
+	    auto idptr = collect[ind];
+	    auto mm = idptr->strip();
+	    double pitch = -z_half_width + idptr->impact_number()*impact_pitch;
 	    if (!ind) {
 		min_pitch = max_pitch = pitch;
 		min_tick = mm.first;
@@ -152,7 +135,7 @@ void test_track(Meta& meta, double charge, double t0, double track_time, const R
 		continue;
 	    }
 	    min_tick = std::min(min_tick, mm.first);
-	    max_tick = std::max(max_tick, mm.second);
+	    max_tick = std::max(max_tick, mm.second-1);
 	    min_pitch = std::min(min_pitch, pitch);
 	    max_pitch = std::max(max_pitch, pitch);
 	}
@@ -161,7 +144,7 @@ void test_track(Meta& meta, double charge, double t0, double track_time, const R
 	double max_pitch_mm = max_pitch/units::mm;
 	double min_time_us = (min_tick-0.5)*tick/units::us;
 	double max_time_us = (max_tick+0.5)*tick/units::us;
-	double num_ticks = max_tick - min_tick + 1;
+	double num_ticks = 1+max_tick - min_tick;
 
 	cerr << "Tick range: [" << min_tick << "," << max_tick << "]\n";
 	cerr << "Histogram: t=[" << min_time_us << "," << max_time_us << "]x" << num_ticks << " "
@@ -172,12 +155,12 @@ void test_track(Meta& meta, double charge, double t0, double track_time, const R
 	hist.SetXTitle("time (us)");
 	hist.SetYTitle("pitch (mm)");
 
-	for (auto id : collect) {
-	    auto wave = id->waveform();
-	    double pitch_distance_mm = id->pitch_distance()/units::mm;
-	    //cerr << "\t" << id->impact_number() << "@" << pitch_distance_mm << " x " << wave.size() <<  endl;
+	for (auto idptr : collect) {
+	    auto wave = idptr->waveform();
+            double pitch_distance_mm = (-z_half_width + idptr->impact_number()*impact_pitch ) / units::mm;
+	    //cerr << "\t" << idptr->impact_number() << "@" << pitch_distance_mm << " x " << wave.size() <<  endl;
 	    Assert (wave.size() == nticks);
-	    auto mm = id->tick_bounds();
+	    auto mm = idptr->strip();
 	    for (int itick=mm.first; itick<mm.second; ++itick) {
 		const double time_us = (itick * tick)/units::us;
 		hist.Fill(time_us, pitch_distance_mm, wave[itick]);

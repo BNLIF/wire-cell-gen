@@ -23,53 +23,37 @@ Waveform::compseq_t& Gen::ImpactData::spectrum() const
 
 void Gen::ImpactData::calculate(int nticks) const
 {
-    m_waveform.clear();
+    if (m_waveform.size() > 0) {
+        return;
+    }
     m_waveform.resize(nticks, 0.0);
 
     for (auto diff : m_diffusions) {
-	auto pd = diff->pitch_desc();
-	auto td = diff->time_desc();
-	auto p = diff->patch();
+        const int toffset = diff->toffset();
+        const int poffset = diff->poffset();
+        const int pind = m_impact - poffset;
 
-	int relimpact = m_impact - pd.sample_begin;
-	for (int ind=0; ind < td.nsamples; ++ind) {
-	    const int absind = td.sample_begin + ind;
-	    if (absind >= nticks) {
-		break;
-	    }
-	    m_waveform[absind] += p(relimpact, ind);
-	}
+	auto patch = diff->patch();
+        const int nt = patch.cols();
+
+        for (int tind=0; tind<nt; ++tind) {
+            const int absind = tind+toffset;
+            m_waveform[absind] += patch(pind, tind);
+        }
     }
 
     m_spectrum = Waveform::dft(m_waveform);
 }
 
-std::pair<int,int> Gen::ImpactData::tick_bounds() const
+
+
+std::pair<int,int> Gen::ImpactData::strip() const
 {
-    int mint=0, maxt=0;
-    const int ndiff = m_diffusions.size();
-    for (int ind=0; ind<ndiff; ++ind) {
-	auto td = m_diffusions[ind]->time_desc();
-	const int tmp = td.sample_begin + td.nsamples;
-	if (!ind) {
-	    mint = td.sample_begin;
-	    maxt = tmp;
-	    continue;
-	}
-	if (td.sample_begin < mint) {
-	    mint = td.sample_begin;
-	}
-	if (tmp > maxt) {
-	    maxt = tmp;
-	}
+    int imin=-1, imax = -1;
+    for (int ind=0; ind<m_waveform.size(); ++ind) {
+        const double val = m_waveform[ind];
+        if (imin < 0 && val > 0) { imin = ind; }
+        if (val > 0) { imax = ind; }
     }
-    return std::make_pair(mint,maxt);
-}
-
-
-
-double Gen::ImpactData::pitch_distance() const
-{
-    auto pd = m_diffusions.front()->pitch_desc();
-    return m_impact * pd.sample_size;
+    return std::make_pair(imin, imax+1);
 }

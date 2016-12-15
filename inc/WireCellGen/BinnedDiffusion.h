@@ -19,57 +19,76 @@ namespace WireCell {
 
 
 	/**  A BinnedDiffusion maintains an association between impact
-	 *  positions along the pitch direction of a wire plane and
-	 *  the diffused depositions that drift to them.
+	 * positions along the pitch direction of a wire plane and
+	 * the diffused depositions that drift to them.
+         *
+         * It covers a fixed and discretely sampled time and pitch
+         * domain.
 	 */
 	class BinnedDiffusion {
 	public:
 
-	    /** Created a BinnedDiffusion. 
-	     *	
-	     * - pitch_coordinate :: ray perpendicular to and with its
-	     *   tail on the center of first wire and with length of
-	     *   one impact position.
-	     *
-	     * - ntime_samples :: number of samples in time
-	     * - time_0 :: time of first sample
-	     * - time_f :: time of final sample
-	     * - nsigma :: number of sigma the 2D (transverse X longitudinal) Gaussian extends.
-	     * - fluctuate :: set to true if charge-preserving Poisson fluctuations are applied.
+	    /** Create a BinnedDiffusion. 
+
+               Arguments are:
+	      	
+               - pitch_origin :: the 3-space position pointing to the
+                 origin of the pitch coordinate.  This may typically
+                 be the center of the zero'th wire in the plane.
+
+               - pitch_direction :: a 3-vector of unit length pointing
+                 in the wire pitch direction.
+
+               - npitch_samples :: the number of samples of impact
+                 positions along the pitch direction.
+
+               - min_pitch :: the minimum pitch location to sample.
+
+               - max_pitch :: the maximum pitch location to sample.
+               
+	       - ntime_samples :: number of samples in time
+              
+	       - min_time :: the minimum time to sample
+              
+	       - max_time :: the maximum time to sample
+              
+	       - nsigma :: number of sigma the 2D (transverse X
+                 longitudinal) Gaussian extends.
+              
+	       - fluctuate :: set to true if charge-preserving Poisson
+                 fluctuations are applied.
 	     */
-	    BinnedDiffusion(const Ray& pitch_coordinate,
-			    int ntime_samples, double time_0, double time_f,
+	    BinnedDiffusion(const Point& pitch_origin, const Vector& pitch_direction,
+                            int npitch_samples, double min_pitch, double max_pitch,
+			    int ntime_samples, double min_time, double max_time,
 			    double nsigma=3.0, bool fluctuate=false);
 
 
-	    /// Add a diffusion.
-	    void add(IDepo::pointer deposition, double sigma_time, double sigma_pitch);
+	    /// Add a deposition and its associated diffusion sigmas.
+	    /// Return false if no activity falls within the domain.
+	    bool add(IDepo::pointer deposition, double sigma_time, double sigma_pitch);
 
-	    /// Add a already build GaussianDiffusion to all relevant impacts.
-	    // Fixme: this is not an IDiffusion! Do not want a large binned object here.
-	    void add(std::shared_ptr<GaussianDiffusion> gd);
+	    /// Unconditionally associate an already built
+	    /// GaussianDiffusion to one impact.  
+	    void add(std::shared_ptr<GaussianDiffusion> gd, int impact_index);
 
-	    /// Add a already build GaussianDiffusion to one impact.
-	    // Fixme: this is not an IDiffusion! Do not want a large binned object here.
-	    void add(std::shared_ptr<GaussianDiffusion> gd, int impact);
-
-	    /// Drop associations to conserve memory.
-	    void erase(int begin_impact_number, int end_impact_number);
+	    /// Drop any stored ImpactData withing the half open
+	    /// impact index range.
+	    void erase(int begin_impact_index, int end_impact_index);
 
 	    /// Return the data at the give impact position.
-	    ImpactData::pointer impact_data(int number) const;
+	    ImpactData::pointer impact_data(int impact_index) const;
 
-	    // return the distance of the point along the pitch direction
+	    // Return the absolute distance of the point along the
+	    // pitch direction.  This may be outside the pitch domain.
 	    double pitch_distance(const Point& pt) const;
 
-	    // return the impact number closest to the given pitch distance.
-	    int impact_number(double pitch) const;
+	    // Return the impact index in the domain closest to the
+	    // given pitch distance.  Negative or greater or equal to
+	    // nsamples() indicates outside of the pitch domain.
+	    int impact_index(double pitch) const;
 
             int nsamples() const { return m_nticks;}
-            std::pair<double,double> time_range() const {
-                return std::make_pair(m_time_origin,
-                                      m_time_origin+m_nticks*m_time_binsize);
-            }
 
 
 	private:
@@ -80,15 +99,19 @@ namespace WireCell {
 	    std::map<int, ImpactData::mutable_pointer> m_impacts;
 
 	    // 3-point that is the origin of the pitch measurement
-	    Point m_pitch_origin;
+	    const Point m_origin;
 	    // unit vector pointing in pitch direction
-	    Vector m_pitch_axis;
-	    // distance between impact positions
-	    double m_pitch_binsize;
+	    const Vector m_axis;
+
+            const int m_nimpacts;
+            const double m_pitch_min;
+            const double m_pitch_max;
+            const double m_pitch_sample;
 	    
-	    int m_nticks;
-	    double m_time_origin;
-	    double m_time_binsize;
+	    const int m_nticks;
+	    const double m_time_min;
+	    const double m_time_max;
+            const double m_time_sample;
 
 	    double m_nsigma;
 	    bool m_fluctuate;

@@ -4,69 +4,76 @@
 
 using namespace WireCell;
 
-Gen::BinnedDiffusion::BinnedDiffusion(const Ray& impact,
+Gen::BinnedDiffusion::BinnedDiffusion(const Point& origin, const Vector& pitch_dir,
+                                      int npitch_samples, double min_pitch, double max_pitch,
 				      int ntime_samples, double min_time, double max_time,
 				      double nsigma, bool fluc)
     : m_window(0,0)
-    , m_pitch_origin(impact.first)
-    , m_pitch_axis(ray_unit(impact))
-    , m_pitch_binsize(ray_length(impact))
+
+    , m_origin(origin)
+    , m_axis(pitch_dir.magnitude())
+
+    , m_nimpacts(npitch_samples)
+    , m_pitch_min(min_pitch)
+    , m_pitch_max(max_pitch)
+    , m_pitch_sample((max_pitch-min_pitch)/(npitch_samples-1))
+
     , m_nticks(ntime_samples)
-    , m_time_origin(min_time)
-    , m_time_binsize((max_time-min_time)/(ntime_samples-1))
+    , m_time_min(min_time)
+    , m_time_max(max_time)
+    , m_time_sample((max_time-min_time)/(ntime_samples-1))
+
     , m_nsigma(nsigma)
     , m_fluctuate(fluc)
 {
 }
 
-void Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double sigma_pitch)
+bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double sigma_pitch)
 {
-    // time parameters
-    const double time_center = depo->time() - m_time_origin;
-    const double time_min = time_center - m_nsigma*sigma_time;
-    const double time_max = time_center + m_nsigma*sigma_time;
-    const int time_bin0 = int(round(time_min / m_time_binsize));
-    const int time_binf = int(round(time_max / m_time_binsize));
-    const int nt = 1 + time_binf - time_bin0;
-
-    Gen::GausDesc time_desc(time_center, sigma_time, m_time_binsize, nt, time_bin0);
-
-    // pitch parameters.
-    const double pitch_center = pitch_distance(depo->pos());
-    const double pitch_min = pitch_center - m_nsigma*sigma_pitch;
-    const double pitch_max = pitch_center + m_nsigma*sigma_pitch;
-    const int pitch_bin0 = impact_number(pitch_min);
-    const int pitch_binf = impact_number(pitch_max);
-    const int np = 1 + pitch_binf - pitch_bin0;
-
-    Gen::GausDesc pitch_desc(pitch_center, sigma_pitch, m_pitch_binsize, np, pitch_bin0);
-
-    auto gd = std::make_shared<GaussianDiffusion>(depo, time_desc, pitch_desc, m_fluctuate);
-    this->add(gd);
-
-}
-
-void Gen::BinnedDiffusion::add(std::shared_ptr<GaussianDiffusion> gd)
-{
-    auto pd = gd->pitch_desc();
-    auto arange = pd.absolute_range();
-    for (int ind=arange.first; ind<arange.second; ++ind) {
-	this->add(gd, ind);
+    // calculate time parameters and check if contained
+    const double center_time = depo->time();
+    Gen::GausDesc time_desc(center_time, sigma_time);
+    if (time_desc.distance(m_time_min - 0.5*m_time_sample) < -m_nsigma) {
+        return false;
     }
+    if (time_desc.distance(m_time_max + 0.5*m_time_sample) > +m_nsigma) {    
+        return false;
+    }
+
+    // calcualte pitch parameters and check if contained.
+    const double center_pitch = pitch_distance(depo->pos());
+    Gen::GausDesc pitch_desc(center_pitch, sigma_pitch);
+    if (pitch_desc.distance(m_pitch_min - 0.5*m_pitch_sample) < -m_nsigma) {
+        return false;
+    }
+    if (pitch_desc.distance(m_pitch_max + 0.5*m_pitch_sample) > +m_nsigma) {
+        return false;
+    }
+
+    // make GD and add to all covered impacts
+    int min_impact = std::max(int(round(center_pitch - sigma_pitch*m_nsigma)), 0);
+    int max_impact = std::min(int(round(center_pitch + sigma_pitch*m_nsigma)), m_nimpacts-1);
+
+    auto gd = std::make_shared<GaussianDiffusion>(depo, time_desc, pitch_desc);
+    for (int imp = min_impact; imp <= max_impact; ++imp) {
+        this->add(gd, imp);
+    }
+
+    return true;
 }
 
 void Gen::BinnedDiffusion::add(std::shared_ptr<GaussianDiffusion> gd, int impact)
 {
+    ImpactData::mutable_pointer idptr = nullptr;
     auto it = m_impacts.find(impact);
-    ImpactData::mutable_pointer id = nullptr;
     if (it == m_impacts.end()) {
-	id = std::make_shared<ImpactData>(impact);
-	m_impacts[impact] = id;
+	idptr = std::make_shared<ImpactData>(impact);
+	m_impacts[impact] = idptr;
     }
     else {
-	id = it->second;
+	idptr = it->second;
     }
-    id->add(gd);
+    idptr->add(gd);
 }
 
 void Gen::BinnedDiffusion::erase(int begin_impact_number, int end_impact_number)
@@ -84,26 +91,35 @@ void Gen::BinnedDiffusion::erase(int begin_impact_number, int end_impact_number)
 
 Gen::ImpactData::pointer Gen::BinnedDiffusion::impact_data(int number) const
 {
-    auto ret = m_impacts.find(number);
-    if (ret == m_impacts.end()) {
+    if (number < 0 || number >= m_nimpacts) {
+        return nullptr;
+    }
+
+    auto it = m_impacts.find(number);
+    if (it == m_impacts.end()) {
 	return nullptr;
     }
-    auto id = ret->second;
-    if (id->waveform().empty()) {
-	id->calculate(m_nticks);
+    auto idptr = it->second;
+
+    // make sure all diffusions have been sampled 
+    for (auto diff : idptr->diffusions()) {
+        diff->set_sampling(m_nticks, m_time_min, m_time_max,
+                           m_nimpacts, m_pitch_min, m_pitch_max,
+                           m_nsigma, m_fluctuate);
     }
-    return id;
+
+    idptr->calculate(m_nticks);
+    return idptr;
 }
 
 
 double Gen::BinnedDiffusion::pitch_distance(const Point& pt) const
 {
-    return m_pitch_axis.dot(pt - m_pitch_origin);
+    return m_axis.dot(pt - m_origin);
 }
 
 
-int Gen::BinnedDiffusion::impact_number(double pitch) const
+int Gen::BinnedDiffusion::impact_index(double pitch) const
 {
-    return int(round(pitch/m_pitch_binsize));
-
+    return int(round((pitch - m_pitch_min) / m_pitch_sample));
 }

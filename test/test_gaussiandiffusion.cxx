@@ -28,7 +28,7 @@ void test_gd(bool fluctuate)
     const int nt_start = int(round(t_min/t_sample));
     const int nt = int(2*nsigma*t_sigma/t_sample);
 
-    Gen::GausDesc tdesc(t_center, t_sigma, t_sample, nt, nt_start);
+    Gen::GausDesc tdesc(t_center, t_sigma);
 
     const double p_center = 1*units::m;
     const double p_sigma = 1*units::mm;
@@ -37,7 +37,7 @@ void test_gd(bool fluctuate)
     const int np_start = int(round(p_min/p_sample));
     const int np = int(2*nsigma*p_sigma/p_sample);
 
-    Gen::GausDesc pdesc(p_center, p_sigma, p_sample, np, np_start);
+    Gen::GausDesc pdesc(p_center, p_sigma);
 
     cerr << "nt=" << nt << " np=" << np << endl;
 
@@ -45,7 +45,7 @@ void test_gd(bool fluctuate)
     const Point pdepo(10*units::cm, 0.0, p_center);
     auto depo = std::make_shared<SimpleDepo>(t_center, pdepo, qdepo);
 
-    Gen::GaussianDiffusion gd(depo, tdesc, pdesc, fluctuate);
+    Gen::GaussianDiffusion gd(depo, tdesc, pdesc);
 			 
     auto patch = gd.patch();
 
@@ -61,11 +61,9 @@ void test_gd(bool fluctuate)
     marker->SetMarkerStyle(5);
     cerr << "center t=" << t_center/tunit << ", p=" << p_center/punit << endl;
 
-    auto tbinning = tdesc.binned_extent();
-    auto pbinning = pdesc.binned_extent();
     TH2F* hist = new TH2F("patch1","Diffusion Patch",    
-			  nt, tbinning.first/tunit, tbinning.second/tunit,
-			  np, pbinning.first/punit, pbinning.second/punit);// we will leak this.
+			  nt, t_min/tunit, (t_min + nt*t_sample)/tunit,
+			  np, p_min/punit, (p_min + np*p_sample)/punit);
 
     hist->SetXTitle("time (us)");
     hist->SetYTitle("pitch (mm)");

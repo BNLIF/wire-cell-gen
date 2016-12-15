@@ -9,49 +9,48 @@
 namespace WireCell {
     namespace Gen {
 
-	/// Describe a binned and truncated Gaussian
+	/** A GausDesc describes one dimension of a sampled Gaussian
+         * distribution.
+         *
+         * Two are used by GaussianDiffusion.  One describes the
+         * transverse dimension along the direction of wire pitch (and
+         * for a given wire plane) and one the longitudinal dimension
+         * is along the drift direction as measured in time.  */
 	struct GausDesc {
-	    double center;	// Gaussian mean location
-	    double sigma;	// Gaussian sigma width
-	    double sample_size;	// distance between consecutive samples 
-	    int nsamples;	// number of samples over the domain
-	    int sample_begin;	// sample number of start of sample domain
 
-	    GausDesc(double center,double sigma,double sample_size,int nsamples,int sample_begin)
-		: center(center)
-		, sigma(sigma)
-		, sample_size(sample_size)
-		, nsamples(nsamples)
-		, sample_begin(sample_begin)
+            /// The absolute location of the mean of the Gaussian as
+            /// measured relative to some externally defined origin.
+	    double center;
+            /// The Gaussian sigma (half) width.
+	    double sigma;
+            /// The distance between two consecutive samples of the Gaussian.
+//	    double sample_size;
+            /// The location of the first sample
+//            double sample_zero;
+            /// The total number of samples over the domain.
+//	    int nsamples;
+
+//	    GausDesc(double center, double sigma, double sample_size, double sample_zero, int nsamples)
+            GausDesc(double center, double sigma)
+                : center(center)
+                , sigma(sigma)
+//                , sample_size(sample_size)
+//                , sample_zero(sample_zero)
+//		, nsamples(nsamples)
 		{ }
-		
-	    // The [begin,end) half open relative sample index range.
-	    std::pair<int,int> relative_range() const {
-		return std::make_pair(0, nsamples);
-	    }
-	    // The [begin,end) half open absolute sample index range.
-	    std::pair<int,int> absolute_range() const {
-		return std::make_pair(sample_begin, sample_begin + nsamples);
-	    }
-	    // The center-to-center extent of sampling
-	    std::pair<double,double> sampled_extent() const {
-		auto bb = absolute_range();
-		return std::make_pair(bb.first*sample_size, bb.second*sample_size);
-	    }
-	    // The edge-to-edge extent of the sampling.
-	    std::pair<double,double> binned_extent() const {
-		auto bb = absolute_range();
-		return std::make_pair((bb.first-0.5)*sample_size, (bb.second-0.5)*sample_size);
-	    }
-	    std::vector<double> sample() const {
-		std::vector<double> ret(nsamples);
-		const double vmin = sample_begin * sample_size;
-		for (int ind=0; ind<nsamples; ++ind) {
-		    const double rel = (vmin + ind*sample_size - center)/sigma;
-		    ret[ind] = exp(-0.5*rel*rel);
-		}
-		return ret;
-	    }
+
+            /// Return the distance in number of sigma that x is from the center
+            double distance(double x) {
+                return (x-center)/sigma;
+            }
+
+            /// Return range indices in the given sampling that cover
+            /// at most +/- nsigma of the Gaussian.  The range is half
+            /// open (.second is +1 beyond what should be accessed).
+            std::pair<int,int> subsample_range(int nsamples, double xmin, double xmax, double nsigma=3.0) const;
+
+            /** Sample the Gaussian.  Return num samples taken from xmin to xmax. */
+	    std::vector<double> sample(int num, double xmin, double xmax) const;
 	    
 	};
 
@@ -78,14 +77,32 @@ namespace WireCell {
 
 	    GaussianDiffusion(const IDepo::pointer& depo,
 			      const GausDesc& time_desc, 
-			      const GausDesc& pitch_desc,
-			      bool fluctuate = false);
+			      const GausDesc& pitch_desc);
+
+            /// This fills the patch once.  The number, min and max
+            /// describe the entire sampled domain.  The patch is
+            /// limited to the 2D sample points that cover the
+            /// subdomain determined by the number of sigma.  If
+            /// fluctuate is true then a total-charge preserving
+            /// Poisson fluctuation is applied bin-by-bin to the
+            /// sampling.
+            void set_sampling(int nt, double tmin, double tmax,
+                              int np, double pmin, double pmax,
+                              double nsigma = 3.0,
+                              bool fluctuate=false);
 
 	    /// Get the diffusion patch as an array of N_pitch rows X
 	    /// N_time columns.  Index as patch(i_pitch, i_time).
+	    /// Call set_sampling() first.
 	    const patch_t& patch() const;
 
-	    /// Access depositing.
+            /// Return the number of samples in the time direction to where the patch starts.
+            int toffset() const { m_toffset; }
+
+            /// Return the number of samples in the pitch direction to where the patch starts.
+            int poffset() const { m_poffset; }
+
+	    /// Access deposition.
 	    IDepo::pointer depo() const { return m_deposition; }
 	    
 	    const GausDesc pitch_desc() { return m_pitch_desc; }
@@ -96,8 +113,8 @@ namespace WireCell {
 
 	    GausDesc m_time_desc, m_pitch_desc;
 
-	    bool m_fluctuate;
 	    mutable patch_t m_patch;
+            mutable int m_toffset, m_poffset;
 	};
     }
 }
