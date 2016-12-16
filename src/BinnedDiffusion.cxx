@@ -1,6 +1,6 @@
 #include "WireCellGen/BinnedDiffusion.h"
 #include "WireCellGen/GaussianDiffusion.h"
-
+#include "WireCellUtil/Units.h"
 
 using namespace WireCell;
 
@@ -11,7 +11,7 @@ Gen::BinnedDiffusion::BinnedDiffusion(const Point& origin, const Vector& pitch_d
     : m_window(0,0)
 
     , m_origin(origin)
-    , m_axis(pitch_dir.magnitude())
+    , m_axis(pitch_dir)
 
     , m_nimpacts(npitch_samples)
     , m_pitch_min(min_pitch)
@@ -26,28 +26,46 @@ Gen::BinnedDiffusion::BinnedDiffusion(const Point& origin, const Vector& pitch_d
     , m_nsigma(nsigma)
     , m_fluctuate(fluc)
 {
+    std::cerr << "BinnedDiffusion(origin=" << origin/units::mm << ", pitchdir=" << pitch_dir << ", "
+              << "pitch (mm): "<< npitch_samples << "," << min_pitch/units::mm << "," << max_pitch/units::mm << ", "
+              << "time (us): " << ntime_samples << "," << min_time/units::us << "+" << (max_time-min_time)/units::us << ")\n";
+        
 }
 
 bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double sigma_pitch)
 {
-    // calculate time parameters and check if contained
+
     const double center_time = depo->time();
+    const double center_pitch = pitch_distance(depo->pos());
+    std::cerr << "add(time=" << center_time/units::us << " +/- " << sigma_time/units::us << " us "
+              << " pt=" << depo->pos() / units::mm << " mm "
+              << " pitch=" << center_pitch/units::mm << " +/- " << sigma_pitch/units::mm << " mm\n";
+
+
     Gen::GausDesc time_desc(center_time, sigma_time);
-    if (time_desc.distance(m_time_min - 0.5*m_time_sample) < -m_nsigma) {
-        return false;
-    }
-    if (time_desc.distance(m_time_max + 0.5*m_time_sample) > +m_nsigma) {    
-        return false;
+    {
+        double nmin_sigma = time_desc.distance(m_time_min - 0.5*m_time_sample);
+        double nmax_sigma = time_desc.distance(m_time_max + 0.5*m_time_sample);
+        if (nmin_sigma > m_nsigma || nmax_sigma < -m_nsigma) {
+            std::cerr << "Depo too far away in time sigma: [" << nmin_sigma << "," << nmax_sigma << "]\n";
+            std::cerr << "  time range=[" << m_time_min/units::us << "," << m_time_max/units::us << "]";
+            std::cerr << "  time_sample=" << m_time_sample/units::us << "us, center=" << center_time/units::us << " us"
+                      << ", sigma=" << sigma_time/units::us << " us\n";
+            return false;
+        }
     }
 
-    // calcualte pitch parameters and check if contained.
-    const double center_pitch = pitch_distance(depo->pos());
     Gen::GausDesc pitch_desc(center_pitch, sigma_pitch);
-    if (pitch_desc.distance(m_pitch_min - 0.5*m_pitch_sample) < -m_nsigma) {
-        return false;
-    }
-    if (pitch_desc.distance(m_pitch_max + 0.5*m_pitch_sample) > +m_nsigma) {
-        return false;
+    {
+        double nmin_sigma = pitch_desc.distance(m_pitch_min - 0.5*m_pitch_sample);
+        double nmax_sigma = pitch_desc.distance(m_pitch_max + 0.5*m_pitch_sample);
+        if (nmin_sigma > m_nsigma || nmax_sigma < -m_nsigma) {
+            std::cerr << "Depo too far away in pitch sigma: [" << nmin_sigma << "," << nmax_sigma << "]\n";
+            std::cerr << "  pitch range=[" << m_pitch_min/units::mm << "," << m_pitch_max/units::mm << "]";
+            std::cerr << "  pitch_sample=" << m_pitch_sample/units::mm << "mm, center=" << center_pitch/units::mm << " mm"
+                      << ", sigma=" << sigma_pitch/units::mm << " mm\n";
+            return false;
+        }
     }
 
     // make GD and add to all covered impacts
