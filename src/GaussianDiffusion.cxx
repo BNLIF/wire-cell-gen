@@ -15,15 +15,15 @@ std::vector<double> Gen::GausDesc::sample(double start, double step, int nsample
     return ret;
 }
 
-std::pair<int,int> Gen::GausDesc::subsample_range(int nsamples, double xmin, double xmax, double nsigma) const
-{
-    const double sample_size = (xmax-xmin)/(nsamples-1);
-    // find closest sample indices
-    int imin = int(round((center - nsigma*sigma - xmin)/sample_size));
-    int imax = int(round((center + nsigma*sigma - xmin)/sample_size));
+// std::pair<int,int> Gen::GausDesc::subsample_range(int nsamples, double xmin, double xmax, double nsigma) const
+// {
+//     const double sample_size = (xmax-xmin)/(nsamples-1);
+//     // find closest sample indices
+//     int imin = int(round((center - nsigma*sigma - xmin)/sample_size));
+//     int imax = int(round((center + nsigma*sigma - xmin)/sample_size));
     
-    return std::make_pair(std::max(imin, 0), std::min(imax+1, nsamples));
-}
+//     return std::make_pair(std::max(imin, 0), std::min(imax+1, nsamples));
+// }
 
 
 

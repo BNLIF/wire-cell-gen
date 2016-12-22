@@ -52,7 +52,7 @@ namespace WireCell {
             /// Return range indices in the given sampling that cover
             /// at most +/- nsigma of the Gaussian.  The range is half
             /// open (.second is +1 beyond what should be accessed).
-            std::pair<int,int> subsample_range(int nsamples, double xmin, double xmax, double nsigma=3.0) const;
+            //std::pair<int,int> subsample_range(int nsamples, double xmin, double xmax, double nsigma=3.0) const;
 
             /** Sample the Gaussian. */
 	    std::vector<double> sample(double start, double step, int nsamples) const;

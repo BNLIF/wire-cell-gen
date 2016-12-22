@@ -38,13 +38,12 @@ void Gen::ImpactData::calculate(int nticks) const
         const int poffset_bin = diff->poffset_bin();
         const int pbin = m_impact - poffset_bin;
         const int np = patch.rows();
+        if (pbin<0 || pbin >= np) {
+            continue;
+        }
 
         const int toffset_bin = diff->toffset_bin();
         const int nt = patch.cols();
-
-        if (pbin<0 || pbin >= patch.rows()) {
-            continue;
-        }
 
         for (int tbin=0; tbin<nt; ++tbin) {
             const int absbin = tbin+toffset_bin;

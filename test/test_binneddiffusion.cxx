@@ -145,9 +145,9 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
         const double max_time = time_span.second;
         const int ntbins = (max_time - min_time)/tbins.binsize();
 
-        const int npbins = max_impact - min_impact + 1;
         const double min_pitch = ibins.edge(min_impact);
         const double max_pitch = ibins.edge(max_impact+1);
+        const int npbins = (max_pitch-min_pitch)/ibins.binsize();
 
         // cerr << "t:"<<ntbins<<"["<<min_time/units::us<<","<<max_time/units::us<<"]us ("<<max_time-min_time<<")\n";
         // cerr << "p:"<<npbins<<"["<<min_pitch/units::mm<<","<<max_pitch/units::mm<<"]mm\n";
@@ -169,11 +169,11 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
 	    Assert (wave.size() == nticks);
             const int impact = idptr->impact_number();
             const double pitch_dist = ibins.center(impact);
-	    auto mm = idptr->span();
+	    auto mm = idptr->span(ndiffision_sigma);
             const int min_tick = tbins.bin(mm.first);
             const int max_tick = tbins.bin(mm.second);
             //cerr << "impact:" << impact << " pitch="<<pitch_dist/units::mm << " ticks:["<<min_tick<<","<<max_tick<<"]\n";
-	    for (int itick=min_tick; itick<max_tick; ++itick) {
+	    for (int itick=min_tick; itick<=max_tick; ++itick) {
 		const double time = tbins.center(itick);
                 if (!tbins.inside(time)) {
                     cerr << "OOB time: " << time/units::us << "us tick:"<<itick
