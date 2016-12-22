@@ -1,10 +1,11 @@
 #include "WireCellGen/ImpactZipper.h"
 #include "WireCellGen/TrackDepos.h"
 #include "WireCellGen/BinnedDiffusion.h"
+#include "WireCellGen/TransportedDepo.h"
 #include "WireCellUtil/ImpactResponse.h"
-#include "WireCellIface/SimpleDepo.h"
 #include "WireCellUtil/ExecMon.h"
 #include "WireCellUtil/Point.h"
+#include "WireCellUtil/Binning.h"
 #include "WireCellUtil/Testing.h"
 
 #include "TCanvas.h"
@@ -14,6 +15,8 @@
 #include <iostream>
 
 using namespace WireCell;
+using namespace std;
+
 
 int main(int argc, char *argv[])
 {
@@ -41,44 +44,57 @@ int main(int argc, char *argv[])
     PlaneImpactResponse pirw(fr,wplaneid);
     std::cerr << em("made PlaneImpactResponse") << std::endl;
 
+    // Origin where drift and diffusion meets field response.
+    Point field_origin(fr.origin, 0, 0);
 
-    // diffusion
-    const double t0 = 1.0*units::s;
+    // Describe the W collection plane
+    const int nwires = 2000;
+    const double wire_pitch = 3*units::mm;
+    const int nregion_bins = 10; // fixme: this should come from the Response::Schema.
+    const double halfwireextent = wire_pitch * 0.5*nwires;
+
+    Pimpos pimpos(nwires, -halfwireextent, halfwireextent,
+                  wwire, wpitch, field_origin, nregion_bins);
+
+
+    // Digitization and time
+    const double trigger_time = 1.0*units::s; // eg, optical trigger from prompt interaction activity
+    const double readout_time = 5*units::ms;
     const int nticks = 9600;
     const double tick = 0.5*units::us;
-    const double drift_speed = 1.0*units::mm/units::us;
-    const int nwires = 1000;
-    const int npmwires = 10;	// effective induction range in # of wire pitches
-    const double wire_pitch = 3*units::mm;
-    const int nimpacts_per_wire_pitch = 10;
-    const double impact_pitch = wire_pitch/nimpacts_per_wire_pitch;
-    const double z_half_width = 0.5*nwires*wire_pitch;
-    const Point w_origin(0.0,0.0,0.0);
-    const Vector w_pitchdir(0.0, 0.0, 1.0);
-    const double min_time = t0;
-    const double max_time = min_time + nticks*tick;
+    const double drift_speed = 1.0*units::mm/units::us; // close but fake/arb value!
+    Binning tbins(nticks, trigger_time, trigger_time+readout_time);
+
+    // Diffusion
     const int ndiffision_sigma = 3.0;
     const bool fluctuate = false;
 
-
-    // tracks
+    // Generate some trivial tracks
     const double stepsize = 1*units::mm;
     TrackDepos tracks(stepsize);
 
+    // random "box" in space and time
     std::random_device rd;
     std::default_random_engine re(rd());
     std::uniform_real_distribution<> rpos(-1*units::cm, 1*units::cm);
     std::uniform_real_distribution<> tpos(0*units::us, 10*units::us);
+    const Point interaction_box_center(1*units::m, 0*units::m, 0*units::m);
 
+    // ionized electrons per track distance
     const double dedx = 500.0/(1.0*units::cm);
     const int ntracks = 2;
-    const double xoffset = 30*units::cm;
     for (int itrack = 0; itrack < ntracks; ++itrack) {
-        Point p1(xoffset+rpos(re), rpos(re), rpos(re));
-        Point p2(xoffset+rpos(re), rpos(re), rpos(re));
+        Point p1(rpos(re), rpos(re), rpos(re));
+        Point p2(rpos(re), rpos(re), rpos(re));
         double time = tpos(re);
-        std::cerr << "track #"<<itrack<<": t(us)=" << time/units::us << " + " << t0/units::us << std::endl;
-        tracks.add_track(t0+time, Ray(p1,p2), dedx);
+        std::cerr << "track #"<<itrack << "\n"
+                  << "\tt=" << trigger_time/units::s << "s + " << time/units::us << "us\n"
+                  << "\tp1=" << p1/units::mm << "mm\n"
+                  << "\tp2=" << p2/units::mm << "mm\n"
+                  << "\t c=" << interaction_box_center/units::mm << "mm\n"
+                  << std::endl;
+        const Ray ray(p1+interaction_box_center,p2+interaction_box_center);
+        tracks.add_track(time+trigger_time, ray, dedx);
     }
     std::cerr << em("made tracks") << std::endl;
 
@@ -88,26 +104,27 @@ int main(int argc, char *argv[])
     std::cerr << em("made tracks") << std::endl;
 
     // add deposition to binned diffusion
-    Gen::BinnedDiffusion bdw(w_origin, w_pitchdir,
-                             nwires*npmwires, -z_half_width, z_half_width,
-                             nticks, t0, t0 + nticks*tick,
-                             ndiffision_sigma, fluctuate);
+    Gen::BinnedDiffusion bdw(pimpos, tbins, ndiffision_sigma, fluctuate);
+
     std::cerr << em("made BinnedDiffusion") << std::endl;
     for (auto depo : depos) {
-        Point pt = depo->pos();
-	double drift_time = pt.x()/drift_speed;
-	pt.x(0);		// insta-drift
+        auto drifted = std::make_shared<Gen::TransportedDepo>(depo, 0.0, drift_speed);
 
-	const double sigmaL = 1.0*units::us;
-        const double sigmaT = 1.0*units::mm;
+	const double sigma_time = 1.0*units::us; // fixme: should really be function of drift time
+        const double sigma_pitch = 1.0*units::mm; // fixme: ditto
 	
-        const double time = depo->time()+drift_time;
-	auto drifted = std::make_shared<SimpleDepo>(time, pt, depo->charge());
-	bool ok = bdw.add(drifted, sigmaL, sigmaT);
+	bool ok = bdw.add(drifted, sigma_time, sigma_pitch);
         if (!ok) {
-            std::cerr << "failed to add: t=" << time/units::us << ", pt=" << pt/units::mm << std::endl;
+            std::cerr << "failed to add: t=" << drifted->time()/units::us << ", pt=" << drifted->pos()/units::mm << std::endl;
         }
         Assert(ok);
+
+        std::cerr << "depo:  time=1s+" << (depo->time()-1*units::s)/units::us<< "us +/- " << sigma_time/units::us << " us "
+                  << " pt=" << depo->pos() / units::mm << " mm\n";
+        
+        std::cerr << "drift: time=1s+" << (drifted->time()-1*units::s)/units::us<< "us +/- " << sigma_time/units::us << " us "
+                  << " pt=" << drifted->pos() / units::mm << " mm\n";
+
     }
     std::cerr << em("added track depositions") << std::endl;
 
@@ -115,25 +132,26 @@ int main(int argc, char *argv[])
     Gen::ImpactZipper zipper(pirw, bdw);
     std::cerr << em("made ImpactZipper") << std::endl;
 
+    auto pitch_mm = bdw.pitch_range();
+    cerr << "Pitch sample range: ["<<pitch_mm.first/units::mm <<","<< pitch_mm.second/units::mm<<"]mm\n";
+
+    const auto rb = pimpos.region_binning();
+    const int minwire = rb.bin(pitch_mm.first);
+    const int maxwire = rb.bin(pitch_mm.second);
+    cerr << "Wires: [" << minwire << "," << maxwire << "]\n";
+
     std::vector<Waveform::realseq_t> wframe;
-    int minwire = -1, maxwire=-1;
-    for (int iwire=0; iwire<nwires; ++iwire) {
+    double tottot=0.0;
+    for (int iwire=minwire; iwire<maxwire; ++iwire) {
         auto wave = zipper.waveform(iwire);
         auto tot = Waveform::sum(wave);
-        if (tot>0) {
-            std::cerr << iwire << " tot=" << tot << std::endl;
-        }
-        if (minwire < 0 && tot > 0) {
-            minwire = iwire;
-        }
-        if (tot > 0) {
-            maxwire = iwire;
-        }
+        tottot += tot;
+        std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
         wframe.push_back(wave);
     }
     std::cerr << em("zipped through wires") << std::endl;
-    Assert(minwire >= 0);
-    Assert(maxwire > 0 && maxwire < nwires);
+    Assert(tottot > 0.0);
+
 
     int mintick = -1, maxtick=-1;
     for (int iwire=minwire; iwire<=maxwire; ++iwire) {    

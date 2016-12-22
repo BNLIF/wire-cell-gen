@@ -34,7 +34,7 @@ namespace WireCell {
              * at this impact. */
 	    void add(GaussianDiffusion::pointer diffusion);
 
-            std::vector<GaussianDiffusion::pointer>& diffusions() { return m_diffusions; }
+            const std::vector<GaussianDiffusion::pointer>& diffusions() const { return m_diffusions; }
 
             /** Calculate the slice in time across the collected
              * GaussianDiffusion objects.
@@ -57,9 +57,15 @@ namespace WireCell {
 	    externally defined pitch origin. */
             int impact_number() const { return m_impact; }
 
+            /** Return the max time range spanned by the difussions
+             * that cover this impact including a width expressed as a
+             * factor multiplied by the sigma of the time Gaussian.
+             * Set to 0.0 gives collective span of centers.*/
+            std::pair<double,double> span(double nsigma = 0.0) const;
+
             /** Return the smallest, half-open range of tick indices
              * which have only zero values outside. */
-            std::pair<int,int> strip() const;
+            //std::pair<int,int> strip() const;
 	};
     }
 }

@@ -16,36 +16,49 @@ Gen::ImpactZipper::~ImpactZipper()
 
 Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 {
-    const int nimpperwire = m_pir.nimp_per_wire();
-    const int abs_impact_begin = nimpperwire * iwire;
-    const int abs_impact_end = abs_impact_begin + nimpperwire * m_pir.nwires() ;
-        
+    const double pitch_range = m_pir.pitch_range();
 
-    Waveform::compseq_t spec(m_bd.nsamples(), Waveform::complex_t(0.0,0.0));
+    const auto pimpos = m_bd.pimpos();
+    const auto rb = pimpos.region_binning();
+    const auto ib = pimpos.impact_binning();
+    const double wire_pos = rb.center(iwire);
 
-    int nfound = 0;
-    for (int abs_imp = abs_impact_begin; abs_imp < abs_impact_end; ++abs_imp) {
-        auto id = m_bd.impact_data(abs_imp);
+    const int min_impact = ib.edge_index(wire_pos - 0.5*pitch_range);
+    const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
+
+    const int nsamples = m_bd.tbins().nbins();
+    Waveform::compseq_t spec(nsamples, Waveform::complex_t(0.0,0.0));
+
+    int nfound=0;
+
+    for (int imp = min_impact; imp <= max_impact; ++imp) {
+        auto id = m_bd.impact_data(imp);
         if (!id) {
+            //std::cerr << "ImpactZipper: no data for absolute impact number: " << imp << std::endl;
             continue;
         }
-
+        
         const Waveform::compseq_t& charge_spectrum = id->spectrum();
         if (charge_spectrum.empty()) {
+            //std::cerr << "ImpactZipper: no charge for absolute impact number: " << abs_imp << std::endl;
             continue;
         }
 
         ++nfound;
         Waveform::increase(spec, charge_spectrum);
     }
+    std::cerr << "ImpactZipper: found " << nfound << " in abs impact: ["  << min_impact << ","<< max_impact << "]\n";
 
-    m_bd.erase(0, abs_impact_begin); // clear memory
+    // Clear memory assuming next call is iwire+1..
+    // fixme: this is a dumb way to go.....
+    //m_bd.erase(0, min_impact); 
 
     if (!nfound) {
-        return Waveform::realseq_t(m_bd.nsamples(), 0.0);
+        return Waveform::realseq_t(nsamples, 0.0);
     }
     
     auto waveform = Waveform::idft(spec);
 
     return waveform;
 }
+

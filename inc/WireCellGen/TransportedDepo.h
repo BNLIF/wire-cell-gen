@@ -1,6 +1,7 @@
 #ifndef WIRECELL_NAV_TRANSPORTEDDEPO
 #define WIRECELL_NAV_TRANSPORTEDDEPO
 
+#include "WireCellIface/IDepo.h"
 
 namespace WireCell {
     namespace Gen {

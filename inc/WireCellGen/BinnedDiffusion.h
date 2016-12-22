@@ -1,11 +1,7 @@
-/**
-   
-
- */
-
 #ifndef WIRECELLGEN_BINNEDDIFFUSION
 #define WIRECELLGEN_BINNEDDIFFUSION
 
+#include "WireCellUtil/Pimpos.h"
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellIface/IDepo.h"
@@ -32,37 +28,22 @@ namespace WireCell {
 
                Arguments are:
 	      	
-               - pitch_origin :: the 3-space position pointing to the
-                 origin of the pitch coordinate.  This may typically
-                 be the center of the zero'th wire in the plane.
+               - pimpos :: a Pimpos instance defining the wire and impact binning.
 
-               - pitch_direction :: a 3-vector of unit length pointing
-                 in the wire pitch direction.
+               - tbins :: a Binning instance defining the time sampling binning.
 
-               - npitch_samples :: the number of samples of impact
-                 positions along the pitch direction.
-
-               - min_pitch :: the minimum pitch location to sample.
-
-               - max_pitch :: the maximum pitch location to sample.
-               
-	       - ntime_samples :: number of samples in time
-              
-	       - min_time :: the minimum time to sample
-              
-	       - max_time :: the maximum time to sample
-              
 	       - nsigma :: number of sigma the 2D (transverse X
                  longitudinal) Gaussian extends.
               
 	       - fluctuate :: set to true if charge-preserving Poisson
                  fluctuations are applied.
 	     */
-	    BinnedDiffusion(const Point& pitch_origin, const Vector& pitch_direction,
-                            int npitch_samples, double min_pitch, double max_pitch,
-			    int ntime_samples, double min_time, double max_time,
+	    BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
 			    double nsigma=3.0, bool fluctuate=false);
 
+
+            const Pimpos& pimpos() const { return m_pimpos; }
+            const Binning& tbins() const { return m_tbins; }
 
 	    /// Add a deposition and its associated diffusion sigmas.
 	    /// Return false if no activity falls within the domain.
@@ -76,45 +57,45 @@ namespace WireCell {
 	    /// impact index range.
 	    void erase(int begin_impact_index, int end_impact_index);
 
-	    /// Return the data at the give impact position.
-	    ImpactData::pointer impact_data(int impact_index) const;
+	    /// Return the data in the given impact bin.  Note, this
+	    /// bin represents drifted charge between two impact
+	    /// positions.  Take care when using BinnedDiffusion and
+	    /// field responses because epsilon above or below the
+	    /// impact position exactly in the middle of two wires
+	    /// drastically different response.
+	    ImpactData::pointer impact_data(int bin) const;
 
-	    // Return the absolute distance of the point along the
-	    // pitch direction.  This may be outside the pitch domain.
-	    double pitch_distance(const Point& pt) const;
+            /// Return the range of pitch containing depos out to
+            /// given nsigma and without bounds checking.
+            std::pair<double,double> pitch_range(double nsigma=0.0) const;
 
-	    // Return the impact index in the domain closest to the
-	    // given pitch distance.  Negative or greater or equal to
-	    // nsamples() indicates outside of the pitch domain.
-	    int impact_index(double pitch) const;
+            /// Return the half open bin range of impact bins,
+            /// constrained so that either number is in [0,nimpacts].
+            std::pair<int,int> impact_bin_range(double nsigma=0.0) const;
 
-            int nsamples() const { return m_nticks;}
+            /// Return the range of time containing depos out to given
+            /// nsigma and without bounds checking.
+            std::pair<double,double> time_range(double nsigma=0.0) const;
+
+            /// Return the half open bin range for time bins
+            /// constrained so that either number is in [0,nticks].
+            std::pair<int,int> time_bin_range(double nsigma=0.0) const;
 
 
 	private:
 	    
+            const Pimpos& m_pimpos;
+            const Binning& m_tbins;
+
+	    double m_nsigma;
+	    bool m_fluctuate;
+
 	    // current window set by user.
 	    std::pair<int,int> m_window;
 	    // the content of the current window
 	    std::map<int, ImpactData::mutable_pointer> m_impacts;
+            std::vector<std::shared_ptr<GaussianDiffusion> > m_diffs;
 
-	    // 3-point that is the origin of the pitch measurement
-	    const Point m_origin;
-	    // unit vector pointing in pitch direction
-	    const Vector m_axis;
-
-            const int m_nimpacts;
-            const double m_pitch_min;
-            const double m_pitch_max;
-            const double m_pitch_sample;
-	    
-	    const int m_nticks;
-	    const double m_time_min;
-	    const double m_time_max;
-            const double m_time_sample;
-
-	    double m_nsigma;
-	    bool m_fluctuate;
 	};
 
 

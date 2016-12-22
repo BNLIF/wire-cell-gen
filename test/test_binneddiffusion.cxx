@@ -39,33 +39,34 @@ struct Meta {
     }
 };
 
+const double t0 = 1*units::s;   // put it way out in left field to catch any offset errors
+//const double t0 = 0*units::s;
 const int nticks = 9600;
 const double tick = 0.5*units::us;
-const double drift_speed = 1.0*units::mm/units::us;
-const int nwires = 1000;
-const int npmwires = 10;	// effective induction range in # of wire pitches
+const double readout_time = nticks*tick;
+const double drift_speed = 1.6*units::mm/units::us;
+
+const int nwires = 2001;
 const double wire_pitch = 3*units::mm;
-const int nimpacts_per_wire_pitch = 10;
-const double impact_pitch = wire_pitch/nimpacts_per_wire_pitch;
+const double min_wire_pitch = -(nwires/2)*wire_pitch;
+const double max_wire_pitch = +(nwires/2)*wire_pitch;
+
+Pimpos pimpos(nwires, min_wire_pitch, max_wire_pitch);
+Binning tbins(nticks, t0, t0 + readout_time);
+
+// +/- this number of wire regions around wire of interest to assume
+// we have field responses calculated.
+const int npmwires = 10;
 
 
-void test_track(Meta& meta, double charge, double t0, double track_time, const Ray& track_ray, double stepsize, bool fluctuate)
+void test_track(Meta& meta, double charge, double track_time, const Ray& track_ray, double stepsize, bool fluctuate)
 {
-    const int nimpacts = nwires*npmwires;
-    const double z_half_width = wire_pitch*0.5*nwires;
-
-    const Point w_origin(-3*units::mm, 0.0, -z_half_width);
-    const Vector w_pitchdir(0.0, 0.0, 1.0);
-
-
-    const double min_time = t0;
-    const double max_time = min_time + nticks*tick;
     const int ndiffision_sigma = 3.0;
-    
-    Gen::BinnedDiffusion bd(w_origin, w_pitchdir,
-                            nimpacts, -z_half_width, z_half_width,
-                            nticks, t0, t0 + nticks*tick,
-                            ndiffision_sigma, fluctuate);
+
+    const auto rbins = pimpos.region_binning();
+    const auto ibins = pimpos.impact_binning();
+
+    Gen::BinnedDiffusion bd(pimpos, tbins, ndiffision_sigma, fluctuate);
 
     auto track_start = track_ray.first;
     auto track_dir = ray_unit(track_ray);
@@ -74,96 +75,115 @@ void test_track(Meta& meta, double charge, double t0, double track_time, const R
     const double DL=5.3*units::centimeter2/units::second;
     const double DT=12.8*units::centimeter2/units::second;
 
-    meta.em("begin adding depos");
+    const double xstop = pimpos.origin()[0];
+
+    meta.em("begin adding Depp's");
     for (double dist=0.0; dist < track_length; dist += stepsize) {
 	auto pt = track_start + dist*track_dir;
-	double drift_time = pt.x()/drift_speed;
-	pt.x(0);		// insta-drift
+        const double delta_x = pt.x() - xstop;
+        const double drift_time = delta_x / drift_speed;
+	pt.x(xstop);		// insta-drift
+        const double time = track_time+drift_time;
+
+        const double pitch = pimpos.distance(pt);
+        Assert(rbins.inside(pitch));
+        Assert(ibins.inside(pitch)); // should be identical
+        Assert(tbins.inside(time));
 
 	const double tmpcm2 = 2*DL*drift_time/units::centimeter2;
 	const double sigmaL = sqrt(tmpcm2)*units::centimeter / drift_speed;
 	const double sigmaT = sqrt(2*DT*drift_time/units::centimeter2)*units::centimeter2;
 	
-	auto depo = std::make_shared<SimpleDepo>(t0+drift_time, pt, charge);
+	auto depo = std::make_shared<SimpleDepo>(time, pt, charge);
 	bd.add(depo, sigmaL, sigmaT);
-	cerr << "dist: " <<dist/units::mm << "mm, drift: " << drift_time/units::us << "us depo:" << depo->pos() << " @ " << depo->time()/units::us << "us\n";
+	//cerr << "dist: " <<dist/units::mm << "mm, drift: " << drift_time/units::us << "us depo:" << depo->pos() << " @ " << depo->time()/units::us << "us\n";
     }
+    
 
     meta.em("begin swiping wires");
 
     for (int iwire = 0; iwire < nwires; ++iwire) {
 
-	const int lo_wire = std::max(iwire-npmwires, 0);
-	const int hi_wire = std::min(iwire+npmwires, nwires-1);
-	const int lo_impact = int(round((lo_wire - 0.5) * nimpacts_per_wire_pitch));
-	const int hi_impact = int(round((hi_wire + 0.5) * nimpacts_per_wire_pitch));
+        const int min_wire = std::max(iwire-npmwires, 0);
+        const int max_wire = std::min(iwire+npmwires, nwires-1);
 
+        const int min_impact = std::max(pimpos.wire_impacts(min_wire).first, 0);
+        const int max_impact = std::min(pimpos.wire_impacts(max_wire).second, ibins.nbins());
+
+        std::pair<double,double> time_span(0,0);
 	std::vector<Gen::ImpactData::pointer> collect;
 
-	for (int impact_number = lo_impact; impact_number <= hi_impact; ++impact_number) {
-	    auto impact_data = bd.impact_data(impact_number);
-	    if (impact_data) {
-		collect.push_back(impact_data);
-	    }
+        for (int imp = min_impact; imp <= max_impact; ++imp) {
+	    auto impact_data = bd.impact_data(imp);
+	    if (!impact_data) {
+                continue;
+            }
+            auto ts = impact_data->span(ndiffision_sigma);
+
+            if (collect.empty()) {
+                time_span = ts;
+            }
+            else {
+                time_span.first = std::min(time_span.first, ts.first);
+                time_span.second = std::max(time_span.second, ts.second);
+            }
+            collect.push_back(impact_data);
 	}
 
 	if (collect.empty()) {
 	    continue;
 	}
 	
-	bd.erase(0, lo_impact);
+	//bd.erase(0, min_impact);
 
 	if (false) {		
+            cerr << "Not histogramming\n";
 	    continue;
 	}
 
-	auto one = collect.front();
+        const double min_time = time_span.first;
+        const double max_time = time_span.second;
+        const int ntbins = (max_time - min_time)/tbins.binsize();
 
-	// find nonzero bounds int the awkward way possible.
-	double min_pitch = 0.0;
-	double max_pitch = 0.0;
-	int min_tick = 0;
-	int max_tick = 0;
-	for (int ind=0; ind < collect.size(); ++ind ){
-	    auto idptr = collect[ind];
-	    auto mm = idptr->strip();
-	    double pitch = -z_half_width + idptr->impact_number()*impact_pitch;
-	    if (!ind) {
-		min_pitch = max_pitch = pitch;
-		min_tick = mm.first;
-		max_tick = mm.second;
-		continue;
-	    }
-	    min_tick = std::min(min_tick, mm.first);
-	    max_tick = std::max(max_tick, mm.second-1);
-	    min_pitch = std::min(min_pitch, pitch);
-	    max_pitch = std::max(max_pitch, pitch);
-	}
+        const int npbins = max_impact - min_impact + 1;
+        const double min_pitch = ibins.edge(min_impact);
+        const double max_pitch = ibins.edge(max_impact+1);
 
-	double min_pitch_mm = min_pitch/units::mm;
-	double max_pitch_mm = max_pitch/units::mm;
-	double min_time_us = (min_tick-0.5)*tick/units::us;
-	double max_time_us = (max_tick+0.5)*tick/units::us;
-	double num_ticks = 1+max_tick - min_tick;
+        // cerr << "t:"<<ntbins<<"["<<min_time/units::us<<","<<max_time/units::us<<"]us ("<<max_time-min_time<<")\n";
+        // cerr << "p:"<<npbins<<"["<<min_pitch/units::mm<<","<<max_pitch/units::mm<<"]mm\n";
 
-	cerr << "Tick range: [" << min_tick << "," << max_tick << "]\n";
-	cerr << "Histogram: t=[" << min_time_us << "," << max_time_us << "]x" << num_ticks << " "
-	     << "p=[" << min_pitch_mm << "," << max_pitch_mm << "]x" << collect.size() << "\n";
+        Assert(max_time > min_time);
+        Assert(ntbins>1);
+        Assert(max_pitch > min_pitch);
+        Assert(npbins>1);
 
-	TH2F hist("h","h", num_ticks, min_time_us, max_time_us, collect.size(), min_pitch_mm, max_pitch_mm);
+	TH2F hist("h","h",
+                  ntbins, (min_time-t0)/units::us, (max_time-t0)/units::us,
+                  npbins, min_pitch/units::mm, max_pitch/units::mm);
 	hist.SetTitle(Form("Diffused charge for wire %d", iwire));
 	hist.SetXTitle("time (us)");
 	hist.SetYTitle("pitch (mm)");
 
 	for (auto idptr : collect) {
 	    auto wave = idptr->waveform();
-            double pitch_distance_mm = (-z_half_width + idptr->impact_number()*impact_pitch ) / units::mm;
-	    //cerr << "\t" << idptr->impact_number() << "@" << pitch_distance_mm << " x " << wave.size() <<  endl;
 	    Assert (wave.size() == nticks);
-	    auto mm = idptr->strip();
-	    for (int itick=mm.first; itick<mm.second; ++itick) {
-		const double time_us = (itick * tick)/units::us;
-		hist.Fill(time_us, pitch_distance_mm, wave[itick]);
+            const int impact = idptr->impact_number();
+            const double pitch_dist = ibins.center(impact);
+	    auto mm = idptr->span();
+            const int min_tick = tbins.bin(mm.first);
+            const int max_tick = tbins.bin(mm.second);
+            //cerr << "impact:" << impact << " pitch="<<pitch_dist/units::mm << " ticks:["<<min_tick<<","<<max_tick<<"]\n";
+	    for (int itick=min_tick; itick<max_tick; ++itick) {
+		const double time = tbins.center(itick);
+                if (!tbins.inside(time)) {
+                    cerr << "OOB time: " << time/units::us << "us tick:"<<itick
+                         << " impact:" << idptr->impact_number()
+                         << " pitch:" << pitch_dist/units::mm << "mm\n";
+                }
+
+                Assert(tbins.inside(time));
+                Assert(rbins.inside(pitch_dist));
+		hist.Fill((time-t0)/units::us, pitch_dist/units::mm, wave[itick]);
 	    }
 	}
 	hist.Draw("colz");
@@ -179,14 +199,13 @@ int main(int argc, char* argv[])
     Meta meta(me);
     gStyle->SetOptStat(0);
 
-    const double t0 = 1.0*units::s;
     const double track_time = t0+10*units::ns;
     const double delta = 100*units::mm;
     Ray track_ray(Point(1*units::m-delta, 0, -delta),
 		  Point(1*units::m+delta, 0, +delta));
     const double stepsize = 1*units::mm;
     const double charge = 1e5;
-    test_track(meta, charge, t0, track_time, track_ray, stepsize, true);
+    test_track(meta, charge, track_time, track_ray, stepsize, true);
 
     meta.print("]");
 

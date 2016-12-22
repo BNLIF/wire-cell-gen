@@ -21,37 +21,54 @@ void test_gd(bool fluctuate)
 {
     const double nsigma = 3.0;
 
-    const double t_center = 1*units::ms;
-    const double t_sigma = 1*units::us;
-    const double t_sample = 0.5*units::us;
-    const double t_min = t_center - nsigma*t_sigma;
-    const int nt_start = int(round(t_min/t_sample));
-    const int nt = int(2*nsigma*t_sigma/t_sample);
-
+    /// Time Gaussian
+    const double t_center = 3*units::ms;
+    const double t_sigma = 2*units::us;
     Gen::GausDesc tdesc(t_center, t_sigma);
 
+    /// Pitch Gaussian
     const double p_center = 1*units::m;
     const double p_sigma = 1*units::mm;
-    const double p_sample = 0.3*units::mm;
-    const double p_min = p_center - nsigma*p_sigma;
-    const int np_start = int(round(p_min/p_sample));
-    const int np = int(2*nsigma*p_sigma/p_sample);
-
     Gen::GausDesc pdesc(p_center, p_sigma);
 
-    cerr << "nt=" << nt << " np=" << np << endl;
+    const double nsigma_binning = 2.0*nsigma;
+    /// Time bins
+    const double t_sample = 0.5*units::us;
+    const double t_min = t_center - nsigma_binning*t_sigma;
+    const double t_max = t_center + nsigma_binning*t_sigma;
+    const int nt = (t_max-t_min)/t_sample;
+    const Binning tbins(nt, t_min, t_max);
 
+    /// Pitch bins
+    const double p_sample = 0.3*units::mm;
+    const double p_min = p_center - nsigma_binning*p_sigma;
+    const double p_max = p_center + nsigma_binning*p_sigma;
+    const int np = (p_max-p_min)/p_sample;
+    const Binning pbins(np, p_min, p_max);
+
+    /// Make a single deposition
     const double qdepo = 1000.0;
     const Point pdepo(10*units::cm, 0.0, p_center);
     auto depo = std::make_shared<SimpleDepo>(t_center, pdepo, qdepo);
 
+    /// Note it is up to caller to assure that depo and tdesc/pdesc
+    /// are consistent!  See BinnedDiffussion for one class that does
+    /// this.
     Gen::GaussianDiffusion gd(depo, tdesc, pdesc);
-			 
+
+    /// Rastering to an array is delayed
+    gd.set_sampling(tbins, pbins, nsigma, fluctuate);
+
+    /// patch only covers +/- nsigma
     auto patch = gd.patch();
+    const int toffset = gd.toffset_bin();
+    const int poffset = gd.poffset_bin();
 
     cerr << "rows=" << patch.rows() << " cols=" << patch.cols() << endl;
-    Assert (nt == patch.cols());
-    Assert (np == patch.rows());
+    cerr << "toffset=" << toffset <<" poffset=" << poffset << endl;
+
+    Assert(toffset > 0);
+    Assert(poffset > 0);
 
     const double tunit = units::us;	// for display
     const double punit = units::mm;	// for display
@@ -62,15 +79,19 @@ void test_gd(bool fluctuate)
     cerr << "center t=" << t_center/tunit << ", p=" << p_center/punit << endl;
 
     TH2F* hist = new TH2F("patch1","Diffusion Patch",    
-			  nt, t_min/tunit, (t_min + nt*t_sample)/tunit,
-			  np, p_min/punit, (p_min + np*p_sample)/punit);
+                          tbins.nbins(), tbins.min()/tunit, tbins.max()/tunit,
+                          pbins.nbins(), pbins.min()/punit, pbins.max()/punit);
 
     hist->SetXTitle("time (us)");
     hist->SetYTitle("pitch (mm)");
-    for (int it=0; it < nt; ++it) {
-	for (int ip=0; ip < np; ++ip) {
+    for (int it=0; it < patch.cols(); ++it) {
+        double tval = tbins.center(it+toffset);
+        Assert(tbins.inside(tval));
+	for (int ip=0; ip < patch.rows(); ++ip) {
+            double pval = pbins.center(ip+poffset);
+            Assert(pbins.inside(pval));
 	    const double value = patch(ip,it);
-	    hist->SetBinContent(it+1, ip+1, value);
+            hist->Fill(tval/tunit, pval/punit, value);
 	}
     }
     hist->Write();
