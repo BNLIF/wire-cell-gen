@@ -5,6 +5,8 @@
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellUtil/Units.h"
 
+#include <tuple>
+
 namespace WireCell {
 
     /// A producer of depositions created from some number of simple, linear tracks.
@@ -31,11 +33,15 @@ namespace WireCell {
 
 	WireCell::IDepo::vector& depos() { return m_depos; }
 
+        typedef std::tuple<double, Ray, double> track_t;
+        std::vector<track_t> tracks() const { return m_tracks; }
+
     private:
 	double m_stepsize;
 	double m_clight;
 	WireCell::IDepo::vector m_depos;
 	bool m_eos;
+        std::vector<track_t> m_tracks; // collect for posterity
     };
 
 }

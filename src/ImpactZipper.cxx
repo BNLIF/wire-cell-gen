@@ -47,7 +47,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         ++nfound;
         Waveform::increase(spec, charge_spectrum);
     }
-    std::cerr << "ImpactZipper: found " << nfound << " in abs impact: ["  << min_impact << ","<< max_impact << "]\n";
+    //std::cerr << "ImpactZipper: found " << nfound << " in abs impact: ["  << min_impact << ","<< max_impact << "]\n";
 
     // Clear memory assuming next call is iwire+1..
     // fixme: this is a dumb way to go.....

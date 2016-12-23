@@ -9,6 +9,8 @@
 #include "WireCellUtil/Testing.h"
 
 #include "TCanvas.h"
+#include "TFile.h"
+#include "TLine.h"
 #include "TStyle.h"
 #include "TH2F.h"
 
@@ -27,7 +29,7 @@ int main(int argc, char *argv[])
 
     WireCell::ExecMon em(argv[0]);
     auto fr = Response::Schema::load(argv[1]);
-    std::cerr << em("loaded response") << std::endl;
+    em("loaded response");
 
     // 1D garfield wires are all parallel
     const double angle = 60*units::degree;
@@ -42,73 +44,69 @@ int main(int argc, char *argv[])
     Response::Schema::lie(fr.planes[2], wpitch, wwire);
     const int wplaneid = 2;
     PlaneImpactResponse pirw(fr,wplaneid);
-    std::cerr << em("made PlaneImpactResponse") << std::endl;
+    em("made PlaneImpactResponse");
 
     // Origin where drift and diffusion meets field response.
     Point field_origin(fr.origin, 0, 0);
+    cerr << "Field response origin: " << field_origin/units::mm << "mm\n";
 
     // Describe the W collection plane
-    const int nwires = 2000;
+    const int nwires = 2001;
     const double wire_pitch = 3*units::mm;
     const int nregion_bins = 10; // fixme: this should come from the Response::Schema.
-    const double halfwireextent = wire_pitch * 0.5*nwires;
+    const double halfwireextent = wire_pitch * (nwires/2);
 
     Pimpos pimpos(nwires, -halfwireextent, halfwireextent,
                   wwire, wpitch, field_origin, nregion_bins);
-
+    cerr << "Max wire at pitch=" << halfwireextent << endl;
 
     // Digitization and time
-    const double trigger_time = 1.0*units::s; // eg, optical trigger from prompt interaction activity
+    const double t0 = 0.0*units::s; // eg, optical trigger from prompt interaction activity
     const double readout_time = 5*units::ms;
     const int nticks = 9600;
     const double tick = 0.5*units::us;
     const double drift_speed = 1.0*units::mm/units::us; // close but fake/arb value!
-    Binning tbins(nticks, trigger_time, trigger_time+readout_time);
+    Binning tbins(nticks, t0, t0+readout_time);
 
     // Diffusion
     const int ndiffision_sigma = 3.0;
-    const bool fluctuate = false;
+    const bool fluctuate = true;
 
     // Generate some trivial tracks
     const double stepsize = 1*units::mm;
     TrackDepos tracks(stepsize);
 
-    // random "box" in space and time
-    std::random_device rd;
-    std::default_random_engine re(rd());
-    std::uniform_real_distribution<> rpos(-1*units::cm, 1*units::cm);
-    std::uniform_real_distribution<> tpos(0*units::us, 10*units::us);
-    const Point interaction_box_center(1*units::m, 0*units::m, 0*units::m);
+    // Pick half bogus number ionized electrons per track distance
+    const double dedx = 7.0e4/(1*units::cm); // in electrons
+    const double charge_per_depo = -(dedx)*stepsize;
 
-    // ionized electrons per track distance
-    const double dedx = 500.0/(1.0*units::cm);
-    const int ntracks = 2;
-    for (int itrack = 0; itrack < ntracks; ++itrack) {
-        Point p1(rpos(re), rpos(re), rpos(re));
-        Point p2(rpos(re), rpos(re), rpos(re));
-        double time = tpos(re);
-        std::cerr << "track #"<<itrack << "\n"
-                  << "\tt=" << trigger_time/units::s << "s + " << time/units::us << "us\n"
-                  << "\tp1=" << p1/units::mm << "mm\n"
-                  << "\tp2=" << p2/units::mm << "mm\n"
-                  << "\t c=" << interaction_box_center/units::mm << "mm\n"
-                  << std::endl;
-        const Ray ray(p1+interaction_box_center,p2+interaction_box_center);
-        tracks.add_track(time+trigger_time, ray, dedx);
-    }
-    std::cerr << em("made tracks") << std::endl;
+    // mostly "prolonged" track in X direction
+    tracks.add_track(t0 + 1*units::ms,
+                     Ray(Point(1*units::m, 0*units::m, 0*units::m),
+                         Point(2*units::m, 0*units::m, 3*units::cm)), // over 10 wires
+                     charge_per_depo);
+    // mostly "isochronous" track in Z direction
+    tracks.add_track(t0 + 2*units::ms,
+                     Ray(Point(1*units::m, 0*units::m, -1*units::m),
+                         Point(1*units::m + 100*units::us*drift_speed, 0*units::m, +1*units::m)),
+                     charge_per_depo);
+    // "driftlike" track diagonal in space and drift time
+    tracks.add_track(t0 + 3*units::ms,
+                     Ray(Point(1*units::m, 0*units::m, -1*units::m),
+                         Point(2*units::m, 0*units::m, +1*units::m)),
+                     charge_per_depo);
+    em("made tracks");
 
     // Get depos
     auto depos = tracks.depos();
-    std::cerr << "got " << depos.size() << " depos from "<<ntracks<<" tracks\n";
-    std::cerr << em("made tracks") << std::endl;
+    std::cerr << "got " << depos.size() << " depos from tracks\n";
+    em("made depos");
 
     // add deposition to binned diffusion
     Gen::BinnedDiffusion bdw(pimpos, tbins, ndiffision_sigma, fluctuate);
-
-    std::cerr << em("made BinnedDiffusion") << std::endl;
+    em("made BinnedDiffusion");
     for (auto depo : depos) {
-        auto drifted = std::make_shared<Gen::TransportedDepo>(depo, 0.0, drift_speed);
+        auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
 
 	const double sigma_time = 1.0*units::us; // fixme: should really be function of drift time
         const double sigma_pitch = 1.0*units::mm; // fixme: ditto
@@ -119,18 +117,17 @@ int main(int argc, char *argv[])
         }
         Assert(ok);
 
-        std::cerr << "depo:  time=1s+" << (depo->time()-1*units::s)/units::us<< "us +/- " << sigma_time/units::us << " us "
-                  << " pt=" << depo->pos() / units::mm << " mm\n";
-        
-        std::cerr << "drift: time=1s+" << (drifted->time()-1*units::s)/units::us<< "us +/- " << sigma_time/units::us << " us "
-                  << " pt=" << drifted->pos() / units::mm << " mm\n";
+        // std::cerr << "depo:"
+        //           << " q=" << drifted->charge()
+        //           << " time-T0=" << (drifted->time()-t0)/units::us<< "us +/- " << sigma_time/units::us << " us "
+        //           << " pt=" << drifted->pos() / units::mm << " mm\n";
 
     }
-    std::cerr << em("added track depositions") << std::endl;
+    em("added track depositions");
 
     // Zip!
     Gen::ImpactZipper zipper(pirw, bdw);
-    std::cerr << em("made ImpactZipper") << std::endl;
+    em("made ImpactZipper");
 
     auto pitch_mm = bdw.pitch_range();
     cerr << "Pitch sample range: ["<<pitch_mm.first/units::mm <<","<< pitch_mm.second/units::mm<<"]mm\n";
@@ -140,57 +137,89 @@ int main(int argc, char *argv[])
     const int maxwire = rb.bin(pitch_mm.second);
     cerr << "Wires: [" << minwire << "," << maxwire << "]\n";
 
-    std::vector<Waveform::realseq_t> wframe;
+    std::map<int, Waveform::realseq_t> wframe;
     double tottot=0.0;
-    for (int iwire=minwire; iwire<maxwire; ++iwire) {
+    for (int iwire=minwire; iwire <= maxwire; ++iwire) {
         auto wave = zipper.waveform(iwire);
         auto tot = Waveform::sum(wave);
         tottot += tot;
-        std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
-        wframe.push_back(wave);
+        //std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
+        wframe[iwire] = wave;
     }
-    std::cerr << em("zipped through wires") << std::endl;
+    em("zipped through wires");
+    cerr << "Tottot = " << tottot << endl;
     Assert(tottot > 0.0);
 
+    auto tmm = bdw.time_range();
+    const int tbin0 = tbins.bin(tmm.first);
+    const int tbinf = tbins.bin(tmm.second);
+    const int ntbins = 1+tbinf-tbin0;
 
-    int mintick = -1, maxtick=-1;
-    for (int iwire=minwire; iwire<=maxwire; ++iwire) {    
-        auto wave = wframe[iwire];
-        int lmintick=-1, lmaxtick=-1;
-        for (int itick=0; itick<wave.size(); ++itick) {
-            if (lmintick < 0 || wave[itick] > 0) {
-                lmintick = itick;
-            }
-            if (wave[itick] > 0) {
-                lmaxtick = itick;
-            }
-        }
-        if (mintick<0 || lmintick < mintick) { mintick = lmintick; }
-        if (maxtick<0 || lmaxtick > maxtick) { maxtick = lmaxtick; }
-    }
-
-
-    TCanvas canvas("c","canvas",500,500);
-
+    auto pmm = bdw.pitch_range();
+    const int wbin0 = rb.bin(pmm.first);
+    const int wbinf = rb.bin(pmm.second);
+    const int nwbins = 1+wbinf-wbin0;
+    
+    //TCanvas canvas("c","canvas",500,500);
     gStyle->SetOptStat(0);
+    
+    TFile* rootfile = TFile::Open(Form("%s.root", argv[0]), "recreate");
 
-    TH2F hist("h","Pitch vs Time W-plane",
-              maxtick-mintick, mintick, maxtick,
-              maxwire-minwire, minwire, maxwire);
-    std::cerr << "wires: [" << minwire << "," << maxwire << "], ticks: [" << mintick << "," << maxtick << "]\n";
+    TH2F hist("h","Wire vs Tick W-plane",
+              ntbins, tbin0, tbin0+ntbins,
+              nwbins, wbin0, wbin0+nwbins);
+    hist.SetXTitle("tick");
+    hist.SetYTitle("wire");
 
-    for (int iwire=minwire; iwire<=maxwire; ++iwire) {    
-        auto wave = wframe[iwire];
+    std::cerr << nwbins << " wires: [" << wbin0 << "," << wbinf << "], "
+              << ntbins << " ticks: [" << tbin0 << "," << tbinf << "]\n";
+
+    for (auto wire : wframe) {
+        const int iwire = wire.first;
+        Assert(rb.inbounds(iwire));
+        const Waveform::realseq_t& wave = wire.second;
         auto tot = Waveform::sum(wave);
         //std::cerr << iwire << " tot=" << tot << std::endl;
-        for (int itick=mintick; itick <= maxtick; ++itick) {
+        for (int itick=tbin0; itick <= tbinf; ++itick) {
+            Assert(tbins.inbounds(itick));
             hist.Fill(itick+0.1, iwire+0.1, wave[itick]);
         }
     }
 
-    hist.Draw("colz");
-    canvas.Print(Form("%s.pdf", argv[0]));
+    std::vector<TLine*> lines;
+    auto trqs = tracks.tracks();
+    for (int iline=0; iline<trqs.size(); ++iline) {
+        auto trq = trqs[iline];
+        const double time = get<0>(trq);
+        const Ray ray = get<1>(trq);
 
+        // this need to subtract off the fr.origin is I think a bug,
+        // or at least a bookkeeping detail to ensconce somewhere.  I
+        // think FR is taking the start of the path as the time
+        // origin.  Something to check...
+        const int tick1 = tbins.bin(time + (ray.first.x()-fr.origin)/drift_speed);
+        const int tick2 = tbins.bin(time + (ray.second.x()-fr.origin)/drift_speed);
 
+        const int wire1 = rb.bin(pimpos.distance(ray.first, wplaneid));
+        const int wire2 = rb.bin(pimpos.distance(ray.second, wplaneid));
+
+        cerr << "digitrack: t=" << time << " ticks=["<<tick1<<","<<tick2<<"] wires=["<<wire1<<","<<wire2<<"]\n";
+
+        TLine* line = new TLine(tick1, wire1, tick2, wire2);
+        lines.push_back(line);
+    }
+
+    //hist.Draw("colz");
+    //canvas.Print(Form("%s.pdf", argv[0]));
+    hist.Write();
+    for (auto line : lines) {
+        line->Write();
+    }
+    cerr << rootfile->GetName() << endl;
+    rootfile->Close();
+
+    em("made hist");
+
+    cerr << em.summary() << endl;
     return 0;
 }

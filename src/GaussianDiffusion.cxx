@@ -54,7 +54,11 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, const Binning& pb
     const int ntss = tbin_range.second - tbin_range.first;
     m_toffset_bin = tbin_range.first;
     auto tvec =  m_time_desc.sample(tbin.center(m_toffset_bin), tbin.binsize(), ntss);
-    //cerr << "tmin,gaus=" << tvalrange.first/units::us << " toff_bin=" << m_toffset_bin << endl;
+
+    if (!ntss) {
+        cerr << "No time bins for [" << tval_range.first/units::us << "," << tval_range.second/units::us << "] us\n";
+        return;
+    }
 
 
     /// Sample pitch dimension.
@@ -63,7 +67,11 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, const Binning& pb
     const int npss = pbin_range.second - pbin_range.first+1;
     m_poffset_bin = pbin_range.first;
     auto pvec = m_pitch_desc.sample(pbin.center(m_poffset_bin), pbin.binsize(), npss);
-    //cerr << "pmin,gaus=" << prange.first << " poff_edge=" << m_poffset_edge << endl;
+
+    if (!npss) {
+        cerr << "No impact bins [" << pval_range.first/units::mm << "," << pval_range.second/units::mm << "] mm\n";
+        return;
+    }
     
     patch_t ret = patch_t::Zero(npss, ntss);
     double raw_sum=0.0;
@@ -82,18 +90,28 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, const Binning& pb
 
     if (fluctuate) {
 	double fluc_sum = 0;
+        double unfluc_sum = 0;
 	std::default_random_engine generator;
 
 	for (size_t ip = 0; ip < npss; ++ip) {
 	    for (size_t it = 0; it < ntss; ++it) {
 		const float oldval = ret(ip,it);
+                unfluc_sum += oldval;
 		std::poisson_distribution<int> poisson(oldval);
 		float nelectrons = poisson(generator);
 		fluc_sum += nelectrons;
 		ret(ip,it) = nelectrons;
 	    }
 	}
-	ret *= m_deposition->charge() / fluc_sum;
+        if (fluc_sum == 0) {
+            cerr << "No net charge after fluctuation. Total unfluctuated = "
+                 << unfluc_sum
+                 << " Qdepo = " << m_deposition->charge()
+                 << endl;
+        }
+        else {
+            ret *= m_deposition->charge() / fluc_sum;
+        }
     }
 
     m_patch = ret;

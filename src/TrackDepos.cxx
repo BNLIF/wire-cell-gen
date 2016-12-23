@@ -49,12 +49,9 @@ void TrackDepos::configure(const Configuration& cfg)
 
 void TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
-    double time_us = time / units::microsecond;
-    cerr << "TrackDepos.stepsize="<<m_stepsize<<" clight=" << m_clight << endl;
-    cerr << "TrackDepos.add_track(" << time_us << "us "
-    	 << "[" << ray.first/units::mm << " --> " << ray.second/units::mm << "]) mm" << endl;
-    // fixme: why do I get compile error if I just put "ray" here???
+    m_tracks.push_back(track_t(time, ray, charge));
 
+    double time_us = time / units::microsecond;
 
     const WireCell::Vector dir = WireCell::ray_unit(ray);
     const double length = WireCell::ray_length(ray);
