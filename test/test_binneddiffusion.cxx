@@ -10,6 +10,7 @@
 #include "TStyle.h"
 #include "TFile.h"
 #include "TH2F.h"
+#include "TH1F.h"
 #include "TPolyMarker.h"
 
 #include <iostream>
@@ -102,6 +103,7 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
 
     meta.em("begin swiping wires");
 
+
     for (int iwire = 0; iwire < nwires; ++iwire) {
 
         const int min_wire = std::max(iwire-npmwires, 0);
@@ -113,13 +115,23 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
         std::pair<double,double> time_span(0,0);
 	std::vector<Gen::ImpactData::pointer> collect;
 
+        std::set<int> seen;
         for (int imp = min_impact; imp <= max_impact; ++imp) {
 	    auto impact_data = bd.impact_data(imp);
 	    if (!impact_data) {
                 continue;
             }
-            auto ts = impact_data->span(ndiffision_sigma);
 
+            const int impnum = impact_data->impact_number();
+            if (seen.find(impnum) != seen.end()) {
+                cerr << "Got duplicate impact number: " << impnum << " in wire " << iwire << endl;
+            }
+            seen.insert(impnum);
+            if (iwire==974) {
+                cerr << "collecting: " << iwire << " " << impnum << endl;
+            }
+            
+            auto ts = impact_data->span(ndiffision_sigma);
             if (collect.empty()) {
                 time_span = ts;
             }
@@ -141,12 +153,15 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
 	    continue;
 	}
 
-        const double min_time = time_span.first;
-        const double max_time = time_span.second;
-        const int ntbins = (max_time - min_time)/tbins.binsize();
+        const int min_tedge = tbins.edge_index(time_span.first);
+        const int max_tedge = tbins.edge_index(time_span.second);
+
+        const double min_time = tbins.edge(min_tedge);
+        const double max_time = tbins.edge(max_tedge);
+        const int ntbins = max_tedge - min_tedge;
 
         const double min_pitch = ibins.edge(min_impact);
-        const double max_pitch = ibins.edge(max_impact+1);
+        const double max_pitch = ibins.edge(max_impact);
         const int npbins = (max_pitch-min_pitch)/ibins.binsize();
 
         // cerr << "t:"<<ntbins<<"["<<min_time/units::us<<","<<max_time/units::us<<"]us ("<<max_time-min_time<<")\n";
@@ -157,18 +172,25 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
         Assert(max_pitch > min_pitch);
         Assert(npbins>1);
 
-	TH2F hist("h","h",
+	TH2F hist(Form("hwire%04d", iwire),Form("Diffused charge for wire %d", iwire),
                   ntbins, (min_time-t0)/units::us, (max_time-t0)/units::us,
                   npbins, min_pitch/units::mm, max_pitch/units::mm);
-	hist.SetTitle(Form("Diffused charge for wire %d", iwire));
 	hist.SetXTitle("time (us)");
 	hist.SetYTitle("pitch (mm)");
+
+        TH1F hp(Form("pwire%04d", iwire),Form("Pitches for wire %d", iwire),
+                npbins, min_pitch/units::mm, max_pitch/units::mm);
+        TH1F ht(Form("twire%04d", iwire),Form("Times for wire %d", iwire),
+                ntbins, (min_time-t0)/units::us, (max_time-t0)/units::us);
 
 	for (auto idptr : collect) {
 	    auto wave = idptr->waveform();
 	    Assert (wave.size() == nticks);
             const int impact = idptr->impact_number();
             const double pitch_dist = ibins.center(impact);
+            if (iwire == 974) {
+                cerr << iwire << " impact=" << impact << " pitch=" << pitch_dist << endl;
+            }
 	    auto mm = idptr->span(ndiffision_sigma);
             const int min_tick = tbins.bin(mm.first);
             const int max_tick = tbins.bin(mm.second);
@@ -183,10 +205,18 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
 
                 Assert(tbins.inside(time));
                 Assert(rbins.inside(pitch_dist));
-		hist.Fill((time-t0)/units::us, pitch_dist/units::mm, wave[itick]);
+                const double t_us = (time-t0)/units::us;
+                const double p_mm = pitch_dist/units::mm;
+		hist.Fill(t_us, p_mm, wave[itick]);
+                ht.Fill(t_us);
+                hp.Fill(p_mm);
 	    }
 	}
 	hist.Draw("colz");
+        //hp.Draw();
+        hist.Write();
+        ht.Write();
+        hp.Write();
 	meta.print();
     }
     meta.em("done");
@@ -195,6 +225,8 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
 int main(int argc, char* argv[])
 {
     const char* me = argv[0];
+
+    TFile* rootfile = TFile::Open(Form("%s.root", me), "RECREATE");
 
     Meta meta(me);
     gStyle->SetOptStat(0);
@@ -208,7 +240,7 @@ int main(int argc, char* argv[])
     test_track(meta, charge, track_time, track_ray, stepsize, true);
 
     meta.print("]");
-
+    rootfile->Close();
     cerr << meta.em.summary() << endl;
     return 0;
 }
