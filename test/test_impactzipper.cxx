@@ -26,6 +26,12 @@ int main(int argc, char *argv[])
         std::cerr << "This test requires an Wire Cell Field Response input file." << std::endl;
 	return 0;
     }
+    int plane_id = 2;
+    if (argc >= 3) {
+        plane_id = atoi(argv[2]);
+    }
+    Assert (plane_id >= 0 && plane_id <= 2);
+    cerr << "Plane #" << plane_id << " argc:" << argc << endl;
 
     WireCell::ExecMon em(argv[0]);
     auto fr = Response::Schema::load(argv[1]);
@@ -33,17 +39,17 @@ int main(int argc, char *argv[])
 
     // 1D garfield wires are all parallel
     const double angle = 60*units::degree;
-    Vector upitch(0, -sin(angle),  cos(angle));
-    Vector uwire (0,  cos(angle),  sin(angle));
-    Vector vpitch(0,  cos(angle),  sin(angle));
-    Vector vwire (0, -sin(angle),  cos(angle));
-    Vector wpitch(0, 0, 1);
-    Vector wwire (0, 1, 0);
+    const Vector upitch(0, -sin(angle),  cos(angle));
+    const Vector uwire (0,  cos(angle),  sin(angle));
+    const Vector vpitch(0,  cos(angle),  sin(angle));
+    const Vector vwire (0, -sin(angle),  cos(angle));
+    const Vector wpitch(0, 0, 1);
+    const Vector wwire (0, 1, 0);
     Response::Schema::lie(fr.planes[0], upitch, uwire);
     Response::Schema::lie(fr.planes[1], vpitch, vwire);
     Response::Schema::lie(fr.planes[2], wpitch, wwire);
-    const int wplaneid = 2;
-    PlaneImpactResponse pirw(fr,wplaneid);
+
+    PlaneImpactResponse pirw(fr, plane_id);
     em("made PlaneImpactResponse");
 
     // Origin where drift and diffusion meets field response.
@@ -55,10 +61,16 @@ int main(int argc, char *argv[])
     const double wire_pitch = 3*units::mm;
     const int nregion_bins = 10; // fixme: this should come from the Response::Schema.
     const double halfwireextent = wire_pitch * (nwires/2);
-
-    Pimpos pimpos(nwires, -halfwireextent, halfwireextent,
-                  wwire, wpitch, field_origin, nregion_bins);
     cerr << "Max wire at pitch=" << halfwireextent << endl;
+
+    std::vector<Pimpos> uvw_pimpos{
+            Pimpos(nwires, -halfwireextent, halfwireextent,
+                   uwire, upitch, field_origin, nregion_bins),
+            Pimpos(nwires, -halfwireextent, halfwireextent,
+                   vwire, vpitch, field_origin, nregion_bins),
+            Pimpos(nwires, -halfwireextent, halfwireextent,
+                   wwire, wpitch, field_origin, nregion_bins)};
+    Pimpos pimpos = uvw_pimpos[plane_id];
 
     // Digitization and time
     const double t0 = 0.0*units::s; // eg, optical trigger from prompt interaction activity
@@ -163,7 +175,7 @@ int main(int argc, char *argv[])
     //TCanvas canvas("c","canvas",500,500);
     gStyle->SetOptStat(0);
     
-    TFile* rootfile = TFile::Open(Form("%s.root", argv[0]), "recreate");
+    TFile* rootfile = TFile::Open(Form("%s-%d.root", argv[0], plane_id), "recreate");
 
     TH2F hist("h","Wire vs Tick W-plane",
               ntbins, tbin0, tbin0+ntbins,
@@ -200,8 +212,8 @@ int main(int argc, char *argv[])
         const int tick1 = tbins.bin(time + (ray.first.x()-fr.origin)/drift_speed);
         const int tick2 = tbins.bin(time + (ray.second.x()-fr.origin)/drift_speed);
 
-        const int wire1 = rb.bin(pimpos.distance(ray.first, wplaneid));
-        const int wire2 = rb.bin(pimpos.distance(ray.second, wplaneid));
+        const int wire1 = rb.bin(pimpos.distance(ray.first, plane_id));
+        const int wire2 = rb.bin(pimpos.distance(ray.second, plane_id));
 
         cerr << "digitrack: t=" << time << " ticks=["<<tick1<<","<<tick2<<"] wires=["<<wire1<<","<<wire2<<"]\n";
 
@@ -210,7 +222,7 @@ int main(int argc, char *argv[])
     }
 
     //hist.Draw("colz");
-    //canvas.Print(Form("%s.pdf", argv[0]));
+    //canvas.Print(Form("%s-%d.pdf", argv[0], plane_id));
     hist.Write();
     for (auto line : lines) {
         line->Write();
