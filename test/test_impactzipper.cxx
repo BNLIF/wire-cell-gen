@@ -26,16 +26,12 @@ int main(int argc, char *argv[])
         std::cerr << "This test requires an Wire Cell Field Response input file." << std::endl;
 	return 0;
     }
-    int plane_id = 2;
-    if (argc >= 3) {
-        plane_id = atoi(argv[2]);
-    }
-    Assert (plane_id >= 0 && plane_id <= 2);
-    cerr << "Plane #" << plane_id << " argc:" << argc << endl;
 
     WireCell::ExecMon em(argv[0]);
     auto fr = Response::Schema::load(argv[1]);
     em("loaded response");
+
+    const char* uvw = "UVW";
 
     // 1D garfield wires are all parallel
     const double angle = 60*units::degree;
@@ -49,8 +45,6 @@ int main(int argc, char *argv[])
     Response::Schema::lie(fr.planes[1], vpitch, vwire);
     Response::Schema::lie(fr.planes[2], wpitch, wwire);
 
-    PlaneImpactResponse pirw(fr, plane_id);
-    em("made PlaneImpactResponse");
 
     // Origin where drift and diffusion meets field response.
     Point field_origin(fr.origin, 0, 0);
@@ -70,7 +64,6 @@ int main(int argc, char *argv[])
                    vwire, vpitch, field_origin, nregion_bins),
             Pimpos(nwires, -halfwireextent, halfwireextent,
                    wwire, wpitch, field_origin, nregion_bins)};
-    Pimpos pimpos = uvw_pimpos[plane_id];
 
     // Digitization and time
     const double t0 = 0.0*units::s; // eg, optical trigger from prompt interaction activity
@@ -114,123 +107,123 @@ int main(int argc, char *argv[])
     std::cerr << "got " << depos.size() << " depos from tracks\n";
     em("made depos");
 
-    // add deposition to binned diffusion
-    Gen::BinnedDiffusion bdw(pimpos, tbins, ndiffision_sigma, fluctuate);
-    em("made BinnedDiffusion");
-    for (auto depo : depos) {
-        auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
+    TFile* rootfile = TFile::Open(Form("%s-uvw.root", argv[0]), "recreate");
 
-	const double sigma_time = 1.0*units::us; // fixme: should really be function of drift time
-        const double sigma_pitch = 1.0*units::mm; // fixme: ditto
+    for (int plane_id = 0; plane_id < 3; ++plane_id) {
+        Pimpos& pimpos = uvw_pimpos[plane_id];
+
+        // add deposition to binned diffusion
+        Gen::BinnedDiffusion bdw(pimpos, tbins, ndiffision_sigma, fluctuate);
+        em("made BinnedDiffusion");
+        for (auto depo : depos) {
+            auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
+
+            const double sigma_time = 1.0*units::us; // fixme: should really be function of drift time
+            const double sigma_pitch = 1.0*units::mm; // fixme: ditto
 	
-	bool ok = bdw.add(drifted, sigma_time, sigma_pitch);
-        if (!ok) {
-            std::cerr << "failed to add: t=" << drifted->time()/units::us << ", pt=" << drifted->pos()/units::mm << std::endl;
+            bool ok = bdw.add(drifted, sigma_time, sigma_pitch);
+            if (!ok) {
+                std::cerr << "failed to add: t=" << drifted->time()/units::us << ", pt=" << drifted->pos()/units::mm << std::endl;
+            }
+            Assert(ok);
+
+            // std::cerr << "depo:"
+            //           << " q=" << drifted->charge()
+            //           << " time-T0=" << (drifted->time()-t0)/units::us<< "us +/- " << sigma_time/units::us << " us "
+            //           << " pt=" << drifted->pos() / units::mm << " mm\n";
+            
         }
-        Assert(ok);
+        em("added track depositions");
 
-        // std::cerr << "depo:"
-        //           << " q=" << drifted->charge()
-        //           << " time-T0=" << (drifted->time()-t0)/units::us<< "us +/- " << sigma_time/units::us << " us "
-        //           << " pt=" << drifted->pos() / units::mm << " mm\n";
+        PlaneImpactResponse pirw(fr, plane_id);
+        em("made PlaneImpactResponse");
 
-    }
-    em("added track depositions");
+        Gen::ImpactZipper zipper(pirw, bdw);
+        em("made ImpactZipper");
 
-    // Zip!
-    Gen::ImpactZipper zipper(pirw, bdw);
-    em("made ImpactZipper");
+        auto pitch_mm = bdw.pitch_range();
+        cerr << "Pitch sample range: ["<<pitch_mm.first/units::mm <<","<< pitch_mm.second/units::mm<<"]mm\n";
 
-    auto pitch_mm = bdw.pitch_range();
-    cerr << "Pitch sample range: ["<<pitch_mm.first/units::mm <<","<< pitch_mm.second/units::mm<<"]mm\n";
+        const auto rb = pimpos.region_binning();
+        const int minwire = rb.bin(pitch_mm.first);
+        const int maxwire = rb.bin(pitch_mm.second);
+        cerr << "Wires: [" << minwire << "," << maxwire << "]\n";
 
-    const auto rb = pimpos.region_binning();
-    const int minwire = rb.bin(pitch_mm.first);
-    const int maxwire = rb.bin(pitch_mm.second);
-    cerr << "Wires: [" << minwire << "," << maxwire << "]\n";
+        std::map<int, Waveform::realseq_t> frame;
+        double tottot=0.0;
+        for (int iwire=minwire; iwire <= maxwire; ++iwire) {
+            auto wave = zipper.waveform(iwire);
+            auto tot = Waveform::sum(wave);
+            tottot += tot;
+            //std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
+            frame[iwire] = wave;
+        }
+        em("zipped through wires");
+        cerr << "Tottot = " << tottot << endl;
+        Assert(tottot > 0.0);
 
-    std::map<int, Waveform::realseq_t> wframe;
-    double tottot=0.0;
-    for (int iwire=minwire; iwire <= maxwire; ++iwire) {
-        auto wave = zipper.waveform(iwire);
-        auto tot = Waveform::sum(wave);
-        tottot += tot;
-        //std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
-        wframe[iwire] = wave;
-    }
-    em("zipped through wires");
-    cerr << "Tottot = " << tottot << endl;
-    Assert(tottot > 0.0);
+        auto tmm = bdw.time_range();
+        const int tbin0 = tbins.bin(tmm.first);
+        const int tbinf = tbins.bin(tmm.second);
+        const int ntbins = 1+tbinf-tbin0;
 
-    auto tmm = bdw.time_range();
-    const int tbin0 = tbins.bin(tmm.first);
-    const int tbinf = tbins.bin(tmm.second);
-    const int ntbins = 1+tbinf-tbin0;
-
-    auto pmm = bdw.pitch_range();
-    const int wbin0 = rb.bin(pmm.first);
-    const int wbinf = rb.bin(pmm.second);
-    const int nwbins = 1+wbinf-wbin0;
+        auto pmm = bdw.pitch_range();
+        const int wbin0 = rb.bin(pmm.first);
+        const int wbinf = rb.bin(pmm.second);
+        const int nwbins = 1+wbinf-wbin0;
     
-    //TCanvas canvas("c","canvas",500,500);
-    gStyle->SetOptStat(0);
+        //TCanvas canvas("c","canvas",500,500);
+        gStyle->SetOptStat(0);
     
-    TFile* rootfile = TFile::Open(Form("%s-%d.root", argv[0], plane_id), "recreate");
 
-    TH2F hist("h","Wire vs Tick W-plane",
-              ntbins, tbin0, tbin0+ntbins,
-              nwbins, wbin0, wbin0+nwbins);
-    hist.SetXTitle("tick");
-    hist.SetYTitle("wire");
+        TH2F *hist = new TH2F(Form("h%d", plane_id),
+                              Form("Wire vs Tick %c-plane", uvw[plane_id]),
+                              ntbins, tbin0, tbin0+ntbins,
+                              nwbins, wbin0, wbin0+nwbins);
+        hist->SetXTitle("tick");
+        hist->SetYTitle("wire");
 
-    std::cerr << nwbins << " wires: [" << wbin0 << "," << wbinf << "], "
-              << ntbins << " ticks: [" << tbin0 << "," << tbinf << "]\n";
+        std::cerr << nwbins << " wires: [" << wbin0 << "," << wbinf << "], "
+                  << ntbins << " ticks: [" << tbin0 << "," << tbinf << "]\n";
 
-    for (auto wire : wframe) {
-        const int iwire = wire.first;
-        Assert(rb.inbounds(iwire));
-        const Waveform::realseq_t& wave = wire.second;
-        auto tot = Waveform::sum(wave);
-        //std::cerr << iwire << " tot=" << tot << std::endl;
-        for (int itick=tbin0; itick <= tbinf; ++itick) {
-            Assert(tbins.inbounds(itick));
-            hist.Fill(itick+0.1, iwire+0.1, wave[itick]);
+        for (auto wire : frame) {
+            const int iwire = wire.first;
+            Assert(rb.inbounds(iwire));
+            const Waveform::realseq_t& wave = wire.second;
+            auto tot = Waveform::sum(wave);
+            //std::cerr << iwire << " tot=" << tot << std::endl;
+            for (int itick=tbin0; itick <= tbinf; ++itick) {
+                Assert(tbins.inbounds(itick));
+                hist->Fill(itick+0.1, iwire+0.1, wave[itick]);
+            }
+        }
+        hist->Write();
+
+        std::vector<TLine*> lines;
+        auto trqs = tracks.tracks();
+        for (int iline=0; iline<trqs.size(); ++iline) {
+            auto trq = trqs[iline];
+            const double time = get<0>(trq);
+            const Ray ray = get<1>(trq);
+
+            // this need to subtract off the fr.origin is I think a bug,
+            // or at least a bookkeeping detail to ensconce somewhere.  I
+            // think FR is taking the start of the path as the time
+            // origin.  Something to check...
+            const int tick1 = tbins.bin(time + (ray.first.x()-fr.origin)/drift_speed);
+            const int tick2 = tbins.bin(time + (ray.second.x()-fr.origin)/drift_speed);
+            
+            const int wire1 = rb.bin(pimpos.distance(ray.first, plane_id));
+            const int wire2 = rb.bin(pimpos.distance(ray.second, plane_id));
+            
+            cerr << "digitrack: t=" << time << " ticks=["<<tick1<<","<<tick2<<"] wires=["<<wire1<<","<<wire2<<"]\n";
+            
+            TLine* line = new TLine(tick1, wire1, tick2, wire2);
+            line->Write(Form("l%c%d", uvw[plane_id], iline));
         }
     }
-
-    std::vector<TLine*> lines;
-    auto trqs = tracks.tracks();
-    for (int iline=0; iline<trqs.size(); ++iline) {
-        auto trq = trqs[iline];
-        const double time = get<0>(trq);
-        const Ray ray = get<1>(trq);
-
-        // this need to subtract off the fr.origin is I think a bug,
-        // or at least a bookkeeping detail to ensconce somewhere.  I
-        // think FR is taking the start of the path as the time
-        // origin.  Something to check...
-        const int tick1 = tbins.bin(time + (ray.first.x()-fr.origin)/drift_speed);
-        const int tick2 = tbins.bin(time + (ray.second.x()-fr.origin)/drift_speed);
-
-        const int wire1 = rb.bin(pimpos.distance(ray.first, plane_id));
-        const int wire2 = rb.bin(pimpos.distance(ray.second, plane_id));
-
-        cerr << "digitrack: t=" << time << " ticks=["<<tick1<<","<<tick2<<"] wires=["<<wire1<<","<<wire2<<"]\n";
-
-        TLine* line = new TLine(tick1, wire1, tick2, wire2);
-        lines.push_back(line);
-    }
-
-    //hist.Draw("colz");
-    //canvas.Print(Form("%s-%d.pdf", argv[0], plane_id));
-    hist.Write();
-    for (auto line : lines) {
-        line->Write();
-    }
-    cerr << rootfile->GetName() << endl;
     rootfile->Close();
-
-    em("made hist");
+    em("done");
 
     cerr << em.summary() << endl;
     return 0;
