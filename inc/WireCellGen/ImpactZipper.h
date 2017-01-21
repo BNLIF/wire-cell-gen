@@ -10,7 +10,7 @@ namespace WireCell {
     
         /** An ImpactZipper "zips" together ImpactData from a
          * BinnedDiffusion and ImpactResponse from a
-         * PlaneImpactResponse.  Zipping means to multiple each of the
+         * PlaneImpactResponse.  Zipping means to multiply each of the
          * two impact info's frequency-domain spectra and inverse
          * Fourier transform it.  One such waveform is returned for a
          * given wire at a time.
