@@ -15,6 +15,7 @@
 #include "TH2F.h"
 
 #include <iostream>
+#include <string>
 
 using namespace WireCell;
 using namespace std;
@@ -26,6 +27,11 @@ int main(int argc, char *argv[])
         std::cerr << "This test requires an Wire Cell Field Response input file." << std::endl;
 	return 0;
     }
+    string track_types = "point";
+    if (argc > 2) {
+        track_types = argv[2];
+    }
+
 
     WireCell::ExecMon em(argv[0]);
     auto fr = Response::Schema::load(argv[1]);
@@ -44,6 +50,7 @@ int main(int argc, char *argv[])
     Response::Schema::lie(fr.planes[0], upitch, uwire);
     Response::Schema::lie(fr.planes[1], vpitch, vwire);
     Response::Schema::lie(fr.planes[2], wpitch, wwire);
+    // FIXME: need to apply electronics response!
 
 
     // Origin where drift and diffusion meets field response.
@@ -68,8 +75,8 @@ int main(int argc, char *argv[])
     // Digitization and time
     const double t0 = 0.0*units::s; // eg, optical trigger from prompt interaction activity
     const double readout_time = 5*units::ms;
-    const int nticks = 9600;
     const double tick = 0.5*units::us;
+    const int nticks = readout_time/tick;
     const double drift_speed = 1.0*units::mm/units::us; // close but fake/arb value!
     Binning tbins(nticks, t0, t0+readout_time);
 
@@ -85,38 +92,48 @@ int main(int argc, char *argv[])
     const double dedx = 7.0e4/(1*units::cm); // in electrons
     const double charge_per_depo = -(dedx)*stepsize;
 
-    // // mostly "prolonged" track in X direction
-    // tracks.add_track(t0 + 1*units::ms,
-    //                  Ray(Point(1*units::m, 0*units::m, 0*units::m),
-    //                      Point(2*units::m, 0*units::m, 3*units::cm)), // over 10 wires
-    //                  charge_per_depo);
-    // // mostly "isochronous" track in Z direction
-    // tracks.add_track(t0 + 2*units::ms,
-    //                  Ray(Point(1*units::m, 0*units::m, -1*units::m),
-    //                      Point(1*units::m + 100*units::us*drift_speed, 0*units::m, +1*units::m)),
-    //                  charge_per_depo);
-    // // "driftlike" track diagonal in space and drift time
-    // tracks.add_track(t0 + 3*units::ms,
-    //                  Ray(Point(1*units::m, 0*units::m, -1*units::m),
-    //                      Point(2*units::m, 0*units::m, +1*units::m)),
-    //                  charge_per_depo);
+    // mostly "prolonged" track in X direction
+    if (track_types.find("prolonged") < track_types.size()) {
+        tracks.add_track(t0 + 1*units::ms,
+                         Ray(Point(1*units::m, 0*units::m, 0*units::m),
+                             Point(2*units::m, 0*units::m, 3*units::cm)), // over 10 wires
+                         charge_per_depo);
+    }
+
+    // mostly "isochronous" track in Z direction
+    if (track_types.find("isochronous") < track_types.size()) {
+        tracks.add_track(t0 + 2*units::ms,
+                         Ray(Point(1*units::m, 0*units::m, -1*units::m),
+                             Point(1*units::m + 100*units::us*drift_speed, 0*units::m, +1*units::m)),
+                         charge_per_depo);
+    }
+    // "driftlike" track diagonal in space and drift time
+    if (track_types.find("driftlike") < track_types.size()) {
+        tracks.add_track(t0 + 3*units::ms,
+                         Ray(Point(1*units::m, 0*units::m, -1*units::m),
+                             Point(2*units::m, 0*units::m, +1*units::m)),
+                         charge_per_depo);
+    }
 
     // make a +
-    // tracks.add_track(t0 + 0.5*units::ms,
-    //                  Ray(Point(1.5*units::m, 0*units::m, -1*units::m),
-    //                      Point(1.5*units::m, 0*units::m, +1*units::m)),
-    //                  charge_per_depo);
-    // tracks.add_track(t0 + 0.5*units::ms,
-    //                  Ray(Point(1.5*units::m, -1*units::m, 0*units::m),
-    //                      Point(1.5*units::m, +1*units::m, 0*units::m)),
-    //                  charge_per_depo);
-
-
-    // make a .
+    if (track_types.find("plus") < track_types.size()) {
+        tracks.add_track(t0 + 0.5*units::ms,
+                         Ray(Point(1.5*units::m, 0*units::m, -1*units::m),
+                             Point(1.5*units::m, 0*units::m, +1*units::m)),
+                         charge_per_depo);
     tracks.add_track(t0 + 0.5*units::ms,
-                     Ray(Point(1.5*units::m, 0*units::m, -0.3*units::mm),
-                         Point(1.5*units::m, 0*units::m, +0.3*units::mm)),
+                     Ray(Point(1.5*units::m, -1*units::m, 0*units::m),
+                         Point(1.5*units::m, +1*units::m, 0*units::m)),
                      charge_per_depo);
+    }
+
+    // // make a .
+    if (track_types.find("point") < track_types.size()) {
+        tracks.add_track(t0 + 0.5*units::ms,
+                         Ray(Point(1.5*units::m, 0*units::m, -0.3*units::mm),
+                             Point(1.5*units::m, 0*units::m, +0.3*units::mm)),
+                         charge_per_depo);
+    }
 
     em("made tracks");
 
@@ -128,7 +145,7 @@ int main(int argc, char *argv[])
     TFile* rootfile = TFile::Open(Form("%s-uvw.root", argv[0]), "recreate");
     TCanvas* canvas = new TCanvas("c","canvas",500,500);
     gStyle->SetOptStat(0);
-    canvas->Print("test_impactzipper.pdf[","pdf");
+    //canvas->Print("test_impactzipper.pdf[","pdf");
 
     for (int plane_id = 0; plane_id < 3; ++plane_id) {
         Pimpos& pimpos = uvw_pimpos[plane_id];
@@ -163,14 +180,14 @@ int main(int argc, char *argv[])
         em("made ImpactZipper");
 
         auto tmm = bindiff.time_range(ndiffision_sigma);
-        const int tbin0 = max(0, tbins.bin(tmm.first)-2);
-        const int tbinf = min(tbins.nbins()-1, tbins.bin(tmm.second) + 2);
-        const int ntbins = 1+tbinf-tbin0;
+        const int tbin0 = 0;
+        const int tbinf = nticks;
+        const int ntbins = nticks;
 
         auto rbins = pimpos.region_binning();
         auto pmm = bindiff.pitch_range(ndiffision_sigma);
-        const int wbin0 = max(0, rbins.bin(pmm.first) - 11);
-        const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 11);
+        const int wbin0 = max(0, rbins.bin(pmm.first) - 20);
+        const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 20);
         const int nwbins = 1+wbinf-wbin0;
 
         std::map<int, Waveform::realseq_t> frame;
@@ -184,11 +201,11 @@ int main(int argc, char *argv[])
         }
         em("zipped through wires");
         cerr << "Tottot = " << tottot << endl;
-        Assert(tottot > 0.0);
+        Assert(tottot != 0.0);
 
         TH2F *hist = new TH2F(Form("h%d", plane_id),
                               Form("Wire vs Tick %c-plane", uvw[plane_id]),
-                              ntbins, tbin0, tbin0+ntbins,
+                              ntbins, 0, ntbins,
                               nwbins, wbin0, wbin0+nwbins);
         hist->SetXTitle("tick");
         hist->SetYTitle("wire");
@@ -203,13 +220,13 @@ int main(int argc, char *argv[])
             auto tot = Waveform::sum(wave);
             //std::cerr << iwire << " tot=" << tot << std::endl;
             for (int itick=tbin0; itick <= tbinf; ++itick) {
-                Assert(tbins.inbounds(itick));
                 hist->Fill(itick+0.1, iwire+0.1, wave[itick]);
             }
         }
         hist->Write();
 
         hist->Draw("colz");
+        canvas->SetRightMargin(0.15);
 
         std::vector<TLine*> lines;
         auto trqs = tracks.tracks();
@@ -225,20 +242,22 @@ int main(int argc, char *argv[])
             const int tick1 = tbins.bin(time + (ray.first.x()-fr.origin)/drift_speed);
             const int tick2 = tbins.bin(time + (ray.second.x()-fr.origin)/drift_speed);
             
-            const int wire1 = rbins.bin(pimpos.distance(ray.first, plane_id));
-            const int wire2 = rbins.bin(pimpos.distance(ray.second, plane_id));
+            const int wire1 = rbins.bin(pimpos.distance(ray.first));
+            const int wire2 = rbins.bin(pimpos.distance(ray.second));
             
             cerr << "digitrack: t=" << time << " ticks=["<<tick1<<","<<tick2<<"] wires=["<<wire1<<","<<wire2<<"]\n";
             
-            TLine* line = new TLine(tick1, wire1, tick2, wire2);
+            const int fudge = 1800;
+            TLine* line = new TLine(tick1-fudge, wire1, tick2-fudge, wire2);
             line->Write(Form("l%c%d", uvw[plane_id], iline));
             line->Draw();
+            canvas->Print(Form("test_impactzipper_%c.png", uvw[plane_id]));
         }
 
-        canvas->Print("test_impactzipper.pdf","pdf");
+        //canvas->Print("test_impactzipper.pdf","pdf");
     }
     rootfile->Close();
-    canvas->Print("test_impactzipper.pdf]","pdf");
+    //canvas->Print("test_impactzipper.pdf]","pdf");
     em("done");
 
     cerr << em.summary() << endl;
