@@ -1,4 +1,5 @@
 #include "WireCellGen/ImpactZipper.h"
+#include "WireCellUtil/Testing.h"
 
 using namespace WireCell;
 Gen::ImpactZipper::ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd)
@@ -27,7 +28,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
     const int nimpacts = max_impact-min_impact+1;
     const int nsamples = m_bd.tbins().nbins();
-    Waveform::compseq_t spec(nsamples, Waveform::complex_t(0.0,0.0));
+    Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
 
     
     // std::cerr << "IZ: wire="<<iwire<<" @"<<wire_pos
@@ -65,45 +66,39 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             // std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
             continue;
         }
-	/// frequency-domain spectrum of response
-	const Waveform::compseq_t& response_spectrum = ir->spectrum();
-
-        
-        // fixme: this should not be done inside this loop.
-        // fixme: it shouldn't also make so many assumptions about these numbers!
-        const int csize = charge_spectrum.size(); // 10000
-        const int chalf = csize/2;
-        const int rsize = response_spectrum.size(); // 1000
-        const int rhalf = rsize/2;
-        
-        const double cbin = m_bd.tbins().binsize(); // 500 ns
-        const double rbin = m_pir.field_response().period*units::us; // 100 ns
-        // must rebin field response by this much.
-        // fixme: assumes we know which one is more finely binned!
-        const int rebinfactor = int(float(cbin)/float(rbin)); // 5
-
-        const int shalf = rhalf / rebinfactor; // 100
-        
-        Waveform::compseq_t conv(nsamples, Waveform::complex_t(0.0,0.0));
-        for (int ind=0; ind < shalf; ++ind) {
-            Waveform::complex_t pval(0.0,0.0);
-            Waveform::complex_t mval(0.0,0.0);
-            for (int ii=0; ii<rebinfactor; ++ii) {
-                pval += response_spectrum[ind+ii];
-                mval += response_spectrum[rsize-rebinfactor+ii];
-            }
-            conv[ind] += pval * charge_spectrum[ind];
-            const int rind = csize-1-ind;
-            conv[rind] += mval * charge_spectrum[rind];
+	/// Fixme: this needs to be done inside ImpactResponse to avoid repeating the same calculation!
+	const Waveform::realseq_t& raw_response = ir->waveform();
+        const int rawspec_size = ir->spectrum().size();
+        const int rawresp_size = raw_response.size();
+        // std::cerr << "imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos
+        //           << " size=" << rawresp_size << " spec_size=" << rawspec_size << std::endl;
+        Assert(rawresp_size >= 0   && rawresp_size < 100000); // sanity
+        const Response::Schema::FieldResponse& fr = m_pir.field_response();
+        const double rawresp_min = fr.tstart*units::us; // fixme: Response units
+        const double rawresp_tick = fr.period*units::us; // fixme: Response units
+        const double rawresp_max = rawresp_min + rawresp_size*rawresp_tick;
+        Binning rawresp_bins(rawresp_size, rawresp_min, rawresp_max);
+        WireCell::Waveform::realseq_t response(nsamples, 0.0);
+        for (int ind=0; ind<rawresp_size; ++ind) {
+            const double time = rawresp_bins.center(ind);
+            const int bin = m_bd.tbins().bin(time);
+            Assert(bin < nsamples && bin >= 0);
+            response[bin] += raw_response[ind];
         }
+        Waveform::compseq_t response_spectrum = Waveform::dft(response);
         
+        // convolve 
+        Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
+        for (int ind=0; ind < nsamples; ++ind) {
+            conv_spectrum[ind] = response_spectrum[ind]*charge_spectrum[ind];
+        }
 
         ++nfound;
         // std::cerr << "ImpactZipper: found:"<<nfound<<" for absolute impact number " << imp
         //           << " csize=" << csize << " rsize=" << rsize << " rebin=" << rebinfactor
         //           << std::endl;
 
-        Waveform::increase(spec, conv);
+        Waveform::increase(total_spectrum, conv_spectrum);
     }
     //std::cerr << "ImpactZipper: found " << nfound << " in abs impact: ["  << min_impact << ","<< max_impact << "]\n";
 
@@ -115,7 +110,10 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         return Waveform::realseq_t(nsamples, 0.0);
     }
     
-    auto waveform = Waveform::idft(spec);
+    auto waveform = Waveform::idft(total_spectrum);
+    for (int ind=0; ind<nsamples; ++ind) {
+        waveform[ind] /= nsamples; // normalize FFT/iFFT
+    }
 
     return waveform;
 }

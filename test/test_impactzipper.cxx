@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
             
             cerr << "digitrack: t=" << time << " ticks=["<<tick1<<","<<tick2<<"] wires=["<<wire1<<","<<wire2<<"]\n";
             
-            const int fudge = 1800;
+            const int fudge = 0;
             TLine* line = new TLine(tick1-fudge, wire1, tick2-fudge, wire2);
             line->Write(Form("l%c%d", uvw[plane_id], iline));
             line->Draw();
