@@ -93,46 +93,61 @@ int main(int argc, char *argv[])
     const double dedx = 7.0e4/(1*units::cm); // in electrons
     const double charge_per_depo = -(dedx)*stepsize;
 
+    const double event_time = t0 + 1*units::ms;
+    const Point event_vertex(1*units::m, 0*units::m, 0*units::m);
+
     // mostly "prolonged" track in X direction
-    if (track_types.find("prolonged") < track_types.size()) {
-        tracks.add_track(t0 + 1*units::ms,
-                         Ray(Point(1*units::m, 0*units::m, 0*units::m),
-                             Point(2*units::m, 0*units::m, 3*units::cm)), // over 10 wires
+    if (track_types.find("prolong") < track_types.size()) {
+        tracks.add_track(event_time,
+                         Ray(event_vertex, 
+                             event_vertex + Vector(1*units::m, 0*units::m, +10*units::cm)),
+                         charge_per_depo);
+        tracks.add_track(event_time,
+                         Ray(event_vertex, 
+                             event_vertex + Vector(1*units::m, 0*units::m, -10*units::cm)),
                          charge_per_depo);
     }
 
-    // mostly "isochronous" track in Z direction
-    if (track_types.find("isochronous") < track_types.size()) {
-        tracks.add_track(t0 + 2*units::ms,
-                         Ray(Point(1*units::m, 0*units::m, -1*units::m),
-                             Point(1*units::m + 100*units::us*drift_speed, 0*units::m, +1*units::m)),
+    // mostly "isochronous" track in Z direction, give spelling errors a break. :)
+    if (track_types.find("isoch") < track_types.size()) {
+        tracks.add_track(event_time,
+                         Ray(event_vertex,
+                             event_vertex+Vector(0, 100*units::us*drift_speed, 1*units::m)),
                          charge_per_depo);
     }
     // "driftlike" track diagonal in space and drift time
     if (track_types.find("driftlike") < track_types.size()) {
-        tracks.add_track(t0 + 3*units::ms,
-                         Ray(Point(1*units::m, 0*units::m, -1*units::m),
-                             Point(2*units::m, 0*units::m, +1*units::m)),
+        tracks.add_track(event_time, 
+                         Ray(event_vertex,
+                             event_vertex + Vector(1*units::m, 0*units::m, 1*units::m)),
                          charge_per_depo);
     }
 
     // make a +
     if (track_types.find("plus") < track_types.size()) {
-        tracks.add_track(t0 + 0.5*units::ms,
-                         Ray(Point(1.5*units::m, 0*units::m, -1*units::m),
-                             Point(1.5*units::m, 0*units::m, +1*units::m)),
+        tracks.add_track(event_time,
+                         Ray(event_vertex,
+                             event_vertex+Vector(0,0,+1*units::m)),
                          charge_per_depo);
-    tracks.add_track(t0 + 0.5*units::ms,
-                     Ray(Point(1.5*units::m, -1*units::m, 0*units::m),
-                         Point(1.5*units::m, +1*units::m, 0*units::m)),
-                     charge_per_depo);
+        tracks.add_track(event_time,
+                         Ray(event_vertex,
+                             event_vertex+Vector(0,0,-1*units::m)),
+                         charge_per_depo);
+        tracks.add_track(event_time,
+                         Ray(event_vertex,
+                             event_vertex+Vector(0,+1*units::m, 0)),
+                         charge_per_depo);
+        tracks.add_track(event_time,
+                         Ray(event_vertex,
+                             event_vertex+Vector(0,-1*units::m, 0)),
+                         charge_per_depo);
     }
 
     // // make a .
     if (track_types.find("point") < track_types.size()) {
-        tracks.add_track(t0 + 0.5*units::ms,
-                         Ray(Point(1.5*units::m, 0*units::m, -0.3*units::mm),
-                             Point(1.5*units::m, 0*units::m, +0.3*units::mm)),
+        tracks.add_track(event_time,
+                         Ray(event_vertex,
+                             event_vertex + Vector(0, 0, 0.3*units::mm)),
                          charge_per_depo);
     }
 
@@ -140,15 +155,18 @@ int main(int argc, char *argv[])
 
     // Get depos
     auto depos = tracks.depos();
+
     std::cerr << "got " << depos.size() << " depos from tracks\n";
     em("made depos");
 
     TFile* rootfile = TFile::Open(Form("%s-uvw.root", argv[0]), "recreate");
-    TCanvas* canvas = new TCanvas("c","canvas",500,500);
+    TCanvas* canvas = new TCanvas("c","canvas",1000,1000);
     gStyle->SetOptStat(0);
     //canvas->Print("test_impactzipper.pdf[","pdf");
 
+
     for (int plane_id = 0; plane_id < 3; ++plane_id) {
+        em("start loop over planes");
         Pimpos& pimpos = uvw_pimpos[plane_id];
 
         // add deposition to binned diffusion
@@ -156,10 +174,12 @@ int main(int argc, char *argv[])
         em("made BinnedDiffusion");
         for (auto depo : depos) {
             auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
-
-            const double sigma_time = 3.0*units::us; // fixme: should really be function of drift time
-            const double sigma_pitch = 3.0*units::mm; // fixme: ditto
 	
+            // fixme: these should really be function of drift time,
+            // but hard code them now for simplicity.
+            const double sigma_time = 1.0*units::us; 
+            const double sigma_pitch = 1.0*units::mm;
+
             bool ok = bindiff.add(drifted, sigma_time, sigma_pitch);
             if (!ok) {
                 std::cerr << "failed to add: t=" << drifted->time()/units::us << ", pt=" << drifted->pos()/units::mm << std::endl;
@@ -180,12 +200,6 @@ int main(int argc, char *argv[])
         Gen::ImpactZipper zipper(pir, bindiff);
         em("made ImpactZipper");
 
-        // Set time range for plot x-axis
-        // auto tmm = bindiff.time_range(ndiffision_sigma);
-        // full time range for now
-        const int tbin0 = tbins.min();
-        const int tbinf = tbins.max();
-        const int ntbins = tbins.nbins();
 
         // Set pitch range for plot y-axis
         auto rbins = pimpos.region_binning();
@@ -194,11 +208,17 @@ int main(int argc, char *argv[])
         const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 20);
         const int nwbins = 1+wbinf-wbin0;
 
+
+        // Dead recon
+        const int tbin0 = 3000, tbinf=5000;
+        const int ntbins = tbinf-tbin0;
+
         std::map<int, Waveform::realseq_t> frame;
         double tottot=0.0;
         for (int iwire=wbin0; iwire <= wbinf; ++iwire) {
             auto wave = zipper.waveform(iwire);
             auto tot = Waveform::sum(wave);
+
             tottot += tot;
             //std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
             frame[iwire] = wave;
@@ -209,7 +229,7 @@ int main(int argc, char *argv[])
 
         TH2F *hist = new TH2F(Form("h%d", plane_id),
                               Form("Wire vs Tick %c-plane", uvw[plane_id]),
-                              ntbins, 0, ntbins,
+                              ntbins, tbin0, tbin0+ntbins,
                               nwbins, wbin0, wbin0+nwbins);
         hist->SetXTitle("tick");
         hist->SetYTitle("wire");
@@ -217,6 +237,7 @@ int main(int argc, char *argv[])
         std::cerr << nwbins << " wires: [" << wbin0 << "," << wbinf << "], "
                   << ntbins << " ticks: [" << tbin0 << "," << tbinf << "]\n";
 
+        em("created TH2F");
         for (auto wire : frame) {
             const int iwire = wire.first;
             Assert(rbins.inbounds(iwire));
@@ -227,11 +248,12 @@ int main(int argc, char *argv[])
                 hist->Fill(itick+0.1, iwire+0.1, wave[itick]);
             }
         }
+        em("filled TH2F");
         hist->Write();
-
+        em("wrote TH2F");
         hist->Draw("colz");
         canvas->SetRightMargin(0.15);
-
+        em("drew TH2F");
         std::vector<TLine*> lines;
         auto trqs = tracks.tracks();
         for (int iline=0; iline<trqs.size(); ++iline) {
@@ -257,6 +279,8 @@ int main(int argc, char *argv[])
             line->Draw();
             canvas->Print(Form("test_impactzipper_%c.png", uvw[plane_id]));
         }
+        em("printed PNG canvases");
+        em("end of PIR scope");
 
         //canvas->Print("test_impactzipper.pdf","pdf");
     }
