@@ -10,7 +10,7 @@ Gen::DriftSim::DriftSim(const std::vector<Pimpos>& plane_descriptors,
                         const std::vector<PlaneImpactResponse>& plane_responses,
                         double ndiffision_sigma, bool fluctuate)
     : m_pimpos(plane_descriptors)
-    , m_pirw(plane_responses)
+    , m_pir(plane_responses)
     , m_ndiffision_sigma(ndiffision_sigma)
     , m_fluctuate(fluctuate)
 {
@@ -30,7 +30,7 @@ std::vector<Gen::DriftSim::block_t> Gen::DriftSim::latch(Binning tbins)
 
     for (int iplane=0; iplane < m_pimpos.size(); ++iplane) {
         Gen::BinnedDiffusion bdw(m_pimpos[iplane], tbins, m_ndiffision_sigma, m_fluctuate);
-        Gen::ImpactZipper zipper(m_pirw[iplane], bdw);
+        Gen::ImpactZipper zipper(m_pir[iplane], bdw);
 
         auto pitch_mm = bdw.pitch_range();
         cerr << "Pitch sample range: ["<<pitch_mm.first/units::mm <<","<< pitch_mm.second/units::mm<<"]mm\n";

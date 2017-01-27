@@ -1,8 +1,11 @@
-#include "WireCellUtil/ImpactResponse.h"
+
+#include "WireCellUtil/Response.h"
+#include "WireCellUtil/Waveform.h"
+#include "WireCellUtil/Units.h"
+
 #include "WireCellUtil/ExecMon.h"
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/Binning.h"
-#include "WireCellUtil/Units.h"
 
 #include "TCanvas.h"
 #include "TFile.h"
@@ -15,6 +18,7 @@
 #include <map>
 
 using namespace WireCell;
+using namespace std;
 
 std::vector<TH1F*> plot_wave(TCanvas& canvas, int padnum, 
                              std::string name, std::pair<double,double> bounds,
@@ -74,6 +78,8 @@ int main(int argc, char* argv[])
 	return 0;
     }
     
+    const char* uvw="UVW";
+
     // time binning
     const int nticks = 10000;
     const double tick = 0.5*units::us;
@@ -81,66 +87,84 @@ int main(int argc, char* argv[])
 
     // Get one field response (the one nearest the WOI)
     auto fr = Response::Schema::load(argv[1]);
-    WireCell::Waveform::realseq_t raw_response;
-    auto uplane_response = fr.planes[0];
-    for (auto path_response : uplane_response.paths) {
-        if (path_response.wirepos == 0.0) {
-            raw_response = path_response.current;
-            break;
-        }
-    }
-    const int rawresp_size = raw_response.size();
-    Assert(rawresp_size);
-    const double rawresp_min = fr.tstart*units::us; // fixme: Response units
-    const double rawresp_tick = fr.period*units::us; // fixme: Response units
-    const double rawresp_max = rawresp_min + rawresp_size*rawresp_tick;
-    Binning rawresp_bins(rawresp_size, rawresp_min, rawresp_max);
-
-    // match response sampling to digi and zero-pad
-    WireCell::Waveform::realseq_t response(nticks, 0.0);
-    for (int ind=0; ind<rawresp_size; ++ind) {
-        const double time = rawresp_bins.center(ind);
-        const int bin = bins.bin(time);
-        response[bin] += raw_response[ind];
-    }
-
-    // Make up a Gaussian charge distribution 
-    const double charge_const = 1000.0;
-    const double charge_time = 1*units::ms;
-    const double charge_sigma = 3*units::us;
-
-    WireCell::Waveform::realseq_t electrons(nticks, 0.0);
-    for (int ind=0; ind<nticks; ++ind) {
-        const double t = bins.center(ind);
-        const double rel = (t-charge_time)/charge_sigma;
-        const double val = charge_const * exp(-0.5*rel*rel);
-        electrons[ind] = val;
-    }
-
-    // frequency space
-    Waveform::compseq_t charge_spectrum = Waveform::dft(electrons);
-    Waveform::compseq_t raw_response_spectrum = Waveform::dft(raw_response);
-    Waveform::compseq_t response_spectrum = Waveform::dft(response);    
-
-    // convolve 
-    Waveform::compseq_t conv_spectrum(nticks, Waveform::complex_t(0.0,0.0));
-    for (int ind=0; ind < nticks; ++ind) {
-        conv_spectrum[ind] = response_spectrum[ind]*charge_spectrum[ind];
-    }
-    Waveform::realseq_t conv = Waveform::idft(conv_spectrum);
-    for (int ind=0; ind < nticks; ++ind) {
-        conv[ind] /= nticks;
-    }
 
     TCanvas canvas("h","h",900,1200);
-    canvas.Divide(3,4);         
-
-    plot_wave(canvas, 1, "Response", std::make_pair(0,.1), rawresp_bins, raw_response, raw_response_spectrum);
-    plot_wave(canvas, 4, "Response", std::make_pair(0,.1), bins, response, response_spectrum);
-    plot_wave(canvas, 7, "Electrons", std::make_pair(.9,1.1), bins, electrons, charge_spectrum);
-    plot_wave(canvas, 10, "Signal", std::make_pair(.9,1.1), bins, conv, conv_spectrum);
+    canvas.Print(Form("%s.pdf[", argv[0]), "pdf");
     
-    canvas.Print(Form("%s.pdf", argv[0]), "pdf");
+    const int nplanes = 3;
+    for (int iplane=0; iplane<nplanes; ++iplane) {
 
+        auto plane_response = fr.planes[iplane];
+
+        const int npaths = plane_response.paths.size();
+
+        for (int ipath=0; ipath<npaths; ++ipath) {
+            auto& path_response = plane_response.paths[ipath];
+
+            WireCell::Waveform::realseq_t raw_response = path_response.current;
+
+            const int rawresp_size = raw_response.size();
+            Assert(rawresp_size);
+            const double rawresp_min = fr.tstart*units::us; // fixme: Response units
+            const double rawresp_tick = fr.period*units::us; // fixme: Response units
+            const double rawresp_max = rawresp_min + rawresp_size*rawresp_tick;
+            Binning rawresp_bins(rawresp_size, rawresp_min, rawresp_max);
+
+            // match response sampling to digi and zero-pad
+            WireCell::Waveform::realseq_t response(nticks, 0.0);
+            for (int ind=0; ind<rawresp_size; ++ind) {
+                const double time = rawresp_bins.center(ind);
+                const int bin = bins.bin(time);
+                response[bin] += raw_response[ind];
+            }
+
+            // Make up a Gaussian charge distribution 
+            const double charge_const = 1000.0;
+            const double charge_time = 1*units::ms;
+            const double charge_sigma = 3*units::us;
+
+            WireCell::Waveform::realseq_t electrons(nticks, 0.0);
+            for (int ind=0; ind<nticks; ++ind) {
+                const double t = bins.center(ind);
+                const double rel = (t-charge_time)/charge_sigma;
+                const double val = charge_const * exp(-0.5*rel*rel);
+                electrons[ind] = val;
+            }
+
+            // frequency space
+            Waveform::compseq_t charge_spectrum = Waveform::dft(electrons);
+            Waveform::compseq_t raw_response_spectrum = Waveform::dft(raw_response);
+            Waveform::compseq_t response_spectrum = Waveform::dft(response);    
+
+            // convolve 
+            Waveform::compseq_t conv_spectrum(nticks, Waveform::complex_t(0.0,0.0));
+            for (int ind=0; ind < nticks; ++ind) {
+                conv_spectrum[ind] = response_spectrum[ind]*charge_spectrum[ind];
+            }
+            Waveform::realseq_t conv = Waveform::idft(conv_spectrum);
+            for (int ind=0; ind < nticks; ++ind) {
+                conv[ind] /= nticks;
+            }
+
+            canvas.Clear();
+            canvas.Divide(3,4);         
+
+            std::string extra = Form(" %c-%.1f", uvw[iplane], path_response.pitchpos); 
+
+            plot_wave(canvas, 1, "Response"+extra, std::make_pair(0,.1),
+                      rawresp_bins, raw_response, raw_response_spectrum);
+            plot_wave(canvas, 4, "Response"+extra, std::make_pair(0,.1),
+                      bins, response, response_spectrum);
+            plot_wave(canvas, 7, "Electrons"+extra, std::make_pair(.9,1.1),
+                      bins, electrons, charge_spectrum);
+            plot_wave(canvas, 10, "Signal"+extra, std::make_pair(.9,1.1),
+                      bins, conv, conv_spectrum);
+    
+            canvas.Print(Form("%s.pdf", argv[0]), "pdf");
+            
+        } // paths
+    }     // planes
+
+    canvas.Print(Form("%s.pdf]", argv[0]), "pdf");
     return 0;
 }

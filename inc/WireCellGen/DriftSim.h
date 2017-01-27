@@ -1,7 +1,7 @@
 #ifndef WIRECELLGEN_DRIFTSIM_H
 #define WIRECELLGEN_DRIFTSIM_H
 
-#include "WireCellUtil/ImpactResponse.h"
+#include "WireCellUtil/PlaneImpactResponse.h"
 #include "WireCellUtil/Pimpos.h"
 #include "WireCellUtil/Array.h"
 #include "WireCellIface/IDepo.h"
@@ -62,7 +62,7 @@ namespace WireCell {
 
         private:
             const std::vector<Pimpos>& m_pimpos;
-            const std::vector<PlaneImpactResponse>& m_pirw;
+            const std::vector<PlaneImpactResponse>& m_pir;
             double m_ndiffision_sigma;
             bool m_fluctuate;
 

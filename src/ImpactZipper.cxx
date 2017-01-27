@@ -66,28 +66,9 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             // std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
             continue;
         }
-	/// Fixme: this needs to be done inside ImpactResponse to avoid repeating the same calculation!
-	const Waveform::realseq_t& raw_response = ir->waveform();
-        const int rawspec_size = ir->spectrum().size();
-        const int rawresp_size = raw_response.size();
-        // std::cerr << "imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos
-        //           << " size=" << rawresp_size << " spec_size=" << rawspec_size << std::endl;
-        Assert(rawresp_size >= 0   && rawresp_size < 100000); // sanity
-        const Response::Schema::FieldResponse& fr = m_pir.field_response();
-        const double rawresp_min = fr.tstart*units::us; // fixme: Response units
-        const double rawresp_tick = fr.period*units::us; // fixme: Response units
-        const double rawresp_max = rawresp_min + rawresp_size*rawresp_tick;
-        Binning rawresp_bins(rawresp_size, rawresp_min, rawresp_max);
-        WireCell::Waveform::realseq_t response(nsamples, 0.0);
-        for (int ind=0; ind<rawresp_size; ++ind) {
-            const double time = rawresp_bins.center(ind);
-            const int bin = m_bd.tbins().bin(time);
-            Assert(bin < nsamples && bin >= 0);
-            response[bin] += raw_response[ind];
-        }
-        Waveform::compseq_t response_spectrum = Waveform::dft(response);
-        
-        // convolve 
+        Waveform::compseq_t response_spectrum = ir->spectrum();
+
+        // convolve with slice of charge distribution in this impact
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
         for (int ind=0; ind < nsamples; ++ind) {
             conv_spectrum[ind] = response_spectrum[ind]*charge_spectrum[ind];

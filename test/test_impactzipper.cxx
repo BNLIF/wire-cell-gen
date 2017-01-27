@@ -2,7 +2,6 @@
 #include "WireCellGen/TrackDepos.h"
 #include "WireCellGen/BinnedDiffusion.h"
 #include "WireCellGen/TransportedDepo.h"
-#include "WireCellUtil/ImpactResponse.h"
 #include "WireCellUtil/ExecMon.h"
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Binning.h"
@@ -79,6 +78,8 @@ int main(int argc, char *argv[])
     const int nticks = readout_time/tick;
     const double drift_speed = 1.0*units::mm/units::us; // close but fake/arb value!
     Binning tbins(nticks, t0, t0+readout_time);
+    const double gain = 14.7;
+    const double shaping  = 2.0*units::us;
 
     // Diffusion
     const int ndiffision_sigma = 3.0;
@@ -173,17 +174,20 @@ int main(int argc, char *argv[])
         }
         em("added track depositions");
 
-        PlaneImpactResponse pirw(fr, plane_id);
+        PlaneImpactResponse pir(fr, plane_id, tbins, gain, shaping);
         em("made PlaneImpactResponse");
 
-        Gen::ImpactZipper zipper(pirw, bindiff);
+        Gen::ImpactZipper zipper(pir, bindiff);
         em("made ImpactZipper");
 
-        auto tmm = bindiff.time_range(ndiffision_sigma);
-        const int tbin0 = 0;
-        const int tbinf = nticks;
-        const int ntbins = nticks;
+        // Set time range for plot x-axis
+        // auto tmm = bindiff.time_range(ndiffision_sigma);
+        // full time range for now
+        const int tbin0 = tbins.min();
+        const int tbinf = tbins.max();
+        const int ntbins = tbins.nbins();
 
+        // Set pitch range for plot y-axis
         auto rbins = pimpos.region_binning();
         auto pmm = bindiff.pitch_range(ndiffision_sigma);
         const int wbin0 = max(0, rbins.bin(pmm.first) - 20);

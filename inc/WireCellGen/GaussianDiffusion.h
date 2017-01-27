@@ -10,8 +10,7 @@
 namespace WireCell {
     namespace Gen {
 
-	/** A GausDesc describes one dimension of a sampled Gaussian
-         * distribution.
+	/** A GausDesc describes a Gaussian distribution.
          *
          * Two are used by GaussianDiffusion.  One describes the
          * transverse dimension along the direction of wire pitch (and
@@ -24,20 +23,10 @@ namespace WireCell {
 	    double center;
             /// The Gaussian sigma (half) width.
 	    double sigma;
-            /// The distance between two consecutive samples of the Gaussian.
-//	    double sample_size;
-            /// The location of the first sample
-//            double sample_zero;
-            /// The total number of samples over the domain.
-//	    int nsamples;
 
-//	    GausDesc(double center, double sigma, double sample_size, double sample_zero, int nsamples)
             GausDesc(double center, double sigma)
                 : center(center)
                 , sigma(sigma)
-//                , sample_size(sample_size)
-//                , sample_zero(sample_zero)
-//		, nsamples(nsamples)
 		{ }
 
             /// Return the distance in number of sigma that x is from the center
@@ -48,11 +37,6 @@ namespace WireCell {
             std::pair<double,double> sigma_range(double nsigma=3.0) {
                 return std::make_pair(center-sigma*nsigma, center+sigma*nsigma);
             }
-
-            /// Return range indices in the given sampling that cover
-            /// at most +/- nsigma of the Gaussian.  The range is half
-            /// open (.second is +1 beyond what should be accessed).
-            //std::pair<int,int> subsample_range(int nsamples, double xmin, double xmax, double nsigma=3.0) const;
 
             /** Sample the Gaussian. */
 	    std::vector<double> sample(double start, double step, int nsamples) const;

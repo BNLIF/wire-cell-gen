@@ -1,7 +1,7 @@
 #ifndef WIRECELL_IMPACTZIPPER
 #define WIRECELL_IMPACTZIPPER
 
-#include "WireCellUtil/ImpactResponse.h"
+#include "WireCellUtil/PlaneImpactResponse.h"
 #include "WireCellGen/BinnedDiffusion.h"
 
 namespace WireCell {
