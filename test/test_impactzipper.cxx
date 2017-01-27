@@ -30,6 +30,10 @@ int main(int argc, char *argv[])
     if (argc > 2) {
         track_types = argv[2];
     }
+    string out_basename = argv[0];
+    if (argc > 3) {
+        out_basename = argv[3];
+    }
 
 
     WireCell::ExecMon em(argv[0]);
@@ -159,7 +163,7 @@ int main(int argc, char *argv[])
     std::cerr << "got " << depos.size() << " depos from tracks\n";
     em("made depos");
 
-    TFile* rootfile = TFile::Open(Form("%s-uvw.root", argv[0]), "recreate");
+    TFile* rootfile = TFile::Open(Form("%s-uvw.root", out_basename.c_str()), "recreate");
     TCanvas* canvas = new TCanvas("c","canvas",1000,1000);
     gStyle->SetOptStat(0);
     //canvas->Print("test_impactzipper.pdf[","pdf");
@@ -210,7 +214,7 @@ int main(int argc, char *argv[])
 
 
         // Dead recon
-        const int tbin0 = 3000, tbinf=5000;
+        const int tbin0 = 3500, tbinf=5500;
         const int ntbins = tbinf-tbin0;
 
         std::map<int, Waveform::realseq_t> frame;
@@ -277,7 +281,7 @@ int main(int argc, char *argv[])
             TLine* line = new TLine(tick1-fudge, wire1, tick2-fudge, wire2);
             line->Write(Form("l%c%d", uvw[plane_id], iline));
             line->Draw();
-            canvas->Print(Form("test_impactzipper_%c.png", uvw[plane_id]));
+            canvas->Print(Form("%s_%c.png", out_basename.c_str(), uvw[plane_id]));
         }
         em("printed PNG canvases");
         em("end of PIR scope");

@@ -83,9 +83,9 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     }
     //std::cerr << "ImpactZipper: found " << nfound << " in abs impact: ["  << min_impact << ","<< max_impact << "]\n";
 
-    // Clear memory assuming next call is iwire+1..
-    // fixme: this is a dumb way to go.....
-    //m_bd.erase(0, min_impact); 
+    // Clear memory assuming next call is iwire+1.
+    // fixme: this is a dumb way to go. Better to make an iterator.
+    m_bd.erase(0, min_impact); 
 
     if (!nfound) {
         return Waveform::realseq_t(nsamples, 0.0);
