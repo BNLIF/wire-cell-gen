@@ -15,6 +15,29 @@ std::vector<double> Gen::GausDesc::sample(double start, double step, int nsample
     return ret;
 }
 
+std::vector<double> Gen::GausDesc::binint(double start, double step, int nbins) const
+{
+    std::vector<double> erfs(nbins+1, 0.0);
+    for (int ind=0; ind <= nbins; ++ind) {
+        double x = (start + step * ind - center)/sigma;
+        erfs[ind] = std::erf(x);
+    }
+    std::vector<double> bins(nbins,0.0);
+    double tot = 0.0;
+    for (int ibin=0; ibin < nbins; ++ibin) {
+        const double val = erfs[ibin+1] - erfs[ibin];
+        tot += val;
+        bins[ibin] = val;
+    }
+    for (int ibin=0; ibin < nbins; ++ibin) {
+        bins[ibin] /= tot;
+    }
+    return bins;
+}
+
+
+
+
 // std::pair<int,int> Gen::GausDesc::subsample_range(int nsamples, double xmin, double xmax, double nsigma) const
 // {
 //     const double sample_size = (xmax-xmin)/(nsamples-1);
@@ -41,7 +64,8 @@ Gen::GaussianDiffusion::GaussianDiffusion(const IDepo::pointer& depo,
 {
 }
 
-void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, const Binning& pbin,
+void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time tick binning
+                                          const Binning& pbin, // overall impact position binning
                                           double nsigma, bool fluctuate)
 {
     if (m_patch.size() > 0) {

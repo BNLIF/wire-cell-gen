@@ -38,8 +38,12 @@ namespace WireCell {
                 return std::make_pair(center-sigma*nsigma, center+sigma*nsigma);
             }
 
-            /** Sample the Gaussian. */
+            /** Sample the Gaussian at points on a uniform linear grid. */
 	    std::vector<double> sample(double start, double step, int nsamples) const;
+
+            /** Integrate Gaussian across uniform bins.  Bin contents
+             * are normalized so that they sum to 1.0. */
+	    std::vector<double> binint(double start, double step, int nbins) const;
 	    
 	};
 

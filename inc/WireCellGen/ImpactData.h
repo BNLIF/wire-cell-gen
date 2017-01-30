@@ -1,3 +1,8 @@
+/**
+   ImpactData represents the true charge distribution in time at the
+   point in space where a field response function begins.
+ */
+
 #include "WireCellUtil/Waveform.h"
 #include "WireCellGen/GaussianDiffusion.h"
 

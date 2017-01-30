@@ -17,13 +17,46 @@
 using namespace WireCell;
 using namespace std;
 
+void test_binint()
+{
+    const double mean = 1.0;
+    const double sigma = 2.0;
+    const double xmin = -5;
+    const double xmax = +5;
+
+    const Gen::GausDesc gd(mean, sigma);
+    const vector<int> nbinsv{5,10,20,50,100};
+    const vector<int> color{1,2,4,6,7,8};
+
+    cerr << "erf(+1) = " << std::erf(+1.0) << endl;
+    cerr << "erf(-1) = " << std::erf(-1.0) << endl;
+
+    for (int ind=0; ind < nbinsv.size(); ++ind) {
+        const int nbins = nbinsv[ind];
+        Binning b(nbins, xmin, xmax);
+        auto bi = gd.binint(b.min(), b.binsize(), nbins);
+        TH1F* h = new TH1F("h","h", nbins, xmin, xmax);
+        for (int bin=0; bin<nbins; ++bin) {
+            h->Fill(b.center(bin), bi[bin]);
+        }
+        h->SetLineColor(color[ind]);
+        if (ind) {
+            h->Draw("HIST,SAME");
+        }
+        else {
+            h->Draw("HIST");
+        }
+    }
+}
+    
+
 void test_gd(bool fluctuate)
 {
     const double nsigma = 3.0;
 
     /// Time Gaussian
     const double t_center = 3*units::ms;
-    const double t_sigma = 2*units::us;
+    const double t_sigma = 1*units::us;
     Gen::GausDesc tdesc(t_center, t_sigma);
 
     /// Pitch Gaussian
@@ -111,6 +144,9 @@ int main(int argc, char* argv[])
     TCanvas canvas("canvas","canvas",500,500);
     canvas.Print(Form("%s.pdf[", me),"pdf");
     gStyle->SetOptStat(0);
+
+    test_binint();
+    canvas.Print(Form("%s.pdf",me),"pdf");    
 
     test_gd(false);
     canvas.Print(Form("%s.pdf",me),"pdf");
