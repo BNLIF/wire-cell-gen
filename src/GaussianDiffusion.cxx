@@ -18,9 +18,10 @@ std::vector<double> Gen::GausDesc::sample(double start, double step, int nsample
 std::vector<double> Gen::GausDesc::binint(double start, double step, int nbins) const
 {
     std::vector<double> erfs(nbins+1, 0.0);
+    const double sqrt2 = sqrt(2.0);
     for (int ind=0; ind <= nbins; ++ind) {
-        double x = (start + step * ind - center)/sigma;
-        erfs[ind] = std::erf(x);
+        double x = (start + step * ind - center)/(sqrt2*sigma);
+        erfs[ind] = 0.5*std::erf(x);
     }
     std::vector<double> bins(nbins,0.0);
     double tot = 0.0;
@@ -28,9 +29,6 @@ std::vector<double> Gen::GausDesc::binint(double start, double step, int nbins) 
         const double val = erfs[ibin+1] - erfs[ibin];
         tot += val;
         bins[ibin] = val;
-    }
-    for (int ibin=0; ibin < nbins; ++ibin) {
-        bins[ibin] /= tot;
     }
     return bins;
 }
@@ -88,9 +86,10 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     /// Sample pitch dimension.
     auto pval_range = m_pitch_desc.sigma_range(nsigma);
     auto pbin_range = pbin.sample_bin_range(pval_range.first, pval_range.second);
-    const int npss = pbin_range.second - pbin_range.first+1;
+    const int npss = pbin_range.second - pbin_range.first;
     m_poffset_bin = pbin_range.first;
-    auto pvec = m_pitch_desc.sample(pbin.center(m_poffset_bin), pbin.binsize(), npss);
+    //auto pvec = m_pitch_desc.sample(pbin.center(m_poffset_bin), pbin.binsize(), npss);
+    auto pvec = m_pitch_desc.binint(pbin.center(m_poffset_bin), pbin.binsize(), npss);
 
     if (!npss) {
         cerr << "No impact bins [" << pval_range.first/units::mm << "," << pval_range.second/units::mm << "] mm\n";

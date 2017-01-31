@@ -19,13 +19,13 @@ using namespace std;
 
 void test_binint()
 {
-    const double mean = 1.0;
+    const double mean = 1.7;
     const double sigma = 2.0;
     const double xmin = -5;
     const double xmax = +5;
 
     const Gen::GausDesc gd(mean, sigma);
-    const vector<int> nbinsv{5,10,20,50,100};
+    const vector<int> nbinsv{100, 50, 20, 10, 5};
     const vector<int> color{1,2,4,6,7,8};
 
     cerr << "erf(+1) = " << std::erf(+1.0) << endl;
@@ -35,10 +35,12 @@ void test_binint()
         const int nbins = nbinsv[ind];
         Binning b(nbins, xmin, xmax);
         auto bi = gd.binint(b.min(), b.binsize(), nbins);
-        TH1F* h = new TH1F("h","h", nbins, xmin, xmax);
+        TH1F* h = new TH1F("h","binint Gaussian per binsize", nbins, xmin, xmax);
         for (int bin=0; bin<nbins; ++bin) {
-            h->Fill(b.center(bin), bi[bin]);
+            h->Fill(b.center(bin), bi[bin]/b.binsize());
         }
+        const double integ = h->Integral();
+        cerr << ind << " integ=" << b.binsize()*integ << " raw=" << integ << endl;
         h->SetLineColor(color[ind]);
         if (ind) {
             h->Draw("HIST,SAME");
@@ -121,7 +123,7 @@ void test_gd(bool fluctuate)
         double tval = tbins.center(it+toffset);
         Assert(tbins.inside(tval));
 	for (int ip=0; ip < patch.rows(); ++ip) {
-            double pval = pbins.center(ip+poffset);
+            double pval = pbins.edge(ip+poffset)+0.0001;
             Assert(pbins.inside(pval));
 	    const double value = patch(ip,it);
             hist->Fill(tval/tunit, pval/punit, value);
