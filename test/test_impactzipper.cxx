@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     if (track_types.find("point") < track_types.size()) {
         tracks.add_track(event_time,
                          Ray(event_vertex,
-                             event_vertex + Vector(0, 0, 0.3*units::mm)),
+                             event_vertex + Vector(0, 0, 0.1*units::mm)),
                          charge_per_depo);
     }
 
@@ -181,8 +181,8 @@ int main(int argc, char *argv[])
 	
             // fixme: these should really be function of drift time,
             // but hard code them now for simplicity.
-            const double sigma_time = 1.0*units::us; 
-            const double sigma_pitch = 1.0*units::mm;
+            const double sigma_time = 0.1*units::us; 
+            const double sigma_pitch = 0.1*units::mm;
 
             bool ok = bindiff.add(drifted, sigma_time, sigma_pitch);
             if (!ok) {
@@ -200,6 +200,28 @@ int main(int argc, char *argv[])
 
         PlaneImpactResponse pir(fr, plane_id, tbins, gain, shaping);
         em("made PlaneImpactResponse");
+        {
+            const Response::Schema::PlaneResponse& pr = pir.plane_response();
+            const double pmax = 0.5*pir.pitch_range();
+            const double pstep = pir.impact();
+            const int npbins = 2.0*pmax/pstep;
+            const int ntbins = pr.paths[0].current.size();
+            const double tmin = fr.tstart;
+            const double tmax = fr.tstart + fr.period*ntbins;
+            TH2F* hpir = new TH2F(Form("hfr%d", plane_id), Form("Field Response %c-plane", uvw[plane_id]),
+                                  ntbins, tmin, tmax,
+                                  npbins, -pmax, pmax);
+            for (auto& path : pr.paths) {
+                const double cpitch = path.pitchpos;
+                for (int ic=0; ic<path.current.size(); ++ic) {
+                    const double ctime = fr.tstart + ic*fr.period;
+                    hpir->Fill(ctime, cpitch, path.current[ic]);
+                }
+            }
+            hpir->Write();
+        }
+        em("wrote and leaked response hist");
+
 
         Gen::ImpactZipper zipper(pir, bindiff);
         em("made ImpactZipper");

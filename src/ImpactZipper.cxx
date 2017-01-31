@@ -37,6 +37,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     //           << std::endl;
 
     int nfound=0;
+    const bool share=true;
 
     // The BinnedDiffusion is indexed by absolute impact and the
     // PlaneImpactResponse relative impact.
@@ -53,6 +54,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         
         const Waveform::compseq_t& charge_spectrum = id->spectrum();
         if (charge_spectrum.empty()) {
+            // should not happen
             std::cerr << "ImpactZipper: no charge for absolute impact number: " << imp << std::endl;
             continue;
         }
@@ -61,17 +63,31 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         const double rel_imp_pos = imp_pos - wire_pos;
         //std::cerr << "IZ: imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
 
-        auto ir = m_pir.closest(rel_imp_pos);
-        if (! ir) {
-            // std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
-            continue;
-        }
-        Waveform::compseq_t response_spectrum = ir->spectrum();
-
-        // convolve with slice of charge distribution in this impact
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
-        for (int ind=0; ind < nsamples; ++ind) {
-            conv_spectrum[ind] = response_spectrum[ind]*charge_spectrum[ind];
+        if (share) {
+            PlaneImpactResponse::TwoImpactResponses two_ir = m_pir.bounded(rel_imp_pos);
+            if (!two_ir.first || !two_ir.second) {
+                //std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
+                continue;
+            }
+            Waveform::compseq_t rs1 = two_ir.first->spectrum();            
+            Waveform::compseq_t rs2 = two_ir.second->spectrum();            
+
+            for (int ind=0; ind < nsamples; ++ind) { // this double counts charge, see below
+                conv_spectrum[ind] = (rs1[ind]+rs2[ind])*charge_spectrum[ind];
+            }
+
+        }
+        else {
+            auto ir = m_pir.closest(rel_imp_pos);
+            if (! ir) {
+                // std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
+                continue;
+            }
+            Waveform::compseq_t response_spectrum = ir->spectrum();
+            for (int ind=0; ind < nsamples; ++ind) {
+                conv_spectrum[ind] = response_spectrum[ind]*charge_spectrum[ind];
+            }
         }
 
         ++nfound;
@@ -92,8 +108,14 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     }
     
     auto waveform = Waveform::idft(total_spectrum);
+
+    // normalize FFT/iFFT    
+    double norm = 1.0/nsamples;
+    if (share) {                // and if share, remove double counting of charge.
+        norm *= 0.5;
+    }
     for (int ind=0; ind<nsamples; ++ind) {
-        waveform[ind] /= nsamples; // normalize FFT/iFFT
+        waveform[ind] *= norm;
     }
 
     return waveform;
