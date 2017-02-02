@@ -102,8 +102,8 @@ void test_gd(bool fluctuate)
     cerr << "rows=" << patch.rows() << " cols=" << patch.cols() << endl;
     cerr << "toffset=" << toffset <<" poffset=" << poffset << endl;
 
-    Assert(toffset > 0);
-    Assert(poffset > 0);
+    Assert(toffset >= 0);
+    Assert(poffset >= 0);
 
     const double tunit = units::us;	// for display
     const double punit = units::mm;	// for display
