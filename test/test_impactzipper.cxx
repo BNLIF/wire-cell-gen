@@ -230,8 +230,8 @@ int main(int argc, char *argv[])
         // Set pitch range for plot y-axis
         auto rbins = pimpos.region_binning();
         auto pmm = bindiff.pitch_range(ndiffision_sigma);
-        const int wbin0 = max(0, rbins.bin(pmm.first) - 20);
-        const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 20);
+        const int wbin0 = max(0, rbins.bin(pmm.first) - 40);
+        const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 40);
         const int nwbins = 1+wbinf-wbin0;
 
 
