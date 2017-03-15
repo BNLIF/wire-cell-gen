@@ -10,6 +10,12 @@ using namespace WireCell;
 
 
 Gen::Fourdee::Fourdee()
+    : m_depos(nullptr)
+    , m_drifter(nullptr)
+    , m_ductor(nullptr)
+    , m_dissonance(nullptr)
+    , m_digitizer(nullptr)
+    , m_output(nullptr)
 {
 }
 
@@ -34,7 +40,6 @@ WireCell::Configuration Gen::Fourdee::default_configuration() const
 void Gen::Fourdee::configure(const Configuration& thecfg)
 {
     Configuration cfg = thecfg;
-
     m_depos = Factory::lookup<IDepoSource>(get<string>(cfg, "DepoSource"));
     m_drifter = Factory::lookup<IDrifter>(get<string>(cfg, "Drifter",""));
     m_ductor = Factory::lookup<IDuctor>(get<string>(cfg, "Ductor",""));
@@ -49,7 +54,16 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 
 void Gen::Fourdee::execute()
 {
-    // implement flow control through the pipeline.
+    if (!m_ductor) {
+        configure(default_configuration());
+    }
+
+    if (!m_depos) cerr << "no depos" << endl;
+    if (!m_drifter) cerr << "no drifter" << endl;
+    if (!m_ductor) cerr << "no ductor" << endl;
+    if (!m_dissonance) cerr << "no dissonance" << endl;
+    if (!m_digitizer) cerr << "no digitizer" << endl;
+    if (!m_output) cerr << "no output" << endl;
 
 }
 

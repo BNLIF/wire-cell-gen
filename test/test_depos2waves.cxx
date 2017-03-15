@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     const int nticks = readout_time/tick;
     const double drift_speed = get(cfg,"speed",1.0*units::mm/units::us);
     Binning tbins(nticks, t0, t0+readout_time);
-    const double gain = get(cfg, "gain", 14.7);
+    const double gain = get(cfg, "gain", 14.0);
     const double shaping  = get(cfg, "shaping", 2.0*units::us);
 
     std::cerr << "Field response origin: " << field_origin/units::mm << "mm "
