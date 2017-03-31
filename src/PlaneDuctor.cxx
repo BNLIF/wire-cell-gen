@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 WIRECELL_FACTORY(PlaneDuctor, WireCell::PlaneDuctor, WireCell::IPlaneDuctor, WireCell:: IConfigurable);
 
@@ -247,7 +248,7 @@ IPlaneSlice::pointer PlaneDuctor::latch_hits()
 	//      << nwires_patch << " wires"
 	//      <<  endl;
 
-	vector<double> wire_charge;
+        std::vector<double> wire_charge;
 	for (int tbin = tbin_begin; tbin < tbin_end; ++tbin) {
 	    wire_charge.push_back(diff->get(lbin,tbin));
 	}

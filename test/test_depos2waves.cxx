@@ -34,14 +34,26 @@ int main(int argc, char *argv[])
     const char* uvw = "UVW";
 
     // 2D garfield wires are all parallel so we "lie" them into 3D
+    // Angle is positive and same for U and V.
     const double angle = 60*units::degree;
+
+    // Wire direction
+    std::vector<Vector> uvw_wire{Vector(0,  cos(angle),  sin(angle)), // points Y>0, Z>0
+                                 Vector(0,  cos(angle), -sin(angle)), // points Y>0, Z<0
+                                 Vector(0, 1, 0)};
+
+    // Pitch direction points generally in +Z direction
     std::vector<Vector> uvw_pitch{Vector(0, -sin(angle),  cos(angle)),
                                   Vector(0,  cos(angle),  sin(angle)),
                                   Vector(0, 0, 1)};
-    std::vector<Vector> uvw_wire{Vector(0,  cos(angle),  sin(angle)),
-                                 Vector(0, -sin(angle),  cos(angle)),
-                                 Vector(0, 1, 0)};
     
+    for (int ind=0; ind<3; ++ind) {
+        Vector cross = uvw_wire[ind].cross(uvw_pitch[ind]);
+        const Vector drift(1.0,0.0,0.0);
+        const Vector diff = drift-cross;
+        Assert(std::abs(diff.magnitude()) < 0.0001);
+    }
+
     // Origin where drift and diffusion meets field response.
     Point field_origin(fr.origin, 0, 0);
 

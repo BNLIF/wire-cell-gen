@@ -8,7 +8,7 @@
 
 #include <boost/range.hpp>
 #include <iterator>
-
+#include <vector>
 #include <iostream>		// debug
 
 WIRECELL_FACTORY(BoundCells, WireCell::BoundCells, WireCell::ICellMaker);
@@ -150,7 +150,7 @@ bool BoundCells::operator()(const input_pointer& wires, output_pointer& cells)
 
     */
     
-    vector<IWire::pointer> u_wires, v_wires, w_wires;
+    IWire::vector u_wires, v_wires, w_wires;
     copy_if(wires->begin(), wires->end(), back_inserter(u_wires), select_u_wires);
     copy_if(wires->begin(), wires->end(), back_inserter(v_wires), select_v_wires);
     copy_if(wires->begin(), wires->end(), back_inserter(w_wires), select_w_wires);
@@ -254,7 +254,7 @@ bool BoundCells::operator()(const input_pointer& wires, output_pointer& cells)
                 }
 
 		// go around the cross finding edges to break
-		vector<std::pair<int,int> > to_break;
+                std::vector<std::pair<int,int> > to_break;
 		for (int cjind=0; cjind<4; ++cjind) {
 		    int other_ind = (cjind+1)%4;
 		    if (inside_uv[cjind] && inside_uv[other_ind]) {

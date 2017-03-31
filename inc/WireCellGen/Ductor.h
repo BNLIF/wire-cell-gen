@@ -7,6 +7,8 @@
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IDuctor.h"
 
+#include "WireCellIface/IAnodePlane.h"
+
 namespace WireCell {
     namespace Gen {
 
@@ -24,17 +26,22 @@ namespace WireCell {
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
+            // for mocking
+            void set_anode_plane(IAnodePlane::pointer anode) { m_anode = anode; }
+
         private:
 
-            std::vector<Pimpos*> m_pimpos;
-            Response::Schema::FieldResponse m_fr;
+            IAnodePlane::pointer m_anode;
+            IDepo::vector m_depos;
 
-            double m_start_time, m_readout_period, m_sample_period;
+            double m_start_time;
+            double m_readout_time;
             double m_drift_speed;
             double m_nsigma;
             bool m_fluctuate;
-            double m_gain, m_shaping;
 
+            int m_nticks;
+            int m_frame_count;
 
         };
     }
