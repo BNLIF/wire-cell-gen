@@ -1,104 +1,71 @@
 #include "WireCellGen/Digitizer.h"
 
 #include "WireCellIface/IWireSelectors.h"
+#include "WireCellIface/SimpleFrame.h"
+#include "WireCellIface/SimpleTrace.h"
 
 #include "WireCellUtil/NamedFactory.h"
 
-
-#include <iostream>		// debugging
-#include <sstream>		// debugging
-
-WIRECELL_FACTORY(Digitizer, WireCell::Digitizer, WireCell::IDigitizer);
+WIRECELL_FACTORY(Digitizer, WireCell::Gen::Digitizer, WireCell::IFrameFilter);
 
 using namespace std;
 using namespace WireCell;
 
 
-Digitizer::Digitizer()
+Gen::Digitizer::Digitizer(int maxsamp, float baseline, float vperadc)
+    : m_max_sample(maxsamp)
+    , m_voltage_baseline(baseline)
+    , m_volts_per_adc(vperadc)
+
 {
 }
-Digitizer::~Digitizer()
+Gen::Digitizer::~Digitizer()
 {
 }
 
-// bool Digitizer::set_wires(const IWire::shared_vector& wires)
-// {
-//     for (int ind=0; ind<3; ++ind) {
-// 	m_wires[ind].clear();
-// 	copy_if(wires->begin(), wires->end(),
-// 		back_inserter(m_wires[ind]), select_uvw_wires[ind]);
-// 	std::sort(m_wires[ind].begin(), m_wires[ind].end(), ascending_index);
-//     }
-//     return true;
-// }
-
-
-class SimpleChannelSlice : public IChannelSlice {
-    double m_time;
-    ChannelCharge m_cc;
-public:
-    SimpleChannelSlice(double time, const ChannelCharge& cc)
-	: m_time(time), m_cc(cc) {}
-    
-    virtual double time() const { return m_time; }
-
-    virtual ChannelCharge charge() const { return m_cc; }
-};
-
-//bool Digitizer::operator()(const input_pointer& plane_slice_vector, output_pointer& channel_slice)
-bool Digitizer::operator()(const input_tuple_type& intup, output_pointer& channel_slice)
+WireCell::Configuration Gen::Digitizer::default_configuration() const
 {
-    const IPlaneSlice::shared_vector& plane_slice_vector = std::get<0>(intup);
-    if (!plane_slice_vector) {
-	cerr << "Digitizer: got EOS\n";
-	channel_slice = nullptr;
-	return true;
+    Configuration cfg;
+    put(cfg, "MaxSample", m_max_sample);
+    put(cfg, "Baseline", m_voltage_baseline);
+    put(cfg, "VperADC", m_volts_per_adc);
+    return cfg;
+}
+
+void Gen::Digitizer::configure(const Configuration& cfg)
+{
+    m_max_sample = get(cfg, "MaxSample", m_max_sample);
+    m_voltage_baseline = get(cfg, "Baseline", m_voltage_baseline);
+    m_volts_per_adc = get(cfg, "VperADC", m_volts_per_adc);
+}
+
+
+bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adcframe)
+{
+    auto vtraces = vframe->traces();
+    const int ntraces = vtraces->size();
+    ITrace::vector adctraces(ntraces);
+
+    const double voltsrange = (m_max_sample+1)*m_volts_per_adc;
+
+    for (int itrace=0; itrace<ntraces; ++itrace) {
+        auto& vtrace = vtraces->at(itrace);
+        auto& vwave = vtrace->charge();
+        const int nsamps = vwave.size();
+        ITrace::ChargeSequence adcwave(nsamps);
+        for (int isamp=0; isamp<nsamps; ++isamp) {
+            double adc = (vwave[isamp] - m_voltage_baseline)/voltsrange;
+            if (adc < 0.0) {
+                adc = 0.0; // underflow
+            }
+            if (adc > m_max_sample) {
+                adc = m_max_sample; // overflow
+            }
+            adcwave[isamp] = adc;
+        }
+        adctraces[itrace] = make_shared<SimpleTrace>(vtrace->channel(), vtrace->tbin(), adcwave);
     }
-
-    const IWire::shared_vector& all_wires = std::get<1>(intup);
-    // fixme: this probably needs optimization to not run each call.
-    IWire::vector plane_wires[3];
-    for (int ind=0; ind<3; ++ind) {
-	copy_if(all_wires->begin(), all_wires->end(),
-		back_inserter(plane_wires[ind]), select_uvw_wires[ind]);
-	std::sort(plane_wires[ind].begin(), plane_wires[ind].end(), ascending_index);
-    }
-
-
-    WireCell::ChannelCharge cc;
-    double the_time = -1;
-
-    stringstream msg;
-    msg << "Digitizer: t=" << plane_slice_vector->at(0)->time()<< "\n";
-
-    int nplanes = plane_slice_vector->size();
-    for (int iplane = 0; iplane < nplanes; ++iplane) {
-	IPlaneSlice::pointer ps = plane_slice_vector->at(iplane);
-	if (!ps) {
-	    //cerr << "Digitizer: ignoring null PlaneSlice" << endl;
-	    continue;
-	}
-	WirePlaneId wpid = ps->planeid();
-	IWire::vector& wires = plane_wires[wpid.index()];
-	the_time = ps->time();
-
-	double qtot = 0.0;
-	for (auto wcr : ps->charge_runs()) {
-	    int index = wcr.first;
-	    for (auto q : wcr.second) {
-		IWire::pointer wire = wires[index];
-		cc[wire->channel()] += Quantity(q, sqrt(q));
-		++index;
-		qtot += q;
-	    }
-	}
-	msg << "\t" << iplane << " q=" << qtot << " @ t=" << the_time << "\n";
-    }
-    // fixme: maybe add check for consistent times between planes....
-
-    cerr << msg.str();
-
-
-    channel_slice = IChannelSlice::pointer(new SimpleChannelSlice(the_time, cc));
+    adcframe = make_shared<SimpleFrame>(vframe->ident(), vframe->time(), adctraces,
+                                        vframe->tick(), vframe->masks());
     return true;
 }

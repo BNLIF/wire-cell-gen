@@ -28,7 +28,7 @@ WireCell::Configuration Gen::Fourdee::default_configuration() const
     Configuration cfg;                    // todo:
     put(cfg, "DepoSource", "TrackDepos"); // have
     put(cfg, "Drifter", "Drifter");       // have, needs work
-    put(cfg, "Ductor", "Ductor");         // need
+    put(cfg, "Ductor", "Ductor");         // have
     put(cfg, "Dissonance", "SilentNoise"); // needed
     put(cfg, "Digitizer", "Digitizer");    // need to rework frame
     put(cfg, "FrameSink", "DumpFrames"); // needed

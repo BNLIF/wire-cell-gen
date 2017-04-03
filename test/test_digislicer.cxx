@@ -1,6 +1,6 @@
 #include "WireCellRootVis/CanvasApp.h"
 
-#include "WireCellGen/Digitizer.h"
+#include "WireCellGen/Digislicer.h"
 #include "WireCellGen/WireParams.h"
 #include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/WireSummary.h"
@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
 
     WireSummary ws(*wires);
 
-    Digitizer digitizer;
-    //digitizer.set_wires(wires);
+    Digislicer digislicer;
+    //digislicer.set_wires(wires);
 
     const double the_time = 11.0*units::microsecond;
 
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
     auto todigi = make_tuple(psv, wires);
     IChannelSlice::pointer cs;
-    ok = digitizer(todigi, cs);
+    ok = digislicer(todigi, cs);
     Assert(ok);
     Assert(cs);
 
@@ -76,11 +76,11 @@ int main(int argc, char* argv[])
     }
 
     // should pass EOS
-    Assert(digitizer(IDigitizer::input_tuple_type(nullptr, nullptr), cs));
+    Assert(digislicer(IDigislicer::input_tuple_type(nullptr, nullptr), cs));
     Assert(!cs);
 
     // should fail to go past EOS
-    //Assert(!digitizer(nullptr, cs));
+    //Assert(!digislicer(nullptr, cs));
 
     return 0;
 }

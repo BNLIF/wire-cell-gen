@@ -1,4 +1,4 @@
 # -*- python -*-
-bld.smplpkg('WireCellGen', use='WireCellIface WireCellUtil', test_use='WireCellRootVis')
+bld.smplpkg('WireCellGen', use='WireCellIface WireCellUtil', app_use='DYNAMO BOOST', test_use='WireCellRootVis')
 
 

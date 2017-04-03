@@ -1,38 +1,40 @@
+/** Digitizer converts voltage waveforms to integer ADC ones.
+ * 
+ * Resulting waveforms are still in floating-point form and should be
+ * round()'ed and truncated to whatever integer representation is
+ * wanted by some subsequent node.
+ */
+
 #ifndef WIRECELL_DIGITIZER
 #define WIRECELL_DIGITIZER
 
-#include "WireCellIface/IDigitizer.h"
+#include "WireCellIface/IFrameFilter.h"
+#include "WireCellIface/IConfigurable.h"
+#include "WireCellUtil/Units.h"
 #include <deque>
 
 namespace WireCell {
     
-    /** This simple digitizer takes plane slices and reorganizes their
-     * contents into channel slices.  Charges on wires going to the
-     * same channel are simply summed.
-     */
-    class Digitizer : public IDigitizer {
-    public:
-	Digitizer();       
-	virtual ~Digitizer();       
+    namespace Gen {
 
-        /** Feed new wires to use.  
-	 *
-	 * This must be called once and before any output can be expected.
-	 *
-	 * Calling it does not invalidate a previously sunk plane
-	 * slice vector but will invalidate any previously sunk wires.
-	 */
-        //virtual bool set_wires(const IWire::shared_vector& wires);
+        class Digitizer : public IFrameFilter, public IConfigurable {
+        public:
+            Digitizer(int maxsamp=4095, float baseline=0.0*units::volt,
+                      float vperadc=2.0*units::volt/4096);
+            virtual ~Digitizer();       
 
-	virtual bool operator()(const input_tuple_type& intup, output_pointer& out);
+            virtual void configure(const WireCell::Configuration& config);
+            virtual WireCell::Configuration default_configuration() const;
 
-//	virtual bool operator()(const input_pointer& plane_slice_vector,
-//				output_pointer& channel_slice);
+            // Voltage frame goes in, ADC frame comes out.
+            virtual bool operator()(const input_pointer& inframe, output_pointer& outframe);
 
-    private:
-	// wires, organized by plane
-//	IWire::vector m_wires[3];
-    };
+        private:
+            int m_max_sample;   // eg, 4095.
+            float m_voltage_baseline;  // this number is subtracted to all voltage samples.
+            float m_volts_per_adc;     // how many volts corresponds to one ADC count.
+        };
 
+    }
 }
 #endif
