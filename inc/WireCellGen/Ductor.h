@@ -43,6 +43,8 @@ namespace WireCell {
             int m_nticks;
             int m_frame_count;
 
+            void process(output_queue& frames);
+
         };
     }
 }

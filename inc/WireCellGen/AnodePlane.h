@@ -28,6 +28,7 @@ namespace WireCell {
             virtual int nfaces() const { return m_faces.size(); }
 
             virtual IAnodeFace::pointer face(int ident) const;
+            virtual IAnodeFace::vector faces() const { return m_faces; }
 
 
         private:

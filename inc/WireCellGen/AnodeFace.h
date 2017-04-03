@@ -20,6 +20,7 @@ namespace WireCell {
 
             /// Return the wire plane with the given ident or nullptr if unknown.
             IWirePlane::pointer plane(int ident) const;
+            IWirePlane::vector planes() const { return m_planes; }
 
         private:
             int m_ident;

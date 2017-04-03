@@ -2,6 +2,7 @@
 #include "WireCellUtil/Response.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
+#include "WireCellUtil/Testing.h"
 #include "WireCellUtil/Pimpos.h"
 #include "WireCellUtil/PlaneImpactResponse.h"
 #include "WireCellIface/SimpleDepo.h"
