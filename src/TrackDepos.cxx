@@ -4,6 +4,7 @@
 
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/Testing.h"
 
 #include <iostream>		// debug
 
@@ -27,7 +28,7 @@ Configuration TrackDepos::default_configuration() const
 {
     std::string json = R"(
 {
-"step_size":0,
+"step_size":0.1,
 "clight":1.0,
 "tracks":[]
 }
@@ -38,6 +39,7 @@ Configuration TrackDepos::default_configuration() const
 void TrackDepos::configure(const Configuration& cfg)
 {
     m_stepsize = get<double>(cfg, "step_size", m_stepsize);
+    Assert(m_stepsize > 0);
     m_clight = get<double>(cfg, "clight", m_clight);
     for (auto track : cfg["tracks"]) {
 	double time = get<double>(track, "time", 0.0);
@@ -49,6 +51,7 @@ void TrackDepos::configure(const Configuration& cfg)
 
 void TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
+    //cerr << "TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
     m_tracks.push_back(track_t(time, ray, charge));
 
     double time_us = time / units::microsecond;

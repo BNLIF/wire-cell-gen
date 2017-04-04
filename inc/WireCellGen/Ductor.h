@@ -26,9 +26,6 @@ namespace WireCell {
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
-            // for mocking
-            void set_anode_plane(IAnodePlane::pointer anode) { m_anode = anode; }
-
         private:
 
             IAnodePlane::pointer m_anode;
@@ -42,6 +39,9 @@ namespace WireCell {
 
             int m_nticks;
             int m_frame_count;
+
+            // The "Type:Name" of the IAnodePlane (default is "AnodePlane")
+            std::string m_anode_tn;
 
             void process(output_queue& frames);
 
