@@ -2,7 +2,6 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/ConfigManager.h"
 
-
 WIRECELL_FACTORY(FourDee, WireCell::Gen::Fourdee, WireCell::IApplication, WireCell::IConfigurable);
 
 using namespace std;
@@ -54,9 +53,7 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 
 void Gen::Fourdee::execute()
 {
-    if (!m_ductor) {
-        configure(default_configuration());
-    }
+    cerr << "TrackDepos is type: " << type(m_depos) << endl;
 
     if (!m_depos) cerr << "no depos" << endl;
     if (!m_drifter) cerr << "no drifter" << endl;
@@ -65,5 +62,56 @@ void Gen::Fourdee::execute()
     if (!m_digitizer) cerr << "no digitizer" << endl;
     if (!m_output) cerr << "no output" << endl;
 
+    // here we make a manual pipeline.  In a "real" app this might be
+    // a DFP executed by TBB.
+    while (true) {
+        IDepo::pointer depo;
+        bool ok = (*m_depos)(depo);
+        if (!(*m_depos)(depo)) {
+            cerr << "Stopping on " << type(*m_depos) << endl;
+            return;
+        }
+        
+        IDrifter::output_queue drifted;
+        if (!(*m_drifter)(depo, drifted)) {
+            cerr << "Stopping on " << type(*m_drifter) << endl;
+            return;
+        }
+        if (drifted.empty()) {
+            continue;
+        }
+
+        for (auto drifted_depo : drifted) {
+            IDuctor::output_queue frames;
+            if (!(*m_ductor)(drifted_depo, frames)) {
+                cerr << "Stopping on " << type(*m_ductor) << endl;
+                return;
+            }
+            if (frames.empty()) {
+                continue;
+            }
+
+            for (IFrameFilter::input_pointer voltframe : frames) {
+/// Don't deal with noise quite yet.
+//                IFrame::pointer noise;
+//                if (!(*m_dissonance(noise))) {
+//                    cerr << "Stopping on " << type(*m_dissonance) << endl;
+//                    return;
+//                }
+//                voltframe = add(voltframe, noise);
+
+                IFrameFilter::output_pointer adcframe;
+                if (!(*m_digitizer)(voltframe, adcframe)) {
+                    cerr << "Stopping on " << type(*m_digitizer) << endl;
+                    return;
+                }
+
+                if (!(*m_output)(adcframe)) {
+                    cerr << "Stopping on " << type(*m_output) << endl;
+                    return;
+                }
+            }
+        }
+    }
 }
 

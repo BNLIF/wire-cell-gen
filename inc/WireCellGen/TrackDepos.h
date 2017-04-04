@@ -29,7 +29,7 @@ namespace WireCell {
 	void add_track(double time, const WireCell::Ray& ray, double dedx=-1.0);
 
 	/// ISourceNode
-	bool operator()(output_pointer& out);
+	virtual bool operator()(IDepo::pointer& out);
 
 	WireCell::IDepo::vector& depos() { return m_depos; }
 
