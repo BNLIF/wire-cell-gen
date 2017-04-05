@@ -51,6 +51,32 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 }
 
 
+static void dump(IDrifter::output_queue& drifted)
+{
+    double tmin = -1, tmax = -1, xmin = 0, xmax = 0;
+    for (auto depo : drifted) {
+        if (!depo) {
+            cerr << "Null depo" << endl;
+            continue;
+        }
+        double t = depo->time();
+        double x = depo->pos().x();
+        if (tmin < 0) {
+            tmin = tmax = t;
+            xmin = xmax = x;
+            continue;
+        }
+        if (tmin < t) { tmin = t; }
+        if (tmax > t) { tmax = t; }
+        if (xmin < x) { xmin = x; }
+        if (xmax > x) { xmax = x; }
+    }
+    cerr << "Drifted " << drifted.size() << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"], t in [" << tmin/units::us << "," << tmax/units::us << "]\n";
+
+        
+}
+
+
 void Gen::Fourdee::execute()
 {
     cerr << "TrackDepos is type: " << type(m_depos) << endl;
@@ -80,6 +106,9 @@ void Gen::Fourdee::execute()
         if (drifted.empty()) {
             continue;
         }
+
+        dump(drifted);
+        
 
         for (auto drifted_depo : drifted) {
             IDuctor::output_queue frames;
