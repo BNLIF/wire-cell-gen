@@ -2,6 +2,10 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellGen/TransportedDepo.h"
 
+#include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/IAnodeFace.h"
+#include "WireCellIface/IWirePlane.h"
+
 #include <boost/range.hpp>
 
 #include <sstream>
@@ -14,33 +18,55 @@ using namespace WireCell;
 
 
 
-Drifter::Drifter(double location,
-		 double drift_velocity)
-    : m_location(location)
-    , m_drift_velocity(drift_velocity)
-    , m_input(IDepoDriftCompare(drift_velocity))
+Drifter::Drifter(const std::string& anode_tn)
+    : m_location(0)
+    , m_speed(0)
+    , m_input()
     , m_eos(false)
 {
+    this->set_anode(anode_tn);
+}
+
+void Drifter::set_anode(const std::string& anode_tn)
+{
+    if (anode_tn.empty()) { return; }
+
+    auto anode = Factory::lookup<IAnodePlane>(anode_tn);
+    if (!anode) {
+        cerr << "Drifter: failed to get anode '" << anode_tn << "'\n";
+        return;
+    }
+
+    /// Warning: this assumes "front" face.
+    /// Fixme: it's also kind of a long road to walk.....
+    auto faces = anode->faces();
+    auto face = faces[0];
+    auto planes = face->planes();
+    auto plane = planes[face->nplanes()-1];
+    auto pir = plane->pir();
+    const auto& fr = pir->field_response();
+    m_speed = fr.speed;
+    m_location = fr.origin;
+    m_input = DepoTauSortedSet(IDepoDriftCompare(m_speed));
 }
 
 void Drifter::configure(const WireCell::Configuration& cfg)
 {
-    m_location = get<double>(cfg, "location", m_location);
-    m_drift_velocity = get<double>(cfg, "drift_velocity", m_drift_velocity);
-    //cerr << "Drifter: location=" << m_location << " drift_velocity=" << m_drift_velocity << endl;
+    std::string anode_tn = get<string>(cfg, "anode", "");
+    this->set_anode(anode_tn);
 }
 
 WireCell::Configuration Drifter::default_configuration() const
 {
-    stringstream ss;
-    ss << "{\"location\":0.0,\"drift_velocity\":"<<m_drift_velocity<<"}";
-    return configuration_loads(ss.str(), "json");
+    Configuration cfg;
+    cfg["anode"] = "";
+    return cfg;
 }
 
 
 double Drifter::proper_time(IDepo::pointer depo)
 {
-    return depo->time() + depo->pos().x()/m_drift_velocity;
+    return depo->time() + depo->pos().x()/m_speed;
 }
 
 void Drifter::reset()
@@ -58,7 +84,7 @@ bool Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	while (!m_input.empty()) {	
 	    IDepo::pointer top = *m_input.begin();
 	    m_input.erase(top);
-	    auto ret = std::make_shared<Gen::TransportedDepo>(top, m_location, m_drift_velocity);
+	    auto ret = std::make_shared<Gen::TransportedDepo>(top, m_location, m_speed);
 	    outq.push_back(ret);
 	}
 	outq.push_back(nullptr);
@@ -78,7 +104,7 @@ bool Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	    return true;       // bail when we reach unknown territory
 	}
 
-	auto ret = std::make_shared<Gen::TransportedDepo>(top, m_location, m_drift_velocity);
+	auto ret = std::make_shared<Gen::TransportedDepo>(top, m_location, m_speed);
 	m_input.erase(top);
 	outq.push_back(ret);
     }

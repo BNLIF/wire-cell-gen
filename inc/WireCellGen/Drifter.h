@@ -9,18 +9,13 @@
 
 namespace WireCell {
 
-    /** A Drifter takes inserted depositions, drifts and buffers as
-     * needed and reproduces new depositions drifted to a new
-     * location.
+    /** This IDrifter accepts inserted depositions, drifts them to a
+     * plane near an IAnodePlane and buffers long enough to assure
+     * they can be delivered in time order.
      */
     class Drifter : public IDrifter, public IConfigurable {
     public:
-	/// Create a drifter that will drift charge to a given
-	/// location at a given drift velocity.
-
-	Drifter(double x_location = 0*units::meter,
-		double drift_velocity = 1.6*units::mm/units::microsecond);
-	// fixme: make configureable
+	Drifter(const std::string& anode_plane_component="");
 
 	/// WireCell::IDrifter interface.
 	virtual void reset();
@@ -30,10 +25,12 @@ namespace WireCell {
 	virtual void configure(const WireCell::Configuration& config);
 	virtual WireCell::Configuration default_configuration() const;
 
+
+        void set_anode(const std::string& anode_tn);
+
     private:
 
-	double m_location, m_drift_velocity;
-	bool m_eoi;		// end of input
+	double m_location, m_speed; // get from anode.
 
 	// Input buffer sorted by proper time
 	DepoTauSortedSet m_input;

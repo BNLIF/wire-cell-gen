@@ -27,13 +27,11 @@ std::vector<TH1F*> plot_wave(TCanvas& canvas, int padnum,
                              const Waveform::compseq_t& fdomain)
 {
     const int nbins = bins.nbins();
-    const double tmin = bins.min()/units::ms;
-    const double tmax = bins.max()/units::ms;
     const double vmax = (1.0/(bins.binsize()/units::second))*1e-6;
     const double vbin = vmax/nbins;
 
     TH1F* ht = new TH1F("ht", Form("%s - waveform", name.c_str()),
-                        nbins, tmin, tmax);
+                        nbins, bins.min()/units::ms, bins.max()/units::ms);
     ht->SetXTitle(Form("time (ms, %d bins)", nbins));
     ht->SetDirectory(0);
     ht->GetXaxis()->SetRangeUser(bounds.first, bounds.second);
@@ -49,9 +47,9 @@ std::vector<TH1F*> plot_wave(TCanvas& canvas, int padnum,
     hp->SetDirectory(0);
 
     for (int ind=0; ind<bins.nbins(); ++ind) {
-        const double tms = bins.center(ind)/units::ms;
+        const double tms = bins.center(ind);
         const double fMHz = (ind+0.5)*vbin;
-        ht->Fill(tms, tdomain[ind]);
+        ht->Fill(tms/units::ms, tdomain[ind]);
         hm->Fill(fMHz, std::abs(fdomain[ind]));
         hp->Fill(fMHz, std::arg(fdomain[ind]));
     }
@@ -87,6 +85,7 @@ int main(int argc, char* argv[])
 
     // Get one field response (the one nearest the WOI)
     auto fr = Response::Schema::load(argv[1]);
+    cerr << "Drift speed is: " << fr.speed/(units::mm/units::us) << " mm/us\n";
 
     TCanvas canvas("h","h",900,1200);
     canvas.Print(Form("%s.pdf[", argv[0]), "pdf");
@@ -105,8 +104,8 @@ int main(int argc, char* argv[])
 
             const int rawresp_size = raw_response.size();
             Assert(rawresp_size);
-            const double rawresp_min = fr.tstart*units::us; // fixme: Response units
-            const double rawresp_tick = fr.period*units::us; // fixme: Response units
+            const double rawresp_min = fr.tstart;
+            const double rawresp_tick = fr.period;
             const double rawresp_max = rawresp_min + rawresp_size*rawresp_tick;
             Binning rawresp_bins(rawresp_size, rawresp_min, rawresp_max);
 
