@@ -8,23 +8,23 @@
 
 #include <iostream>		// debug
 
-WIRECELL_FACTORY(TrackDepos, WireCell::TrackDepos, WireCell::IDepoSource);
+WIRECELL_FACTORY(TrackDepos, WireCell::Gen::TrackDepos, WireCell::IDepoSource, WireCell::IConfigurable);
 
 using namespace std;
 using namespace WireCell;
 
-TrackDepos::TrackDepos(double stepsize, double clight)
+Gen::TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
     , m_eos(false)
 {
 }
 
-TrackDepos::~TrackDepos()
+Gen::TrackDepos::~TrackDepos()
 {
 }
 
-Configuration TrackDepos::default_configuration() const
+Configuration Gen::TrackDepos::default_configuration() const
 {
     std::string json = R"(
 {
@@ -36,7 +36,7 @@ Configuration TrackDepos::default_configuration() const
     return configuration_loads(json, "json");
 }
 
-void TrackDepos::configure(const Configuration& cfg)
+void Gen::TrackDepos::configure(const Configuration& cfg)
 {
     m_stepsize = get<double>(cfg, "step_size", m_stepsize);
     Assert(m_stepsize > 0);
@@ -49,9 +49,9 @@ void TrackDepos::configure(const Configuration& cfg)
     }
 }
 
-void TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
+void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
-    //cerr << "TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
+    cerr << "Gen::TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
     m_tracks.push_back(track_t(time, ray, charge));
 
     double time_us = time / units::microsecond;
@@ -82,7 +82,7 @@ void TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 }
 
 
-bool TrackDepos::operator()(output_pointer& out)
+bool Gen::TrackDepos::operator()(output_pointer& out)
 {
     if (m_eos) {
 	return false;

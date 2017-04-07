@@ -85,12 +85,18 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
 
     for (int ianode=0; ianode<store.anodes.size(); ++ianode) {
-        if (store.anodes[ianode].ident != m_ident) { continue; }
+        const int other_ident = store.anodes[ianode].ident;
+        if (other_ident != m_ident) {
+            cerr << "Gen::AnodePlane: my ident is " << m_ident
+                 << " not " << other_ident << " (" << ianode << "/" << store.anodes.size() << ")\n";
+            continue;
+        }
 
         auto& s_anode = store.anodes[ianode];
     
         const int nfaces = s_anode.faces.size();
         m_faces.resize(nfaces);
+        cerr << "Gen::AnodePlane: found my ident " << other_ident << " with " << nfaces << " faces\n";
 
         for (int iface=0; iface<nfaces; ++iface) {
             auto& s_face = store.faces[s_anode.faces[iface]];

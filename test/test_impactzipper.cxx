@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
     // Generate some trivial tracks
     const double stepsize = 1*units::mm;
-    TrackDepos tracks(stepsize);
+    Gen::TrackDepos tracks(stepsize);
 
     // Pick half bogus number ionized electrons per track distance
     const double dedx = 7.0e4/(1*units::cm); // in electrons

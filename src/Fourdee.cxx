@@ -40,6 +40,8 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 {
     Configuration cfg = thecfg;
     m_depos = Factory::lookup<IDepoSource>(get<string>(cfg, "DepoSource"));
+    // fixme: need to convert MeV to number of electrons with: Fano,
+    // Number_electrons_per_mev and Recombination.
     m_drifter = Factory::lookup<IDrifter>(get<string>(cfg, "Drifter",""));
     m_ductor = Factory::lookup<IDuctor>(get<string>(cfg, "Ductor",""));
     m_dissonance = Factory::lookup<IFrameSource>(get<string>(cfg, "Dissonance",""));
@@ -51,16 +53,21 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 }
 
 
-static void dump(IDrifter::output_queue& drifted)
+template<typename DEPOS>
+void dump(DEPOS& depos)
 {
-    double tmin = -1, tmax = -1, xmin = 0, xmax = 0;
-    for (auto depo : drifted) {
+    double tmin = -999, tmax = -999, xmin = -999, xmax = -999;
+    double qtot = 0.0;
+    double qorig = 0.0;
+    for (auto depo : depos) {
         if (!depo) {
-            cerr << "Null depo" << endl;
+            cerr << "Fourdee: null depo" << endl;
             continue;
         }
         double t = depo->time();
         double x = depo->pos().x();
+        qtot += depo->charge();
+        qorig += depo->prior()->charge();
         if (tmin < 0) {
             tmin = tmax = t;
             xmin = xmax = x;
@@ -71,7 +78,13 @@ static void dump(IDrifter::output_queue& drifted)
         if (xmin < x) { xmin = x; }
         if (xmax > x) { xmax = x; }
     }
-    cerr << "Drifted " << drifted.size() << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"], t in [" << tmin/units::us << "," << tmax/units::us << "]\n";
+    
+    const int ndepos = depos.size();
+    cerr << "Drifted " << ndepos
+         << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"], "
+         << "t in [" << tmin/units::us << "," << tmax/units::us << "], "
+         << " Qtot=" << qtot << ", <Qtot>=" << qtot/ndepos << " "
+         << " Qorig=" << qorig << ", <Qorig>=" << qorig/ndepos << endl;
 
         
 }
@@ -90,14 +103,21 @@ void Gen::Fourdee::execute()
 
     // here we make a manual pipeline.  In a "real" app this might be
     // a DFP executed by TBB.
+    int count=0;
     while (true) {
+        ++count;
+
         IDepo::pointer depo;
         bool ok = (*m_depos)(depo);
         if (!(*m_depos)(depo)) {
             cerr << "Stopping on " << type(*m_depos) << endl;
             return;
         }
-        
+        if (!depo) {
+            //cerr << "Got null depo from source at "<<count<< endl;
+        }
+
+
         IDrifter::output_queue drifted;
         if (!(*m_drifter)(depo, drifted)) {
             cerr << "Stopping on " << type(*m_drifter) << endl;
@@ -107,9 +127,9 @@ void Gen::Fourdee::execute()
             continue;
         }
 
+
         dump(drifted);
         
-
         for (auto drifted_depo : drifted) {
             IDuctor::output_queue frames;
             if (!(*m_ductor)(drifted_depo, frames)) {

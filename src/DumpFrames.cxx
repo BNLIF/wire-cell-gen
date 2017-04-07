@@ -1,5 +1,5 @@
 #include "WireCellGen/DumpFrames.h"
-
+#include "WireCellUtil/Units.h"
 #include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
@@ -25,7 +25,7 @@ bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
     const int ntraces = traces->size();
     
     cerr << "Frame: #" << frame->ident()
-         << " @" << frame->time()
+         << " @" << frame->time()/units::ms
          << " with " << ntraces << " traces" << endl;
     
 }

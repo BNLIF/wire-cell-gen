@@ -22,8 +22,8 @@
 using namespace WireCell;
 using namespace std;
 
-TrackDepos make_tracks() {
-    TrackDepos td;
+Gen::TrackDepos make_tracks() {
+    Gen::TrackDepos td;
     td.add_track(10, Ray(Point(10,0,0), Point(100,10,10)));
     td.add_track(120, Ray(Point( 1,0,0), Point( 2,-100,0)));
     td.add_track(99, Ray(Point(130,50,50), Point(11, -50,-30)));
@@ -34,7 +34,7 @@ TrackDepos make_tracks() {
 // not EOS/nullptr terminated.
 IDepo::shared_vector get_depos()
 {
-    TrackDepos td = make_tracks();
+    Gen::TrackDepos td = make_tracks();
     IDepo::vector* ret = new IDepo::vector;
     while (true) {
 	IDepo::pointer depo;
@@ -95,7 +95,7 @@ IDepo::vector test_drifted()
     IDepo::vector result, activity(*get_depos());
     activity.push_back(nullptr); // EOS
 
-    WireCell::Drifter drifter;
+    WireCell::Gen::Drifter drifter;
     int count = 0;
 
     WireCell::IDrifter::output_queue outq;
