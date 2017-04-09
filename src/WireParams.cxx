@@ -1,6 +1,7 @@
 #include "WireCellGen/WireParams.h"
 
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/Persist.h"
 
 #include <iostream>
 
@@ -36,7 +37,7 @@ Configuration WireParams::default_configuration() const
 "plane_mm":{"u":3.0, "v":2.0, "w":1.0}
 }
 )";
-    return configuration_loads(json, "json");
+    return Persist::loads(json);
 }
 
 void WireParams::configure(const Configuration& cfg)

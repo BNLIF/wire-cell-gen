@@ -3,7 +3,7 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
-
+#include "WireCellUtil/Persist.h"
 #include <boost/format.hpp> 
 #include <cmath>
 
@@ -63,7 +63,7 @@ Configuration Diffuser::default_configuration() const
        << "\"max_sigma_l\":" << 5.0 * units::us << ",\n"
        << "\"nsigma\":3.0\n"
        << "}\n";
-    return configuration_loads(ss.str(), "json");
+    return Persist::loads(ss.str());
 }
 
 void Diffuser::configure(const Configuration& cfg)

@@ -2,6 +2,7 @@
 #include "WireCellGen/WireGenerator.h"
 #include "WireCellGen/WireParams.h"
 #include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Persist.h"
 
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -71,7 +72,7 @@ void test2()
 	int nwires = wires->size();
 	cout << ind << ": pitch=" << pitches[ind] << " nwires=" << nwires << " (want=" << want[ind] << ")" << endl;
 	AssertMsg(nwires == want[ind], "Wrong number of wires");
-	AssertMsg(configuration_dumps(cfg).size(), "Failed to dump cfg");
+	AssertMsg(Persist::dumps(cfg).size(), "Failed to dump cfg");
     }
 }
 

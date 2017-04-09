@@ -5,6 +5,7 @@
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Persist.h"
 
 #include <iostream>		// debug
 
@@ -33,7 +34,7 @@ Configuration Gen::TrackDepos::default_configuration() const
 "tracks":[]
 }
 )";
-    return configuration_loads(json, "json");
+    return Persist::loads(json);
 }
 
 void Gen::TrackDepos::configure(const Configuration& cfg)

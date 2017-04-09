@@ -3,6 +3,7 @@
 #include "WireCellIface/SimplePlaneSlice.h"
 #include "WireCellIface/WirePlaneId.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/Persist.h"
 
 #include <iostream>
 #include <sstream>
@@ -46,7 +47,7 @@ Configuration PlaneDuctor::default_configuration() const
 "tpos0_mm":0.0
 }
 )";
-    return configuration_loads(json, "json");
+    return Persist::loads(json);
 }
 
 void PlaneDuctor::configure(const Configuration& cfg)

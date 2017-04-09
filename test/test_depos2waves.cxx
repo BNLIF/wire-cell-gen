@@ -1,4 +1,5 @@
 #include "WireCellUtil/Configuration.h"
+#include "WireCellUtil/Persist.h"
 #include "WireCellUtil/Response.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
 
     // Warning: this is abusing the configuration by being so
     // monolithic.  It's just for this test!  Do not emulate!
-    auto cfg = configuration_load(argv[1]);
+    auto cfg = Persist::load(argv[1]);
     auto fr = Response::Schema::load(argv[2]);
     TFile* rootfile = TFile::Open(argv[3], "recreate");
 
