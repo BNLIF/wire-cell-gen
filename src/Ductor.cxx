@@ -23,6 +23,7 @@ Gen::Ductor::Ductor()
     , m_fluctuate(true)
     , m_nticks(10000)
     , m_frame_count(0)
+    , m_anode_tn("AnodePlane")
 
 {
 }
@@ -49,13 +50,16 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
     /// Allow for a custom starting frame number
     put(cfg, "first_frame_number", m_frame_count);
 
+    /// Name of component providing the anode plane.
+    put(cfg, "anode", m_anode_tn);
+
     return cfg;
 }
 
 void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 {
-    string anode = get<string>(cfg, "anodeplane", "");
-    m_anode = Factory::lookup<IAnodePlane>(anode);
+    m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
+    m_anode = Factory::lookup<IAnodePlane>(m_anode_tn);
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);

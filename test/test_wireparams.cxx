@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 {
     WireParams wp;
     auto cfg = wp.default_configuration();
-    cerr << configuration_dumps(cfg) << endl;
+    cerr << cfg << endl;
     
     TApplication* theApp = 0;
     if (argc > 1) {

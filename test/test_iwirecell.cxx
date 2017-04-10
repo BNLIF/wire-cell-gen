@@ -49,8 +49,6 @@ int main(int argc, char* argv[])
     wp_cfg->configure(cfg);
     cout << tk("Configured WireParams") << endl;
 
-    //cout << configuration_dumps(cfg) << endl;
-
     auto wp_wps = WireCell::Factory::lookup<IWireParameters>("WireParams");
     AssertMsg(wp_wps, "Failed to get IWireParameters from default WireParams");
     cout << "Got WireParams IWireParameters interface @ " << wp_wps << endl;
