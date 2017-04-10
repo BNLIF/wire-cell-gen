@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     // Pitch direction points generally in +Z direction
     std::vector<Vector> uvw_pitch{Vector(0, -sin(angle),  cos(angle)),
-                                  Vector(0,  cos(angle),  sin(angle)),
+                                  Vector(0,  sin(angle),  cos(angle)),
                                   Vector(0, 0, 1)};
     
     for (int ind=0; ind<3; ++ind) {
