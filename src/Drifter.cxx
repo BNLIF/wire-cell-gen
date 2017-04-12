@@ -1,6 +1,7 @@
 #include "WireCellGen/Drifter.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/String.h"
 
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellIface/IAnodeFace.h"
@@ -58,10 +59,9 @@ void Gen::Drifter::set_anode()
         cerr << "Gen::Drifter: no anode plane type:name configured yet\n";
         return;
     }
-
-    auto anode = Factory::lookup<IAnodePlane>(m_anode_tn);
+    auto anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
     if (!anode) {
-        cerr << "Gen::Drifter: failed to get anode '" << m_anode_tn << "'\n";
+        cerr << "Gen::Drifter: failed to get anode: \"" << m_anode_tn << "\"\n";
         return;
     }
     if (anode->nfaces() <= 0) {

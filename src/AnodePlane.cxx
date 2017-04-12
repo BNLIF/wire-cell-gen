@@ -4,6 +4,7 @@
 
 #include "WireCellUtil/WireSchema.h"
 #include "WireCellUtil/BoundingBox.h"
+#include "WireCellUtil/Testing.h"
 
 #include "WireCellIface/SimpleWire.h"
 #include "WireCellUtil/NamedFactory.h"
@@ -36,13 +37,13 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
 
     /// Path to (possibly compressed) JSON file holding wire geometry
     /// which follows wirecell.util.wire.schema.  
-    put(cfg, "wire_file", "");
+    put(cfg, "wires", "");
 
     /// This number is used to take from the wire file the anode
     put(cfg, "ident", 0);
 
     /// Path to (possibly compressed) JSON file holding field responses
-    put(cfg, "field_response_file", "");
+    put(cfg, "fields", "");
 
     /// Electronics gain assumed in [mV/fC]
     put(cfg, "gain", default_gain);
@@ -74,11 +75,22 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     m_faces.clear();
     m_ident = get<int>(cfg, "ident", 0);
 
-    const string frfname = get<string>(cfg, "field_response_file");
+    const string frfname = get<string>(cfg, "fields");
+    if (frfname.empty()) {
+        cerr << "Gen::AnodePlane::configure() must have a field response file name\n";
+    }
+    Assert(!frfname.empty());
     m_fr = Response::Schema::load(frfname.c_str());
+    Assert(m_fr.speed > 0);
 
-    const string wfname = get<string>(cfg, "wire_file");
+
+    const string wfname = get<string>(cfg, "wires");
+    if (wfname.empty()) {
+        cerr << "Gen::AnodePlane::configure() must have a wire geometry file name\n";
+    }
+    Assert(!wfname.empty());
     WireSchema::Store store = WireSchema::load(wfname.c_str());
+    Assert(!store.anodes.empty());
 
     const Vector Xaxis(1.0,0,0);
 
