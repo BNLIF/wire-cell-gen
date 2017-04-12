@@ -22,9 +22,13 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    string response_file = "garfield-1d-3planes-21wires-6impacts-v4.json.bz2";
     if (argc < 2) {
-        std::cerr << "This test requires an Wire Cell Field Response input file." << std::endl;
-	return 0;
+	cerr << "Not  Wire Cell field response input file given, will try to use:\n"
+             << response_file << endl;
+    }
+    else {
+        response_file = argv[1];
     }
     string track_types = "point";
     if (argc > 2) {
@@ -37,7 +41,7 @@ int main(int argc, char *argv[])
 
 
     WireCell::ExecMon em(argv[0]);
-    auto fr = Response::Schema::load(argv[1]);
+    auto fr = Response::Schema::load(response_file.c_str());
     em("loaded response");
 
     const char* uvw = "UVW";
