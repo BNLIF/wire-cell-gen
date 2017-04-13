@@ -1,21 +1,6 @@
 #include "WireCellGen/WireSource.h"
 #include "WireCellUtil/NamedFactory.h"
 
-
-
-//WIRECELL_NAMEDFACTORY_BEGIN(WireSource)
-//WIRECELL_NAMEDFACTORY_INTERFACE(WireSource, IWireSource);
-//WIRECELL_NAMEDFACTORY_END(WireSource)
-//WIRECELL_FACTORY(WireSource, WireCell::WireSource, WireCell::IWireSource, WireCell::IConfigurable);
-
-// extern "C" {
-//     void* make_WireSource_factory() {
-// 	return make_named_factory_factory< WireCell::WireSource,
-// 					   WireCell::IWireSource,
-// 					   WireCell::IConfigurable >("WireSource");
-//     }
-// }
-
 WIRECELL_FACTORY(WireSource, WireCell::WireSource, WireCell::IWireSource, WireCell::IConfigurable);
 
 using namespace WireCell;

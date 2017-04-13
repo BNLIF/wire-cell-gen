@@ -39,7 +39,7 @@ Diffuser::Diffuser(const Ray& pitch,
     , m_nsigma(nsigma)
     , m_eos(false)
 {
-    dump("Diffuser created");
+    //dump("Diffuser created");
 }
 
 Diffuser::~Diffuser()
@@ -86,7 +86,7 @@ void Diffuser::configure(const Configuration& cfg)
     m_max_sigma_l = get<double>(cfg, "max_sigma_l", m_max_sigma_l);
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
 
-    dump("Diffuser configured");
+    //dump("Diffuser configured");
 }
 
 void Diffuser::reset()
