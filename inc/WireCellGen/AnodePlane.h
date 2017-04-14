@@ -9,6 +9,7 @@
 
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellIface/IConfigurable.h"
+#include <unordered_map>
 
 namespace WireCell {
     namespace Gen {
@@ -19,17 +20,18 @@ namespace WireCell {
             AnodePlane();
             virtual ~AnodePlane() {}
 
+
+            // IConfigurable interface
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
 
+            /// IAnodePlane interface
             virtual int ident() const { return m_ident; }
-
             virtual int nfaces() const { return m_faces.size(); }
-
             virtual IAnodeFace::pointer face(int ident) const;
             virtual IAnodeFace::vector faces() const { return m_faces; }
-
+            virtual WirePlaneId resolve(int channel) const;
 
         private:
 
@@ -37,6 +39,8 @@ namespace WireCell {
             IAnodeFace::vector m_faces;
 
             Response::Schema::FieldResponse m_fr;
+
+            std::unordered_map<int, int> m_c2wpid;
 
 
         };

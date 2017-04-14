@@ -134,6 +134,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                                                            ray, s_wire.segment);
                     total_wire += ray_vector(ray);
                     bb(ray);
+                    m_c2wpid[s_wire.channel] = wire_plane_id.ident();
                 } // wire
 
                 const Vector wire_dir = total_wire.norm();
@@ -184,3 +185,15 @@ IAnodeFace::pointer Gen::AnodePlane::face(int ident) const
 }
 
  
+WirePlaneId Gen::AnodePlane::resolve(int channel) const
+{
+    const WirePlaneId bogus(0xFFFFFFFF);
+
+    auto got = m_c2wpid.find(channel);
+    if (got == m_c2wpid.end()) {
+        return bogus;
+    }
+    return WirePlaneId(got->second);
+}
+
+
