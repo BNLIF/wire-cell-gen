@@ -70,6 +70,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
                 //std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
                 continue;
             }
+            // fixme: this is average, not interpolation.
             Waveform::compseq_t rs1 = two_ir.first->spectrum();            
             Waveform::compseq_t rs2 = two_ir.second->spectrum();            
 
