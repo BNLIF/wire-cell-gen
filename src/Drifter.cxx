@@ -10,6 +10,7 @@
 
 #include <boost/range.hpp>
 
+#include <random>
 #include <sstream>
 #include <iostream>
 

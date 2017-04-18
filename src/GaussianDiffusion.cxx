@@ -1,5 +1,6 @@
 #include "WireCellGen/GaussianDiffusion.h"
 
+#include <random>
 #include <iostream>		// debugging
 
 using namespace WireCell;
