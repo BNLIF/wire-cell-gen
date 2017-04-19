@@ -8,6 +8,7 @@
 #include "WireCellUtil/Persist.h"
 
 #include <iostream>		// debug
+#include <sstream>
 
 WIRECELL_FACTORY(TrackDepos, WireCell::Gen::TrackDepos, WireCell::IDepoSource, WireCell::IConfigurable);
 
@@ -50,6 +51,13 @@ void Gen::TrackDepos::configure(const Configuration& cfg)
     }
 }
 
+static std::string dump(IDepo::pointer d)
+{
+    std::stringstream ss;
+    ss << "q=" << d->charge() << ", t=" << d->time()/units::us << "us, r=" << d->pos()/units::mm << "mm";
+    return ss.str();
+}
+
 void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
     cerr << "Gen::TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
@@ -80,6 +88,9 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
     }
     // reverse sort by time so we can pop_back in operator()
     std::sort(m_depos.begin(), m_depos.end(), descending_time);
+    cerr << "Gen::TrackDepos: " << m_depos.size() << " depos over " << length/units::mm << "mm\n";
+    cerr << "\treverse first:" << dump(m_depos[0]) << endl;
+    cerr << "\t reverse last:" << dump(m_depos[m_depos.size()-1]) << endl;
 }
 
 
@@ -97,6 +108,7 @@ bool Gen::TrackDepos::operator()(output_pointer& out)
 
     out = m_depos.back();
     m_depos.pop_back();
+    cerr << "Gen::TrackDepos: " << m_depos.size() << " left, sending: " << dump(out) << endl;
     return true;
 }
 

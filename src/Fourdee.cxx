@@ -38,14 +38,28 @@ WireCell::Configuration Gen::Fourdee::default_configuration() const
 
 void Gen::Fourdee::configure(const Configuration& thecfg)
 {
+    std::string tn="";
     Configuration cfg = thecfg;
+
     m_depos = Factory::lookup<IDepoSource>(get<string>(cfg, "DepoSource"));
     // fixme: need to convert MeV to number of electrons with: Fano,
     // Number_electrons_per_mev and Recombination.
     m_drifter = Factory::lookup<IDrifter>(get<string>(cfg, "Drifter",""));
     m_ductor = Factory::lookup<IDuctor>(get<string>(cfg, "Ductor",""));
-    m_dissonance = Factory::lookup<IFrameSource>(get<string>(cfg, "Dissonance",""));
-    m_digitizer = Factory::lookup<IFrameFilter>(get<string>(cfg, "Digitizer",""));
+    tn = get<string>(cfg, "Dissonance","");
+    if (tn.empty()) {           // noise is optional
+        m_dissonance = nullptr;
+    }
+    else {
+        m_dissonance = Factory::lookup<IFrameSource>(tn);
+    }
+    tn = get<string>(cfg, "Digitizer","");
+    if (tn.empty()) {           // digitizer is optional, voltage saved w.o. it.
+        m_digitizer = nullptr;
+    }
+    else {
+        m_digitizer = Factory::lookup<IFrameFilter>(tn);
+    }
     m_output = Factory::lookup<IFrameSink>(get<string>(cfg, "FrameSink",""));
     
 
@@ -61,7 +75,7 @@ void dump(DEPOS& depos)
     double qorig = 0.0;
     for (auto depo : depos) {
         if (!depo) {
-            cerr << "Fourdee: null depo" << endl;
+            cerr << "Gen::Fourdee: null depo" << endl;
             continue;
         }
         double t = depo->time();
@@ -73,16 +87,16 @@ void dump(DEPOS& depos)
             xmin = xmax = x;
             continue;
         }
-        if (tmin < t) { tmin = t; }
-        if (tmax > t) { tmax = t; }
-        if (xmin < x) { xmin = x; }
-        if (xmax > x) { xmax = x; }
+        if (t < tmin) { tmin = t; }
+        if (t > tmax) { tmax = t; }
+        if (x < xmin) { xmin = x; }
+        if (x > xmax) { xmax = x; }
     }
     
     const int ndepos = depos.size();
     cerr << "Drifted " << ndepos
-         << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"], "
-         << "t in [" << tmin/units::us << "," << tmax/units::us << "], "
+         << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"]mm, "
+         << "t in [" << tmin/units::us << "," << tmax/units::us << "]us, "
          << " Qtot=" << qtot << ", <Qtot>=" << qtot/ndepos << " "
          << " Qorig=" << qorig << ", <Qorig>=" << qorig/ndepos << endl;
 
@@ -92,8 +106,6 @@ void dump(DEPOS& depos)
 
 void Gen::Fourdee::execute()
 {
-    cerr << "TrackDepos is type: " << type(m_depos) << endl;
-
     if (!m_depos) cerr << "no depos" << endl;
     if (!m_drifter) cerr << "no drifter" << endl;
     if (!m_ductor) cerr << "no ductor" << endl;
@@ -104,19 +116,22 @@ void Gen::Fourdee::execute()
     // here we make a manual pipeline.  In a "real" app this might be
     // a DFP executed by TBB.
     int count=0;
+    int ndepos = 0;
+    int ndrifted = 0;
     while (true) {
         ++count;
 
         IDepo::pointer depo;
-        bool ok = (*m_depos)(depo);
         if (!(*m_depos)(depo)) {
-            cerr << "Stopping on " << type(*m_depos) << endl;
-            return;
+            cerr << "DepoSource is empty\n";
         }
         if (!depo) {
-            //cerr << "Got null depo from source at "<<count<< endl;
+            cerr << "Got null depo from source at "<<count<< endl;
         }
-
+        else {
+            ++ndepos;
+        }
+        cerr << "Gen::FourDee: seen " << ndepos << " depos\n";
 
         IDrifter::output_queue drifted;
         if (!(*m_drifter)(depo, drifted)) {
@@ -126,8 +141,8 @@ void Gen::Fourdee::execute()
         if (drifted.empty()) {
             continue;
         }
-
-
+        ndrifted += drifted.size();
+        cerr << "Gen::FourDee: seen " << ndrifted << " drifted\n";
         dump(drifted);
         
         for (auto drifted_depo : drifted) {
@@ -139,22 +154,31 @@ void Gen::Fourdee::execute()
             if (frames.empty()) {
                 continue;
             }
+            cerr << "Gen::FourDee: got " << frames.size() << " frames\n";
 
             for (IFrameFilter::input_pointer voltframe : frames) {
-/// Don't deal with noise quite yet.
-//                IFrame::pointer noise;
-//                if (!(*m_dissonance(noise))) {
-//                    cerr << "Stopping on " << type(*m_dissonance) << endl;
-//                    return;
-//                }
-//                voltframe = add(voltframe, noise);
+
+                /// fixme: needs implementing of "add()".
+                // if (m_dissonance) {
+                //     IFrame::pointer noise;
+                //     if (!(*m_dissonance)(noise)) {
+                //         cerr << "Stopping on " << type(*m_dissonance) << endl;
+                //         return;
+                //     }
+                //     voltframe = add(voltframe, noise);
+                // }
 
                 IFrameFilter::output_pointer adcframe;
-                if (!(*m_digitizer)(voltframe, adcframe)) {
-                    cerr << "Stopping on " << type(*m_digitizer) << endl;
-                    return;
+                if (m_digitizer) {
+                    if (!(*m_digitizer)(voltframe, adcframe)) {
+                        cerr << "Stopping on " << type(*m_digitizer) << endl;
+                        return;
+                    }
                 }
-
+                else {
+                    adcframe = voltframe;
+                }
+                cerr << "frame with " << adcframe->traces()->size() << " traces\n";
                 if (!(*m_output)(adcframe)) {
                     cerr << "Stopping on " << type(*m_output) << endl;
                     return;
