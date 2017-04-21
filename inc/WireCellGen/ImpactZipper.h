@@ -8,12 +8,10 @@ namespace WireCell {
     namespace Gen {
 
     
-        /** An ImpactZipper "zips" together ImpactData from a
-         * BinnedDiffusion and ImpactResponse from a
-         * PlaneImpactResponse.  Zipping means to multiply each of the
-         * two impact info's frequency-domain spectra and inverse
-         * Fourier transform it.  One such waveform is returned for a
-         * given wire at a time.
+        /** An ImpactZipper "zips" up through all the impact positions
+         * along a wire plane convolving the response functions and
+         * the local drifted charge distribution producing a waveform
+         * on each central wire.
          */
         class ImpactZipper
         {
@@ -23,7 +21,15 @@ namespace WireCell {
             ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd);
             virtual ~ImpactZipper();
 
-            /// Return the wire's waveform.
+            /// Return the wire's waveform.  If the response functions
+            /// are just field response (ie, instantaneous current)
+            /// then the waveforms are expressed as current integrated
+            /// over each sample bin and thus in units of charge.  If
+            /// the response functions include electronics response
+            /// then the waveforms are in units of voltage
+            /// representing the sampling of the output of the FEE
+            /// amplifiers.
+ 
             // fixme: this should be a forward iterator so that it may cal bd.erase() safely to conserve memory
             Waveform::realseq_t waveform(int wire) const;
 

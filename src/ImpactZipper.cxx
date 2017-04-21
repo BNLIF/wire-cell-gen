@@ -1,6 +1,9 @@
 #include "WireCellGen/ImpactZipper.h"
 #include "WireCellUtil/Testing.h"
 
+#include <iostream>             // debugging.
+using namespace std;
+
 using namespace WireCell;
 Gen::ImpactZipper::ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd)
     :m_pir(pir), m_bd(bd)
@@ -73,11 +76,10 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             // fixme: this is average, not interpolation.
             Waveform::compseq_t rs1 = two_ir.first->spectrum();            
             Waveform::compseq_t rs2 = two_ir.second->spectrum();            
-
+            
             for (int ind=0; ind < nsamples; ++ind) { // this double counts charge, see below
                 conv_spectrum[ind] = (rs1[ind]+rs2[ind])*charge_spectrum[ind];
             }
-
         }
         else {
             auto ir = m_pir.closest(rel_imp_pos);
@@ -110,15 +112,33 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     
     auto waveform = Waveform::idft(total_spectrum);
 
+
     // normalize FFT/iFFT    
     double norm = 1.0/nsamples;
-    if (share) {                // and if share, remove double counting of charge.
+
+    // "Integrate" over bin to convert raw current response into
+    // charge or electronics response into mV.
+    norm *= m_pir.tbins().binsize();
+
+    if (share) {    // and if share, remove double counting of charge.
         norm *= 0.5;
     }
     for (int ind=0; ind<nsamples; ++ind) {
         waveform[ind] *= norm;
     }
 
+
+    {
+        double qraw = 0.0;
+        for (auto q : waveform) {
+            qraw += q;
+        }
+        cerr << "IZ: plane:" << m_pir.plane_response().planeid
+             << ", wire:" << iwire << ", qraw=" << qraw/units::eplus << "eles"
+             << ", nsamples:" << waveform.size()
+             << ", norm:" << norm
+             << endl;
+    }
     return waveform;
 }
 

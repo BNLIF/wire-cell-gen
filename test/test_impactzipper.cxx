@@ -22,7 +22,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    string response_file = "garfield-1d-3planes-21wires-6impacts-v4.json.bz2";
+    string response_file = "garfield-1d-3planes-21wires-6impacts-v6.json.bz2";
     if (argc < 2) {
 	cerr << "Not  Wire Cell field response input file given, will try to use:\n"
              << response_file << endl;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     const int nticks = readout_time/tick;
     const double drift_speed = 1.0*units::mm/units::us; // close but fake/arb value!
     Binning tbins(nticks, t0, t0+readout_time);
-    const double gain = 14.7;
+    const double gain = 14.0*units::mV/units::fC;
     const double shaping  = 2.0*units::us;
 
     // Diffusion
@@ -97,9 +97,9 @@ int main(int argc, char *argv[])
     const double stepsize = 1*units::mm;
     Gen::TrackDepos tracks(stepsize);
 
-    // Pick half bogus number ionized electrons per track distance
-    const double dedx = 7.0e4/(1*units::cm); // in electrons
-    const double charge_per_depo = -(dedx)*stepsize;
+    // This is the number of ionized electrons for a MIP assumed by MB noise paper.
+    const double dqdx = 16000*units::eplus/(3*units::mm);
+    const double charge_per_depo = -(dqdx)*stepsize;
 
     const double event_time = t0 + 1*units::ms;
     const Point event_vertex(1*units::m, 0*units::m, 0*units::m);
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
         Assert(tottot != 0.0);
 
         TH2F *hist = new TH2F(Form("h%d", plane_id),
-                              Form("Wire vs Tick %c-plane", uvw[plane_id]),
+                              Form("Wire vs Tick %c-plane [mV]", uvw[plane_id]),
                               ntbins, tbin0, tbin0+ntbins,
                               nwbins, wbin0, wbin0+nwbins);
         hist->SetXTitle("tick");
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
             auto tot = Waveform::sum(wave);
             //std::cerr << iwire << " tot=" << tot << std::endl;
             for (int itick=tbin0; itick <= tbinf; ++itick) {
-                hist->Fill(itick+0.1, iwire+0.1, wave[itick]);
+                hist->Fill(itick+0.1, iwire+0.1, wave[itick]/units::mV);
             }
         }
         em("filled TH2F");
@@ -318,6 +318,6 @@ int main(int argc, char *argv[])
     //canvas->Print("test_impactzipper.pdf]","pdf");
     em("done");
 
-    cerr << em.summary() << endl;
+    //cerr << em.summary() << endl;
     return 0;
 }

@@ -112,8 +112,8 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     // normalize to total charge
     ret *= m_deposition->charge() / raw_sum;
 
+    double fluc_sum = 0;
     if (fluctuate) {
-	double fluc_sum = 0;
         double unfluc_sum = 0;
 	std::default_random_engine generator;
 
@@ -137,6 +137,20 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
             ret *= m_deposition->charge() / fluc_sum;
         }
     }
+
+
+    {                           // debugging
+        double retsum=0.0;
+        for (size_t ip = 0; ip < npss; ++ip) {
+            for (size_t it = 0; it < ntss; ++it) {
+                retsum += ret(ip,it);
+            }
+        }
+        cerr << "GaussianDiffusion: Q in electrons: depo=" << m_deposition->charge()/units::eplus
+             << " rawsum=" << raw_sum/units::eplus << " flucsum=" << fluc_sum/units::eplus
+             << " returned=" << retsum/units::eplus << endl;
+    }
+
 
     m_patch = ret;
 }
