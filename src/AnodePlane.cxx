@@ -25,8 +25,9 @@ Gen::AnodePlane::AnodePlane()
 
 
 
-const double default_gain = 14.0;
+const double default_gain = 14.0*units::mV/units::fC;
 const double default_shaping = 2.0*units::us;
+const double default_postgain = 1.0;
 const double default_readout = 5.0*units::ms;
 const double default_tick = 0.5*units::us;
 
@@ -45,8 +46,11 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
     /// Path to (possibly compressed) JSON file holding field responses
     put(cfg, "fields", "");
 
-    /// Electronics gain assumed in [mV/fC]
+    /// Electronics gain
     put(cfg, "gain", default_gain);
+
+    /// Post FEE relative gain
+    put(cfg, "postgain", default_postgain);
 
     /// Electronics shaping time 
     put(cfg, "shaping", default_shaping);
@@ -64,10 +68,19 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
 void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 {
     double gain = get<double>(cfg, "gain", default_gain);
+    double postgain = get<double>(cfg, "postgain", default_postgain);
     double shaping = get<double>(cfg, "shaping", default_shaping);
     double readout = get<double>(cfg, "readout_time", default_readout);
     double tick = get<double>(cfg, "tick", default_tick);
     const int nticks = readout/tick;
+
+    cerr << "Gen::AnodePlane: "
+         << "gain=" << gain/(units::mV/units::fC) << " mV/fC, "
+         << "peaking=" << shaping/units::us << " us, "
+         << "postgain=" << postgain << ", "
+         << "readout=" << readout/units::ms << " ms, "
+         << "tick=" << tick/units::us << " us "
+         << endl;
 
     const double t0 = 0.0; // fixme: t0 not actually used, PIR interface needs reduction
     const Binning tbins(nticks, t0, t0+readout);
@@ -159,7 +172,8 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                                             wire_dir, pitch_dir,
                                             field_origin, nregion_bins);
                 
-                PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, s_plane.ident, tbins, gain, shaping);
+                PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, s_plane.ident, tbins,
+                                                                   gain, shaping, postgain);
 
                 planes[iplane] = make_shared<WirePlane>(s_plane.ident, wires, pimpos, pir);
 

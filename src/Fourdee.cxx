@@ -73,11 +73,13 @@ void dump(DEPOS& depos)
     double tmin = -999, tmax = -999, xmin = -999, xmax = -999;
     double qtot = 0.0;
     double qorig = 0.0;
+    int ndepos = 0;
     for (auto depo : depos) {
         if (!depo) {
             cerr << "Gen::Fourdee: null depo" << endl;
             continue;
         }
+        ++ndepos;
         double t = depo->time();
         double x = depo->pos().x();
         qtot += depo->charge();
@@ -92,13 +94,13 @@ void dump(DEPOS& depos)
         if (x < xmin) { xmin = x; }
         if (x > xmax) { xmax = x; }
     }
-    
-    const int ndepos = depos.size();
-    cerr << "Drifted " << ndepos
+
+    cerr << "Gen::FourDee: drifted " << ndepos
          << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"]mm, "
          << "t in [" << tmin/units::us << "," << tmax/units::us << "]us, "
-         << " Qtot=" << qtot << ", <Qtot>=" << qtot/ndepos << " "
-         << " Qorig=" << qorig << ", <Qorig>=" << qorig/ndepos << endl;
+         << " Qtot=" << qtot/units::eplus << ", <Qtot>=" << qtot/ndepos/units::eplus << " "
+         << " Qorig=" << qorig/units::eplus
+         << ", <Qorig>=" << qorig/ndepos/units::eplus << " electrons" << endl;
 
         
 }

@@ -54,7 +54,7 @@ void Gen::TrackDepos::configure(const Configuration& cfg)
 static std::string dump(IDepo::pointer d)
 {
     std::stringstream ss;
-    ss << "q=" << d->charge() << ", t=" << d->time()/units::us << "us, r=" << d->pos()/units::mm << "mm";
+    ss << "q=" << d->charge()/units::eplus << "eles, t=" << d->time()/units::us << "us, r=" << d->pos()/units::mm << "mm";
     return ss.str();
 }
 
@@ -70,7 +70,7 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
     double step = 0;
     int count = 0;
 
-    double charge_per_depo = 1.0;
+    double charge_per_depo = units::eplus; // charge of one positron
     if (charge > 0) {
 	charge_per_depo = charge / (length / m_stepsize);
     }

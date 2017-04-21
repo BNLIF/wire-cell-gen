@@ -2,6 +2,9 @@
 #include "WireCellGen/GaussianDiffusion.h"
 #include "WireCellUtil/Units.h"
 
+#include <iostream>             // debug
+using namespace std;
+
 using namespace WireCell;
 
 Gen::BinnedDiffusion::BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
@@ -68,7 +71,14 @@ void Gen::BinnedDiffusion::add(std::shared_ptr<GaussianDiffusion> gd, int bin)
 	idptr = it->second;
     }
     idptr->add(gd);
-    auto mm = idptr->span();
+    {                           // debug
+        auto mm = idptr->span();
+        cerr << "Gen::BinnedDiffusion: add: "
+             << " poffoset="<<gd->poffset_bin()
+             << " toffoset="<<gd->toffset_bin()
+             << " charge=" << gd->depo()->charge()/units::eplus << " eles"
+             <<", for bin " << bin << " t=[" << mm.first/units::us << "," << mm.second/units::us << "]us\n";
+    }
     m_diffs.push_back(gd);
 }
 

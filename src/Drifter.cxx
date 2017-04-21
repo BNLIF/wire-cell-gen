@@ -82,7 +82,7 @@ void Gen::Drifter::set_anode()
     m_location = fr.origin;
     m_input = DepoTauSortedSet(IDepoDriftCompare(m_speed));
     cerr << "Gen::Drifter: configured with drift speed=" << m_speed/(units::mm/units::us)
-         << " drifting to x=" << m_location/units::mm << "mm\n";
+         << "mm/us drifting to x=" << m_location/units::mm << "mm\n";
 }
 
 double Gen::Drifter::proper_time(IDepo::pointer depo)
@@ -129,12 +129,18 @@ IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
     }
     const double Qf = Qi - dQ;
 
-    const double tmpcm2 = 2*m_DL*dt/units::centimeter2;
-    //const double sigmaL = sqrt(tmpcm2)*units::centimeter / drift_speed;
-    const double sigmaL = sqrt(tmpcm2)*units::centimeter;
-    const double sigmaT = sqrt(2*m_DT*dt/units::centimeter2)*units::centimeter2;
+    const double sigmaL = sqrt(2.0*m_DL*dt);
+    const double sigmaT = sqrt(2.0*m_DT*dt);
 
-    return make_shared<SimpleDepo>(then, there, Qf, depo, sigmaL, sigmaT);
+    auto ret = make_shared<SimpleDepo>(then, there, Qf, depo, sigmaL, sigmaT);
+    cerr << "Gen::Drifter: "
+         << "q:" << ret->charge()/units::eplus << " electrons "
+         << "t:" << depo->time()/units::us << " -> " << ret->time()/units::us << " ("<<dt/units::us<<") us, "
+         << "x:" << depo->pos().x()/units::mm << " -> " << ret->pos().x()/units::mm << "mm, "
+         << "long=" << ret->extent_long()/units::mm << "mm, trans=" << ret->extent_tran()/units::mm << "mm "
+         << endl;
+    return ret;
+
 }
 
 bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
@@ -167,18 +173,14 @@ bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
 
 	IDepo::pointer bot = *m_input.rbegin();
 
-        cerr << "Gen::Drifter: processing bot:" << bot->time()/units::us << "us, "
-             << "tau:" << tau/units::us << "us, top: t=" << top->time()/units::us << "us "
-             << "x=" << top->pos().x()/units::mm << "mm, speed=" << m_speed/(units::mm/units::us) << "mm/ms\n";
-
 	if (bot->time() < tau) {
 	    return true;       // bail when we reach unknown territory
 	}
 
 	m_input.erase(top);
-	outq.push_back(transport(top));
-        cerr << "Gen::Drifter: returning " << outq.size() << endl;
+        outq.push_back(transport(top));
     }
+    cerr << "Gen::Drifter: returning " << outq.size() << endl;
     return true;
 }
 
