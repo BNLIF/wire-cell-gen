@@ -116,10 +116,6 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     // normalize FFT/iFFT    
     double norm = 1.0/nsamples;
 
-    // "Integrate" over bin to convert raw current response into
-    // charge or electronics response into mV.
-    norm *= m_pir.tbins().binsize();
-
     if (share) {    // and if share, remove double counting of charge.
         norm *= 0.5;
     }

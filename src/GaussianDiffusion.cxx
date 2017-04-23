@@ -79,10 +79,9 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     auto tvec =  m_time_desc.sample(tbin.center(m_toffset_bin), tbin.binsize(), ntss);
 
     if (!ntss) {
-        cerr << "No time bins for [" << tval_range.first/units::us << "," << tval_range.second/units::us << "] us\n";
+        cerr << "Gen::GaussianDiffusion: no time bins for [" << tval_range.first/units::us << "," << tval_range.second/units::us << "] us\n";
         return;
     }
-
 
     /// Sample pitch dimension.
     auto pval_range = m_pitch_desc.sigma_range(nsigma);
