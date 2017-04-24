@@ -60,7 +60,7 @@ static std::string dump(IDepo::pointer d)
 
 void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
-    cerr << "Gen::TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
+    // cerr << "Gen::TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
     m_tracks.push_back(track_t(time, ray, charge));
 
     double time_us = time / units::microsecond;
@@ -88,9 +88,9 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
     }
     // reverse sort by time so we can pop_back in operator()
     std::sort(m_depos.begin(), m_depos.end(), descending_time);
-    cerr << "Gen::TrackDepos: " << m_depos.size() << " depos over " << length/units::mm << "mm\n";
-    cerr << "\treverse first:" << dump(m_depos[0]) << endl;
-    cerr << "\t reverse last:" << dump(m_depos[m_depos.size()-1]) << endl;
+    // cerr << "Gen::TrackDepos: " << m_depos.size() << " depos over " << length/units::mm << "mm\n";
+    // cerr << "\treverse first:" << dump(m_depos[0]) << endl;
+    // cerr << "\t reverse last:" << dump(m_depos[m_depos.size()-1]) << endl;
 }
 
 
@@ -108,7 +108,7 @@ bool Gen::TrackDepos::operator()(output_pointer& out)
 
     out = m_depos.back();
     m_depos.pop_back();
-    cerr << "Gen::TrackDepos: " << m_depos.size() << " left, sending: " << dump(out) << endl;
+    //cerr << "Gen::TrackDepos: " << m_depos.size() << " left, sending: " << dump(out) << endl;
     return true;
 }
 

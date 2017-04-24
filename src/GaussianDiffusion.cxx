@@ -145,9 +145,9 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
                 retsum += ret(ip,it);
             }
         }
-        cerr << "GaussianDiffusion: Q in electrons: depo=" << m_deposition->charge()/units::eplus
-             << " rawsum=" << raw_sum/units::eplus << " flucsum=" << fluc_sum/units::eplus
-             << " returned=" << retsum/units::eplus << endl;
+        // cerr << "GaussianDiffusion: Q in electrons: depo=" << m_deposition->charge()/units::eplus
+        //      << " rawsum=" << raw_sum/units::eplus << " flucsum=" << fluc_sum/units::eplus
+        //      << " returned=" << retsum/units::eplus << endl;
     }
 
 

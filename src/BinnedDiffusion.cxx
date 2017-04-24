@@ -71,7 +71,7 @@ void Gen::BinnedDiffusion::add(std::shared_ptr<GaussianDiffusion> gd, int bin)
 	idptr = it->second;
     }
     idptr->add(gd);
-    {                           // debug
+    if (false) {                           // debug
         auto mm = idptr->span();
         cerr << "Gen::BinnedDiffusion: add: "
              << " poffoset="<<gd->poffset_bin()

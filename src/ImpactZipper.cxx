@@ -124,7 +124,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     }
 
 
-    if (true) {                // debugging
+    if (false) {                // debugging
         double qraw = 0.0;
         for (auto q : waveform) {
             qraw += q;
