@@ -20,27 +20,32 @@ using namespace WireCell;
 using namespace std;
 
 
-int main(int argc, char *argv[])
+int main(const int argc, char *argv[])
 {
+    string track_types = "point";
+    if (argc > 1) {
+        track_types = argv[1];
+    }
+    cerr << "Using tracks type: \"" << track_types << "\"\n";
+
     string response_file = "garfield-1d-3planes-21wires-6impacts-v6.json.bz2";
-    if (argc < 2) {
-	cerr << "Not  Wire Cell field response input file given, will try to use:\n"
+    if (argc > 2) {
+        response_file = argv[2];
+	cerr << "Using Wire Cell field response file:\n"
              << response_file << endl;
     }
     else {
-        response_file = argv[1];
+	cerr << "No Wire Cell field response input file given, will try to use:\n"
+             << response_file << endl;
     }
-    string track_types = "point";
-    if (argc > 2) {
-        track_types = argv[2];
-    }
+
     string out_basename = argv[0];
     if (argc > 3) {
         out_basename = argv[3];
     }
 
 
-    WireCell::ExecMon em(argv[0]);
+    WireCell::ExecMon em(out_basename);
     auto fr = Response::Schema::load(response_file.c_str());
     em("loaded response");
 
