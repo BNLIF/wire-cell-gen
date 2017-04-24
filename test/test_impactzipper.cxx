@@ -91,13 +91,14 @@ int main(int argc, char *argv[])
 
     // Diffusion
     const int ndiffision_sigma = 3.0;
-    const bool fluctuate = true;
+    bool fluctuate = true; // note, "point" negates this below
 
     // Generate some trivial tracks
     const double stepsize = 1*units::mm;
     Gen::TrackDepos tracks(stepsize);
 
     // This is the number of ionized electrons for a MIP assumed by MB noise paper.
+    // note: with option "point" this is overridden below.
     const double dqdx = 16000*units::eplus/(3*units::mm);
     const double charge_per_depo = -(dqdx)*stepsize;
 
@@ -153,10 +154,11 @@ int main(int argc, char *argv[])
 
     // // make a .
     if (track_types.find("point") < track_types.size()) {
+        fluctuate = false;
         tracks.add_track(event_time,
                          Ray(event_vertex,
-                             event_vertex + Vector(0, 0, 0.1*units::mm)),
-                         charge_per_depo);
+                             event_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
+                         -1.0*units::eplus);
     }
 
     em("made tracks");
@@ -183,8 +185,14 @@ int main(int argc, char *argv[])
         for (auto depo : depos) {
             auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
 	
-            // fixme: these should really be function of drift time,
-            // but hard code them now for simplicity.
+            // In the real simulation these sigma are a function of
+            // drift time.  Hard coded here with small values the
+            // resulting voltage peak due to "point" source should
+            // correspond to what is also shown on a per-impact
+            // "Detector Response" from util's test_impactresponse.
+            // Peak response of a delta function of current
+            // integrating over time to one electron charge would give
+            // 1eplus * 14mV/fC = 2.24 microvolt.  
             const double sigma_time = 0.1*units::us; 
             const double sigma_pitch = 0.1*units::mm;
 
@@ -194,10 +202,10 @@ int main(int argc, char *argv[])
             }
             Assert(ok);
 
-            // std::cerr << "depo:"
-            //           << " q=" << drifted->charge()
-            //           << " time-T0=" << (drifted->time()-t0)/units::us<< "us +/- " << sigma_time/units::us << " us "
-            //           << " pt=" << drifted->pos() / units::mm << " mm\n";
+            std::cerr << "depo:"
+                      << " q=" << drifted->charge()/units::eplus << "ele"
+                      << " time-T0=" << (drifted->time()-t0)/units::us<< "us +/- " << sigma_time/units::us << " us "
+                      << " pt=" << drifted->pos() / units::mm << " mm\n";
             
         }
         em("added track depositions");
@@ -219,17 +227,25 @@ int main(int argc, char *argv[])
                 const double cpitch = path.pitchpos;
                 for (int ic=0; ic<path.current.size(); ++ic) {
                     const double ctime = fr.tstart + ic*fr.period;
-                    hpir->Fill(ctime, cpitch, path.current[ic]);
+                    const double charge = path.current[ic]*fr.period;
+                    hpir->Fill(ctime, cpitch, -1*charge/units::eplus);
                 }
             }
+            hpir->SetZTitle("Induced charge [eles]");
             hpir->Write();
+
+            hpir->Draw("colz");
+            if (track_types.find("point") < track_types.size()) {
+                hpir->GetXaxis()->SetRangeUser(70.*units::us,100.*units::us);
+                hpir->GetYaxis()->SetRangeUser(-10.*units::mm,10.*units::mm);
+            }
+            canvas->Update();
+            canvas->Print(Form("%s_%c_resp.png", out_basename.c_str(), uvw[plane_id]));
         }
         em("wrote and leaked response hist");
 
-
         Gen::ImpactZipper zipper(pir, bindiff);
         em("made ImpactZipper");
-
 
         // Set pitch range for plot y-axis
         auto rbins = pimpos.region_binning();
@@ -237,7 +253,6 @@ int main(int argc, char *argv[])
         const int wbin0 = max(0, rbins.bin(pmm.first) - 40);
         const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 40);
         const int nwbins = 1+wbinf-wbin0;
-
 
         // Dead recon
         const int tbin0 = 3500, tbinf=5500;
@@ -250,7 +265,14 @@ int main(int argc, char *argv[])
             auto tot = Waveform::sum(wave);
 
             tottot += tot;
-            //std::cerr << iwire << " tot=" << tot << " tottot=" << tottot << std::endl;
+            if (std::abs(iwire-1000) <=1) { // central wires for "point"
+                auto mm = std::minmax_element(wave.begin(), wave.end());
+                std::cerr << "central wire: " << iwire
+                          << " mm=["
+                          << (*mm.first)/units::microvolt << "," 
+                          << (*mm.second)/units::microvolt 
+                          << "] uV\n";
+            }
             frame[iwire] = wave;
         }
         em("zipped through wires");
@@ -258,11 +280,12 @@ int main(int argc, char *argv[])
         Assert(tottot != 0.0);
 
         TH2F *hist = new TH2F(Form("h%d", plane_id),
-                              Form("Wire vs Tick %c-plane [mV]", uvw[plane_id]),
+                              Form("Wire vs Tick %c-plane", uvw[plane_id]),
                               ntbins, tbin0, tbin0+ntbins,
                               nwbins, wbin0, wbin0+nwbins);
         hist->SetXTitle("tick");
         hist->SetYTitle("wire");
+        hist->SetZTitle("Voltage [-#muV]");
 
         std::cerr << nwbins << " wires: [" << wbin0 << "," << wbinf << "], "
                   << ntbins << " ticks: [" << tbin0 << "," << tbinf << "]\n";
@@ -275,9 +298,15 @@ int main(int argc, char *argv[])
             auto tot = Waveform::sum(wave);
             //std::cerr << iwire << " tot=" << tot << std::endl;
             for (int itick=tbin0; itick <= tbinf; ++itick) {
-                hist->Fill(itick+0.1, iwire+0.1, wave[itick]/units::mV);
+                hist->Fill(itick+0.1, iwire+0.1, -1.0*wave[itick]/units::microvolt);
             }
         }
+
+        if (track_types.find("point") < track_types.size()) {
+            hist->GetXaxis()->SetRangeUser(3900,4000);
+            hist->GetYaxis()->SetRangeUser(990, 1010);
+        }
+
         em("filled TH2F");
         hist->Write();
         em("wrote TH2F");

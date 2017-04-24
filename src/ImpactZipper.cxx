@@ -114,7 +114,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
 
     // normalize FFT/iFFT    
-    double norm = 1.0/nsamples;
+    double norm = 1.0;
 
     if (share) {    // and if share, remove double counting of charge.
         norm *= 0.5;
@@ -124,7 +124,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     }
 
 
-    {
+    if (true) {                // debugging
         double qraw = 0.0;
         for (auto q : waveform) {
             qraw += q;
