@@ -154,7 +154,7 @@ bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
     }
 
     if (!depo) {		// EOS flush
-        cerr << "Gen::Drifter: flushing " << m_input.size() << "\n";
+        //cerr << "Gen::Drifter: flushing " << m_input.size() << "\n";
 	while (!m_input.empty()) {	
 	    IDepo::pointer top = *m_input.begin();
 	    m_input.erase(top);
@@ -180,7 +180,7 @@ bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	m_input.erase(top);
         outq.push_back(transport(top));
     }
-    cerr << "Gen::Drifter: returning " << outq.size() << endl;
+    //cerr << "Gen::Drifter: returning " << outq.size() << endl;
     return true;
 }
 

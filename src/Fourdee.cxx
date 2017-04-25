@@ -133,7 +133,7 @@ void Gen::Fourdee::execute()
         else {
             ++ndepos;
         }
-        cerr << "Gen::FourDee: seen " << ndepos << " depos\n";
+        //cerr << "Gen::FourDee: seen " << ndepos << " depos\n";
 
         IDrifter::output_queue drifted;
         if (!(*m_drifter)(depo, drifted)) {
@@ -145,7 +145,7 @@ void Gen::Fourdee::execute()
         }
         ndrifted += drifted.size();
         cerr << "Gen::FourDee: seen " << ndrifted << " drifted\n";
-        dump(drifted);
+        //dump(drifted);
         
         for (auto drifted_depo : drifted) {
             IDuctor::output_queue frames;

@@ -132,7 +132,14 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             for (int iplane=0; iplane<nplanes; ++iplane) {
                 auto& s_plane = store.planes[s_face.planes[iplane]];
 
-                WirePlaneId wire_plane_id(s_plane.ident); // dubious
+                // fixme: the WireSchema data is SUPPOSED to encode
+                // the ident as packed data but first version stores
+                // just an index.  So we play ball for now.
+
+                // WirePlaneId wire_plane_id(s_plane.ident); // dubious
+                WirePlaneId wire_plane_id(iplane2layer[s_plane.ident]);
+                cerr << wire_plane_id << endl;
+                Assert(wire_plane_id.index() >= 0); 
 
                 Vector total_wire;
                 const int nwires = s_plane.wires.size();
@@ -148,6 +155,13 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                     total_wire += ray_vector(ray);
                     bb(ray);
                     m_c2wpid[s_wire.channel] = wire_plane_id.ident();
+                    // if (iwire == 0) {
+                    //     cerr << "nwires=" << nwires << " ch=" << s_wire.channel
+                    //      << ", wpid=" << wire_plane_id
+                    //      << " index=" << wire_plane_id.index()
+                    //      << " ident=" << wire_plane_id.ident()
+                    //      << endl;
+                    // }
                 } // wire
 
                 const Vector wire_dir = total_wire.norm();

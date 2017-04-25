@@ -41,6 +41,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
     int nfound=0;
     const bool share=true;
+    const Waveform::complex_t complex_one_half(0.5,0.0);
 
     // The BinnedDiffusion is indexed by absolute impact and the
     // PlaneImpactResponse relative impact.
@@ -67,7 +68,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         //std::cerr << "IZ: imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
 
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
-        if (share) {
+        if (share) {            // fixme: make a configurable option
             PlaneImpactResponse::TwoImpactResponses two_ir = m_pir.bounded(rel_imp_pos);
             if (!two_ir.first || !two_ir.second) {
                 //std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
@@ -77,8 +78,8 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             Waveform::compseq_t rs1 = two_ir.first->spectrum();            
             Waveform::compseq_t rs2 = two_ir.second->spectrum();            
             
-            for (int ind=0; ind < nsamples; ++ind) { // this double counts charge, see below
-                conv_spectrum[ind] = (rs1[ind]+rs2[ind])*charge_spectrum[ind];
+            for (int ind=0; ind < nsamples; ++ind) {
+                conv_spectrum[ind] = complex_one_half*(rs1[ind]+rs2[ind])*charge_spectrum[ind];
             }
         }
         else {
@@ -112,29 +113,6 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     
     auto waveform = Waveform::idft(total_spectrum);
 
-
-    // normalize FFT/iFFT    
-    double norm = 1.0;
-
-    if (share) {    // and if share, remove double counting of charge.
-        norm *= 0.5;
-    }
-    for (int ind=0; ind<nsamples; ++ind) {
-        waveform[ind] *= norm;
-    }
-
-
-    if (false) {                // debugging
-        double qraw = 0.0;
-        for (auto q : waveform) {
-            qraw += q;
-        }
-        cerr << "IZ: plane:" << m_pir.plane_response().planeid
-             << ", wire:" << iwire << ", qraw=" << qraw/units::eplus << "eles"
-             << ", nsamples:" << waveform.size()
-             << ", norm:" << norm
-             << endl;
-    }
     return waveform;
 }
 
