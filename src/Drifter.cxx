@@ -133,12 +133,12 @@ IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
     const double sigmaT = sqrt(2.0*m_DT*dt);
 
     auto ret = make_shared<SimpleDepo>(then, there, Qf, depo, sigmaL, sigmaT);
-    cerr << "Gen::Drifter: "
-         << "q:" << ret->charge()/units::eplus << " electrons "
-         << "t:" << depo->time()/units::us << " -> " << ret->time()/units::us << " ("<<dt/units::us<<") us, "
-         << "x:" << depo->pos().x()/units::mm << " -> " << ret->pos().x()/units::mm << "mm, "
-         << "long=" << ret->extent_long()/units::mm << "mm, trans=" << ret->extent_tran()/units::mm << "mm "
-         << endl;
+    // cerr << "Gen::Drifter: "
+    //      << "q:" << ret->charge()/units::eplus << " electrons "
+    //      << "t:" << depo->time()/units::us << " -> " << ret->time()/units::us << " ("<<dt/units::us<<") us, "
+    //      << "x:" << depo->pos().x()/units::mm << " -> " << ret->pos().x()/units::mm << "mm, "
+    //      << "long=" << ret->extent_long()/units::mm << "mm, trans=" << ret->extent_tran()/units::mm << "mm "
+    //      << endl;
     return ret;
 
 }

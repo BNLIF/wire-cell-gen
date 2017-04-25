@@ -111,7 +111,7 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
         const int nsamps = vwave.size();
         ITrace::ChargeSequence adcwave(nsamps);
         for (int isamp=0; isamp<nsamps; ++isamp) {
-            const double voltage = vwave[isamp] + baseline;
+            const double voltage = m_gain*vwave[isamp] + baseline;
             const float adcf = digitize(voltage);
             adcwave[isamp] = adcf;
         }
