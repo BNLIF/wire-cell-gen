@@ -109,7 +109,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
 
 
-    for (int ianode=0; ianode<store.anodes.size(); ++ianode) {
+    for (size_t ianode=0; ianode<store.anodes.size(); ++ianode) {
         const int other_ident = store.anodes[ianode].ident;
         if (other_ident != m_ident) {
             cerr << "Gen::AnodePlane: my ident is " << m_ident

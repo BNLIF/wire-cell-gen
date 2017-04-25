@@ -22,13 +22,14 @@ Gen::DriftSim::~DriftSim()
 
 IDepo::pointer Gen::DriftSim::add(IDepo::pointer depo)
 {
+    return nullptr;
 }
 
 std::vector<Gen::DriftSim::block_t> Gen::DriftSim::latch(Binning tbins)
 {
     std::vector<block_t> ret;
 
-    for (int iplane=0; iplane < m_pimpos.size(); ++iplane) {
+    for (size_t iplane=0; iplane < m_pimpos.size(); ++iplane) {
         Gen::BinnedDiffusion bdw(m_pimpos[iplane], tbins, m_ndiffision_sigma, m_fluctuate);
         Gen::ImpactZipper zipper(m_pir[iplane], bdw);
 

@@ -63,8 +63,6 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
     // cerr << "Gen::TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
     m_tracks.push_back(track_t(time, ray, charge));
 
-    double time_us = time / units::microsecond;
-
     const WireCell::Vector dir = WireCell::ray_unit(ray);
     const double length = WireCell::ray_length(ray);
     double step = 0;

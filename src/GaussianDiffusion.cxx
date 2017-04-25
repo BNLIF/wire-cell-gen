@@ -74,7 +74,7 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     /// Sample time dimension
     auto tval_range = m_time_desc.sigma_range(nsigma);
     auto tbin_range = tbin.sample_bin_range(tval_range.first, tval_range.second);
-    const int ntss = tbin_range.second - tbin_range.first;
+    const size_t ntss = tbin_range.second - tbin_range.first;
     m_toffset_bin = tbin_range.first;
     auto tvec =  m_time_desc.sample(tbin.center(m_toffset_bin), tbin.binsize(), ntss);
 
@@ -86,7 +86,7 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     /// Sample pitch dimension.
     auto pval_range = m_pitch_desc.sigma_range(nsigma);
     auto pbin_range = pbin.sample_bin_range(pval_range.first, pval_range.second);
-    const int npss = pbin_range.second - pbin_range.first;
+    const size_t npss = pbin_range.second - pbin_range.first;
     m_poffset_bin = pbin_range.first;
     //auto pvec = m_pitch_desc.sample(pbin.center(m_poffset_bin), pbin.binsize(), npss);
     auto pvec = m_pitch_desc.binint(pbin.center(m_poffset_bin), pbin.binsize(), npss);

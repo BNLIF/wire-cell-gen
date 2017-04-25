@@ -117,7 +117,7 @@ void WireParams::set(double dx, double dy, double dz,
 
     double angU = +angle;
     double angV = -angle;
-    double angW = 0.0;
+    //double angW = 0.0;
 
     // Wire directions
     const Vector wU(0, std::cos(angU), std::sin(angU));

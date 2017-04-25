@@ -230,8 +230,8 @@ IDiffusion::pointer Diffuser::diffuse(double mean_l, double mean_t,
 				     bounds_l.first, bounds_t.first,
 				     bounds_l.second, bounds_t.second);
 
-    for (int ind_l = 0; ind_l < l_bins.size(); ++ind_l) {
-	for (int ind_t = 0; ind_t < t_bins.size(); ++ind_t) {
+    for (size_t ind_l = 0; ind_l < l_bins.size(); ++ind_l) {
+	for (size_t ind_t = 0; ind_t < t_bins.size(); ++ind_t) {
 	    double value = l_bins[ind_l]*t_bins[ind_t]/power*weight;
 	    smear->set(ind_l, ind_t, value);
 	}

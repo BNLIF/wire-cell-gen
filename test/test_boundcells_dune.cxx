@@ -31,7 +31,7 @@ void draw_wires(const IWire::vector& wires)
     cerr << "nwires = " << nwires << endl;
     for (auto wire : wires) {
 	int iplane = wire->planeid().index();
-	int index = wire->index();
+	//int index = wire->index();
 
 	const Ray ray = wire->ray();
 	TLine* a_wire = new TLine(ray.first.z(), ray.first.y(),
@@ -44,8 +44,8 @@ void draw_wires(const IWire::vector& wires)
 
 void draw_cells(const ICell::vector& cells)
 {
-    const int ncolors= 4;
-    int colors[ncolors] = {2, 4, 6, 8};
+    //const int ncolors= 4;
+    //int colors[ncolors] = {2, 4, 6, 8};
 
     const double reduce = 0.8;
     int ncells = cells.size();
@@ -60,7 +60,7 @@ void draw_cells(const ICell::vector& cells)
 	size_t ncorners = corners.size();
 	
 	TPolyLine* pl = new TPolyLine;
-	int ind=0;
+	size_t ind=0;
 	Point first_point;
 	for (; ind<ncorners; ++ind) {
 	    const Point& p = corners[ind];

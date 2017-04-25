@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	    if (wire_index > 0) {
 		draw_wire(plane_wires[wire_index-1], colors[nwires]);
 	    }
-	    if (wire_index < plane_wires.size() - 1) {
+	    if (wire_index < (int)plane_wires.size() - 1) {
 		draw_wire(plane_wires[wire_index+1], colors[nwires]);
 	    }
 	    ++nwires;

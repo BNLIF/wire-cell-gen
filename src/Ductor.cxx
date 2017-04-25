@@ -100,7 +100,7 @@ void Gen::Ductor::process(output_queue& frames)
                 auto wave = zipper.waveform(iwire);
                 
                 auto mm = Waveform::edge(wave);
-                if (mm.first == wave.size()) { // all zero
+                if (mm.first == (int)wave.size()) { // all zero
                     continue;
                 }
                 

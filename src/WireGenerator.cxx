@@ -56,7 +56,6 @@ public:
 static GenWire* make_wire(int index, const Point& point,
 			    const Point& proto, const Ray& bounds)
 {
-    double number = index;
     const Point pt1 = point;
     const Point pt2  = pt1 + proto;
     const Ray wireray(pt1, pt2);
@@ -115,7 +114,7 @@ static void make_one_plane(IWire::vector& returned_wires,
     std::sort(these_wires.begin(), these_wires.end(), SortByIndex());
 
     // load in to store and fix up index and plane
-    for (int ind=0; ind<these_wires.size(); ++ind) {
+    for (size_t ind=0; ind<these_wires.size(); ++ind) {
 	GenWire* pwire = these_wires[ind];
 	pwire->set_index(ind);
 	pwire->set_planeid(wpid);

@@ -31,7 +31,7 @@ void test_binint()
     cerr << "erf(+1) = " << std::erf(+1.0) << endl;
     cerr << "erf(-1) = " << std::erf(-1.0) << endl;
 
-    for (int ind=0; ind < nbinsv.size(); ++ind) {
+    for (size_t ind=0; ind < nbinsv.size(); ++ind) {
         const int nbins = nbinsv[ind];
         Binning b(nbins, xmin, xmax);
         auto bi = gd.binint(b.min(), b.binsize(), nbins);

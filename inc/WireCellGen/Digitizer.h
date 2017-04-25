@@ -41,10 +41,10 @@ namespace WireCell {
 
         private:
             IAnodePlane::pointer m_anode;
+            std::string m_anode_tn;
             int m_resolution;
             double m_gain;
             std::vector<double> m_fullscale, m_baselines;
-            std::string m_anode_tn;
 
             
         };

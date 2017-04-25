@@ -33,8 +33,6 @@ int main(int argc, char *argv[])
     auto fr = Response::Schema::load(argv[2]);
     TFile* rootfile = TFile::Open(argv[3], "recreate");
 
-    const char* uvw = "UVW";
-
     // 2D garfield wires are all parallel so we "lie" them into 3D
     // Angle is positive and same for U and V.
     const double angle = 60*units::degree;
@@ -148,7 +146,7 @@ int main(int argc, char *argv[])
             auto wave = zipper.waveform(iwire);
 
             auto mm = Waveform::edge(wave);
-            if (mm.first == wave.size()) { // all zero
+            if (mm.first == (int)wave.size()) { // all zero
                 continue;
             }
 

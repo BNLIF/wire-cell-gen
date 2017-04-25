@@ -230,7 +230,7 @@ int main(const int argc, char *argv[])
                                   npbins, -pmax, pmax);
             for (auto& path : pr.paths) {
                 const double cpitch = path.pitchpos;
-                for (int ic=0; ic<path.current.size(); ++ic) {
+                for (size_t ic=0; ic<path.current.size(); ++ic) {
                     const double ctime = fr.tstart + ic*fr.period;
                     const double charge = path.current[ic]*fr.period;
                     hpir->Fill(ctime, cpitch, -1*charge/units::eplus);
@@ -300,7 +300,7 @@ int main(const int argc, char *argv[])
             const int iwire = wire.first;
             Assert(rbins.inbounds(iwire));
             const Waveform::realseq_t& wave = wire.second;
-            auto tot = Waveform::sum(wave);
+            //auto tot = Waveform::sum(wave);
             //std::cerr << iwire << " tot=" << tot << std::endl;
             for (int itick=tbin0; itick <= tbinf; ++itick) {
                 hist->Fill(itick+0.1, iwire+0.1, -1.0*wave[itick]/units::microvolt);
@@ -320,7 +320,7 @@ int main(const int argc, char *argv[])
         em("drew TH2F");
         std::vector<TLine*> lines;
         auto trqs = tracks.tracks();
-        for (int iline=0; iline<trqs.size(); ++iline) {
+        for (size_t iline=0; iline<trqs.size(); ++iline) {
             auto trq = trqs[iline];
             const double time = get<0>(trq);
             const Ray ray = get<1>(trq);
@@ -339,7 +339,7 @@ int main(const int argc, char *argv[])
             
             const int fudge = 0;
             TLine* line = new TLine(tick1-fudge, wire1, tick2-fudge, wire2);
-            line->Write(Form("l%c%d", uvw[plane_id], iline));
+            line->Write(Form("l%c%d", uvw[plane_id], (int)iline));
             line->Draw();
             canvas->Print(Form("%s_%c.png", out_basename.c_str(), uvw[plane_id]));
         }

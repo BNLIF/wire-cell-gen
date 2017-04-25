@@ -29,15 +29,9 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
     const int min_impact = ib.edge_index(wire_pos - 0.5*pitch_range);
     const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
-    const int nimpacts = max_impact-min_impact+1;
     const int nsamples = m_bd.tbins().nbins();
     Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
 
-    
-    // std::cerr << "IZ: wire="<<iwire<<" @"<<wire_pos
-    //           <<", imps:["<<min_impact<<","<<max_impact<<"] n="<<nimpacts<<" pitch range:" << pitch_range 
-    //           <<", nwires=" << m_pir.nwires() << " nimp_per_wire="<<m_pir.nimp_per_wire()
-    //           << std::endl;
 
     int nfound=0;
     const bool share=true;

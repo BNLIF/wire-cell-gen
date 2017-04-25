@@ -63,7 +63,7 @@ Ray make_bbox()
 void test_sort()
 {
     IDepo::vector activity(*get_depos());
-    int norig = activity.size();
+    size_t norig = activity.size();
 
     sort(activity.begin(), activity.end(), ascending_time);
     AssertMsg (norig == activity.size(), "Sort lost depos");
@@ -96,7 +96,6 @@ IDepo::vector test_drifted()
     activity.push_back(nullptr); // EOS
 
     WireCell::Gen::Drifter drifter;
-    int count = 0;
 
     WireCell::IDrifter::output_queue outq;
     for (auto in : activity) {
