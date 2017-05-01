@@ -78,8 +78,6 @@ void Gen::Ductor::process(output_queue& frames)
 {
     ITrace::vector traces;
 
-    // BIG FAT FIXME: this is not checked!!! it is certainly broken.
-
     for (auto face : m_anode->faces()) {
         for (auto plane : face->planes()) {
 
@@ -88,14 +86,12 @@ void Gen::Ductor::process(output_queue& frames)
 
             Binning tbins(pir->tbins().nbins(), m_start_time, m_start_time+m_readout_time);
 
-
             Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_fluctuate);
             for (auto depo : m_depos) {
                 bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
             }
 
             auto& wires = plane->wires();
-
 
             Gen::ImpactZipper zipper(*pir, bindiff);
 
@@ -104,10 +100,9 @@ void Gen::Ductor::process(output_queue& frames)
                 auto wave = zipper.waveform(iwire);
                 
                 auto mm = Waveform::edge(wave);
-                if (mm.first == wave.size()) { // all zero
+                if (mm.first == (int)wave.size()) { // all zero
                     continue;
                 }
-                
                 
                 int chid = wires[iwire]->channel();
                 int tbin = mm.first;

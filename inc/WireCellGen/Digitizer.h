@@ -10,6 +10,7 @@
 
 #include "WireCellIface/IFrameFilter.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellIface/IAnodePlane.h"
 #include "WireCellUtil/Units.h"
 #include <deque>
 
@@ -19,8 +20,11 @@ namespace WireCell {
 
         class Digitizer : public IFrameFilter, public IConfigurable {
         public:
-            Digitizer(int maxsamp=4095, float baseline=0.0*units::volt,
-                      float vperadc=2.0*units::volt/4096);
+            Digitizer(const std::string& anode_tn = "AnodePlane",
+                      int resolution=12,  // bits of resolution
+                      double gain = -1.0, // input gain
+                      std::vector<double> fullscale = {0.0, 2.0*units::volt},
+                      std::vector<double> baselines = {900*units::mV,900*units::mV,200*units::mV});
             virtual ~Digitizer();       
 
             virtual void configure(const WireCell::Configuration& config);
@@ -29,10 +33,20 @@ namespace WireCell {
             // Voltage frame goes in, ADC frame comes out.
             virtual bool operator()(const input_pointer& inframe, output_pointer& outframe);
 
+
+            // implementation method.  Return a "floating point ADC"
+            // value for the given voltage assumed to have been lifted
+            // to the baseline.
+            double digitize(double voltage);
+
         private:
-            int m_max_sample;   // eg, 4095.
-            float m_voltage_baseline;  // this number is subtracted to all voltage samples.
-            float m_volts_per_adc;     // how many volts corresponds to one ADC count.
+            IAnodePlane::pointer m_anode;
+            std::string m_anode_tn;
+            int m_resolution;
+            double m_gain;
+            std::vector<double> m_fullscale, m_baselines;
+
+            
         };
 
     }

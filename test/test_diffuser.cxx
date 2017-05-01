@@ -52,7 +52,7 @@ void test_plot_hist(TCanvas& canvas)
 {
     canvas.Clear();
 
-    const int nsigma = 3;
+    //const int nsigma = 3;
     const double drift_velocity = 1.6 * units::mm/units::microsecond;
     const double binsize_l = 0.5*units::microsecond*drift_velocity;
     const double binsize_t = 5*units::mm;

@@ -49,7 +49,7 @@ bool Framer::operator()(const input_pointer& channel_slice, output_queue& outq)
 void Framer::process(output_queue& outq, bool flush)
 {
     // make as many frames as we can, including final drain
-    while (m_input.size() && (flush || m_input.size() >= m_nticks)) {
+    while (m_input.size() && (flush || (int)m_input.size() >= m_nticks)) {
 
 	std::map<int, ZSEndedTrace*> ch2trace;
 	double time = -1;

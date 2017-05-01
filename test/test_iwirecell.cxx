@@ -96,16 +96,16 @@ int main(int argc, char* argv[])
     TMarker m;
     m.SetMarkerSize(1);
     m.SetMarkerStyle(20);
-    int colors[] = {2,4,1};
+
     c.DrawFrame(bbox.first.z(), bbox.first.y(), bbox.second.z(), bbox.second.y());
     cout << tk("Started TCanvas") << endl;
 
-    for (int cind = 0; cind < cells->size(); ++cind) {
+    for (size_t cind = 0; cind < cells->size(); ++cind) {
 	ICell::pointer cell = cells->at(cind);
 
 	TPolyLine *pl = new TPolyLine; // Hi and welcome to Leak City.
 	PointVector corners = cell->corners();
-	for (int corner_ind=0; corner_ind < corners.size(); ++corner_ind) {
+	for (size_t corner_ind=0; corner_ind < corners.size(); ++corner_ind) {
 	    const Point& corner = corners[corner_ind];
 	    pl->SetPoint(corner_ind, corner.z(), corner.y());
 	}

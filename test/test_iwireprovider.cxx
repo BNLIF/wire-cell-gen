@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
     cout << mu("Made wire summary") << endl;
 
     WireCell::BoundingBox boundingbox;
-    for (int ind = 0; ind < wires->size(); ++ind) {
+    for (size_t ind = 0; ind < wires->size(); ++ind) {
 	boundingbox(wires->at(ind)->ray());
     }
     const Ray& bbox = boundingbox.bounds();

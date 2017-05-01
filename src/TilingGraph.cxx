@@ -118,11 +118,7 @@ void WireCell::TilingGraph::record(WireCell::ICell::pointer thecell)
     const IWire::vector uvw_wires = thecell->wires();
     for (auto wire : uvw_wires) {
 	Vertex wv = wire_vertex_make(wire);
-	auto the_edge = boost::add_edge(cv, wv, m_graph);
-	// cerr << "\tedge " << the_edge.first << " ok? " << the_edge.second
-	//      <<  " to wire id=" << wire->ident()
-	//      << " graphind=" << wv
-	//      << endl;
+        boost::add_edge(cv, wv, m_graph);
     }
 
     // corners
@@ -131,7 +127,7 @@ void WireCell::TilingGraph::record(WireCell::ICell::pointer thecell)
     std::vector<Vertex> corner_vertices;
 
     // corner vertices and internal edges
-    for (int ind=0; ind < npos; ++ind) {
+    for (size_t ind=0; ind < npos; ++ind) {
 	Vertex pv = point_vertex_make(threetotwo(pcell[ind]));
 	corner_vertices.push_back(pv);
 
@@ -140,7 +136,7 @@ void WireCell::TilingGraph::record(WireCell::ICell::pointer thecell)
     }
 
     // cell boundary edges
-    for (int ind=0; ind<npos; ++ind) {
+    for (size_t ind=0; ind<npos; ++ind) {
 	boost::add_edge(corner_vertices[ind], corner_vertices[(ind+1)%npos], m_graph);
     }
     

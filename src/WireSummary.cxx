@@ -44,7 +44,7 @@ struct WirePlaneCache {
     }
 
     IWire::pointer wire_by_index(int index) {
-	if (index < 0 || index >= wires.size()) {
+	if (index < 0 || index >= (int)wires.size()) {
 	    return 0;
 	}
 	return wires[index];

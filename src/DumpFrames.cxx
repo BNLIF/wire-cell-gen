@@ -28,5 +28,6 @@ bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
          << " @" << frame->time()/units::ms
          << " with " << ntraces << " traces" << endl;
     
+    return true;
 }
 

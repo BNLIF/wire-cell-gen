@@ -25,8 +25,9 @@ Gen::AnodePlane::AnodePlane()
 
 
 
-const double default_gain = 14.0;
+const double default_gain = 14.0*units::mV/units::fC;
 const double default_shaping = 2.0*units::us;
+const double default_postgain = 1.0;
 const double default_readout = 5.0*units::ms;
 const double default_tick = 0.5*units::us;
 
@@ -45,8 +46,11 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
     /// Path to (possibly compressed) JSON file holding field responses
     put(cfg, "fields", "");
 
-    /// Electronics gain assumed in [mV/fC]
+    /// Electronics gain
     put(cfg, "gain", default_gain);
+
+    /// Post FEE relative gain
+    put(cfg, "postgain", default_postgain);
 
     /// Electronics shaping time 
     put(cfg, "shaping", default_shaping);
@@ -64,10 +68,19 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
 void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 {
     double gain = get<double>(cfg, "gain", default_gain);
+    double postgain = get<double>(cfg, "postgain", default_postgain);
     double shaping = get<double>(cfg, "shaping", default_shaping);
     double readout = get<double>(cfg, "readout_time", default_readout);
     double tick = get<double>(cfg, "tick", default_tick);
     const int nticks = readout/tick;
+
+    cerr << "Gen::AnodePlane: "
+         << "gain=" << gain/(units::mV/units::fC) << " mV/fC, "
+         << "peaking=" << shaping/units::us << " us, "
+         << "postgain=" << postgain << ", "
+         << "readout=" << readout/units::ms << " ms, "
+         << "tick=" << tick/units::us << " us "
+         << endl;
 
     const double t0 = 0.0; // fixme: t0 not actually used, PIR interface needs reduction
     const Binning tbins(nticks, t0, t0+readout);
@@ -96,7 +109,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
 
 
-    for (int ianode=0; ianode<store.anodes.size(); ++ianode) {
+    for (size_t ianode=0; ianode<store.anodes.size(); ++ianode) {
         const int other_ident = store.anodes[ianode].ident;
         if (other_ident != m_ident) {
             cerr << "Gen::AnodePlane: my ident is " << m_ident
@@ -119,7 +132,14 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             for (int iplane=0; iplane<nplanes; ++iplane) {
                 auto& s_plane = store.planes[s_face.planes[iplane]];
 
-                WirePlaneId wire_plane_id(s_plane.ident); // dubious
+                // fixme: the WireSchema data is SUPPOSED to encode
+                // the ident as packed data but first version stores
+                // just an index.  So we play ball for now.
+
+                // WirePlaneId wire_plane_id(s_plane.ident); // dubious
+                WirePlaneId wire_plane_id(iplane2layer[s_plane.ident]);
+                cerr << wire_plane_id << endl;
+                Assert(wire_plane_id.index() >= 0); 
 
                 Vector total_wire;
                 const int nwires = s_plane.wires.size();
@@ -135,6 +155,13 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                     total_wire += ray_vector(ray);
                     bb(ray);
                     m_c2wpid[s_wire.channel] = wire_plane_id.ident();
+                    // if (iwire == 0) {
+                    //     cerr << "nwires=" << nwires << " ch=" << s_wire.channel
+                    //      << ", wpid=" << wire_plane_id
+                    //      << " index=" << wire_plane_id.index()
+                    //      << " ident=" << wire_plane_id.ident()
+                    //      << endl;
+                    // }
                 } // wire
 
                 const Vector wire_dir = total_wire.norm();
@@ -159,7 +186,8 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                                             wire_dir, pitch_dir,
                                             field_origin, nregion_bins);
                 
-                PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, s_plane.ident, tbins, gain, shaping);
+                PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, s_plane.ident, tbins,
+                                                                   gain, shaping, postgain);
 
                 planes[iplane] = make_shared<WirePlane>(s_plane.ident, wires, pimpos, pir);
 

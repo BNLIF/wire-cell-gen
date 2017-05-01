@@ -31,7 +31,7 @@ void test_binint()
     cerr << "erf(+1) = " << std::erf(+1.0) << endl;
     cerr << "erf(-1) = " << std::erf(-1.0) << endl;
 
-    for (int ind=0; ind < nbinsv.size(); ++ind) {
+    for (size_t ind=0; ind < nbinsv.size(); ++ind) {
         const int nbins = nbinsv[ind];
         Binning b(nbins, xmin, xmax);
         auto bi = gd.binint(b.min(), b.binsize(), nbins);
@@ -117,6 +117,7 @@ void test_gd(bool fluctuate)
                           tbins.nbins(), tbins.min()/tunit, tbins.max()/tunit,
                           pbins.nbins(), pbins.min()/punit, pbins.max()/punit);
 
+    double total = 0.0;
     hist->SetXTitle("time (us)");
     hist->SetYTitle("pitch (mm)");
     for (int it=0; it < patch.cols(); ++it) {
@@ -127,11 +128,13 @@ void test_gd(bool fluctuate)
             Assert(pbins.inside(pval));
 	    const double value = patch(ip,it);
             hist->Fill(tval/tunit, pval/punit, value);
+            total += value;
 	}
     }
     hist->Write();
     hist->Draw("colz");
     marker->Draw();
+    cerr << "total=" << total << " integ=" << hist->Integral() << " maximum=" << hist->GetMaximum() << endl;
 }
 
 int main(int argc, char* argv[])

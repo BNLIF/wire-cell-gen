@@ -1,6 +1,9 @@
 #include "WireCellGen/ImpactZipper.h"
 #include "WireCellUtil/Testing.h"
 
+#include <iostream>             // debugging.
+using namespace std;
+
 using namespace WireCell;
 Gen::ImpactZipper::ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd)
     :m_pir(pir), m_bd(bd)
@@ -26,18 +29,13 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
     const int min_impact = ib.edge_index(wire_pos - 0.5*pitch_range);
     const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
-    const int nimpacts = max_impact-min_impact+1;
     const int nsamples = m_bd.tbins().nbins();
     Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
 
-    
-    // std::cerr << "IZ: wire="<<iwire<<" @"<<wire_pos
-    //           <<", imps:["<<min_impact<<","<<max_impact<<"] n="<<nimpacts<<" pitch range:" << pitch_range 
-    //           <<", nwires=" << m_pir.nwires() << " nimp_per_wire="<<m_pir.nimp_per_wire()
-    //           << std::endl;
 
     int nfound=0;
     const bool share=true;
+    const Waveform::complex_t complex_one_half(0.5,0.0);
 
     // The BinnedDiffusion is indexed by absolute impact and the
     // PlaneImpactResponse relative impact.
@@ -64,7 +62,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         //std::cerr << "IZ: imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
 
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
-        if (share) {
+        if (share) {            // fixme: make a configurable option
             PlaneImpactResponse::TwoImpactResponses two_ir = m_pir.bounded(rel_imp_pos);
             if (!two_ir.first || !two_ir.second) {
                 //std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
@@ -73,11 +71,10 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             // fixme: this is average, not interpolation.
             Waveform::compseq_t rs1 = two_ir.first->spectrum();            
             Waveform::compseq_t rs2 = two_ir.second->spectrum();            
-
-            for (int ind=0; ind < nsamples; ++ind) { // this double counts charge, see below
-                conv_spectrum[ind] = (rs1[ind]+rs2[ind])*charge_spectrum[ind];
+            
+            for (int ind=0; ind < nsamples; ++ind) {
+                conv_spectrum[ind] = complex_one_half*(rs1[ind]+rs2[ind])*charge_spectrum[ind];
             }
-
         }
         else {
             auto ir = m_pir.closest(rel_imp_pos);
@@ -109,15 +106,6 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     }
     
     auto waveform = Waveform::idft(total_spectrum);
-
-    // normalize FFT/iFFT    
-    double norm = 1.0/nsamples;
-    if (share) {                // and if share, remove double counting of charge.
-        norm *= 0.5;
-    }
-    for (int ind=0; ind<nsamples; ++ind) {
-        waveform[ind] *= norm;
-    }
 
     return waveform;
 }

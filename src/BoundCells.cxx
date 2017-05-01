@@ -57,7 +57,7 @@ namespace WireCell {
 
 	    WireCell::Point center;
 	    size_t npos = m_corners.size();
-	    for (int ind=0; ind<npos; ++ind) {
+	    for (size_t ind=0; ind<npos; ++ind) {
 		center = center + m_corners[ind];
 	    }
 	    double norm = 1.0/npos;
@@ -199,14 +199,14 @@ bool BoundCells::operator()(const input_pointer& wires, output_pointer& cells)
     const Vector origin_uv = origin_cross(u_wires, v_wires);
 
     const double first_w_z = w_wires[0]->ray().first.z();
-    const double last_w_z = w_wires[w_wires.size()-1]->ray().first.z();    
+    //const double last_w_z = w_wires[w_wires.size()-1]->ray().first.z();    
     const double w_lane_half_width = 0.5*(pitch_w + tolerance);
 
-    for (int u_ind = 0; u_ind < u_wires.size(); ++u_ind) {
+    for (size_t u_ind = 0; u_ind < u_wires.size(); ++u_ind) {
 	IWire::pointer u_wire = u_wires[u_ind];
 	uvw_wires[0] = u_wire;
 
-	for (int v_ind = 0; v_ind < v_wires.size(); ++v_ind) {
+	for (size_t v_ind = 0; v_ind < v_wires.size(); ++v_ind) {
 	    IWire::pointer v_wire = v_wires[v_ind];
 	    uvw_wires[1] = v_wire;
 
@@ -271,7 +271,7 @@ bool BoundCells::operator()(const input_pointer& wires, output_pointer& cells)
 		    }
 		}
 
-		for (int tbind = 0; tbind < to_break.size(); ++tbind) {
+		for (size_t tbind = 0; tbind < to_break.size(); ++tbind) {
 		    const Vector& p_in = puv[to_break[tbind].first];
 		    const Vector& p_out = puv[to_break[tbind].second];
 
