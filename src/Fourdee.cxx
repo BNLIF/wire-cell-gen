@@ -1,6 +1,7 @@
 #include "WireCellGen/Fourdee.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/ConfigManager.h"
+#include "WireCellUtil/ExecMon.h"
 
 WIRECELL_FACTORY(FourDee, WireCell::Gen::Fourdee, WireCell::IApplication, WireCell::IConfigurable);
 
@@ -120,6 +121,7 @@ void Gen::Fourdee::execute()
     int count=0;
     int ndepos = 0;
     int ndrifted = 0;
+    ExecMon em;
     while (true) {
         ++count;
 
@@ -138,7 +140,7 @@ void Gen::Fourdee::execute()
         IDrifter::output_queue drifted;
         if (!(*m_drifter)(depo, drifted)) {
             cerr << "Stopping on " << type(*m_drifter) << endl;
-            return;
+            goto bail;
         }
         if (drifted.empty()) {
             continue;
@@ -151,7 +153,7 @@ void Gen::Fourdee::execute()
             IDuctor::output_queue frames;
             if (!(*m_ductor)(drifted_depo, frames)) {
                 cerr << "Stopping on " << type(*m_ductor) << endl;
-                return;
+                goto bail;
             }
             if (frames.empty()) {
                 continue;
@@ -159,13 +161,14 @@ void Gen::Fourdee::execute()
             cerr << "Gen::FourDee: got " << frames.size() << " frames\n";
 
             for (IFrameFilter::input_pointer voltframe : frames) {
+                em("got frame");
 
                 /// fixme: needs implementing of "add()".
                 // if (m_dissonance) {
                 //     IFrame::pointer noise;
                 //     if (!(*m_dissonance)(noise)) {
                 //         cerr << "Stopping on " << type(*m_dissonance) << endl;
-                //         return;
+                //         goto bail;
                 //     }
                 //     voltframe = add(voltframe, noise);
                 // }
@@ -174,19 +177,23 @@ void Gen::Fourdee::execute()
                 if (m_digitizer) {
                     if (!(*m_digitizer)(voltframe, adcframe)) {
                         cerr << "Stopping on " << type(*m_digitizer) << endl;
-                        return;
+                        goto bail;
                     }
                 }
                 else {
                     adcframe = voltframe;
                 }
+                em("digitized");
                 cerr << "frame with " << adcframe->traces()->size() << " traces\n";
                 if (!(*m_output)(adcframe)) {
                     cerr << "Stopping on " << type(*m_output) << endl;
-                    return;
+                    goto bail;
                 }
+                em("output");
             }
         }
     }
+  bail:             // what's this weird syntax?  What is this, BASIC?
+    cerr << em.summary() << endl;
 }
 
