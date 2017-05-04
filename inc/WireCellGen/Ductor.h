@@ -37,7 +37,6 @@ namespace WireCell {
             double m_nsigma;
             bool m_fluctuate;
 
-            int m_nticks;
             int m_frame_count;
 
             // The "Type:Name" of the IAnodePlane (default is "AnodePlane")

@@ -21,7 +21,6 @@ Gen::Ductor::Ductor()
     , m_drift_speed(1.0*units::mm/units::us)
     , m_nsigma(3.0)
     , m_fluctuate(true)
-    , m_nticks(10000)
     , m_frame_count(0)
     , m_anode_tn("AnodePlane")
 
@@ -67,7 +66,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
-    m_readout_time = get<double>(cfg, "readout_time", m_start_time);
+    m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
     m_start_time = get<double>(cfg, "start_time", m_start_time);
     m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
@@ -77,6 +76,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 void Gen::Ductor::process(output_queue& frames)
 {
     ITrace::vector traces;
+    double tick = -1;
 
     for (auto face : m_anode->faces()) {
         for (auto plane : face->planes()) {
@@ -85,6 +85,10 @@ void Gen::Ductor::process(output_queue& frames)
             const PlaneImpactResponse* pir = plane->pir();
 
             Binning tbins(pir->tbins().nbins(), m_start_time, m_start_time+m_readout_time);
+
+            if (tick < 0) {     // fixme: assume same tick for all.
+                tick = tbins.binsize();
+            }
 
             Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_fluctuate);
             for (auto depo : m_depos) {
@@ -113,7 +117,7 @@ void Gen::Ductor::process(output_queue& frames)
         }
     }
 
-    auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_readout_time/m_nticks);
+    auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
     frames.push_back(frame);
 
     m_depos.clear();

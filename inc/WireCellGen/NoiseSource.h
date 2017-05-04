@@ -1,10 +1,19 @@
+/** This frame source provides frames filled with noise.
+    
+    Each time it is called it produces a fixed readout length of
+    voltage-level noise which spans all channels.
+
+ */
+
 #ifndef WIRECELLGEN_NOISESOURCE
 #define WIRECELLGEN_NOISESOURCE
 
 #include "WireCellIface/IFrameSource.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellIface/IAnodePlane.h"
+#include "WireCellUtil/Waveform.h"
 
-#include <vector>
+#include <string>
 
 namespace WireCell {
     namespace Gen {
@@ -12,7 +21,7 @@ namespace WireCell {
         class NoiseSource : public IFrameSource, public IConfigurable {
         public:
             NoiseSource();
-            NoiseSource(const std::string& noise_spectrum_data_filename, double scale);
+            // fixme: add constructor that set parameter defaults from c++ for unit tests
             virtual ~NoiseSource();
 
             /// IFrameSource 
@@ -22,12 +31,15 @@ namespace WireCell {
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
-        private:
-            std::string m_filename;
-            double m_scale;
 
-            std::vector<double> m_spectra;
-            double m_nyquist;
+            virtual Waveform::realseq_t waveform(int channel_ident);
+
+        private:
+            IAnodePlane::pointer m_anode;
+            double m_time, m_readout, m_tick;
+            int m_frame_count;
+            std::string m_anode_tn;
+            
         };
     }
 }

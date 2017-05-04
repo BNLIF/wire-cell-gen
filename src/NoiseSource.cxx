@@ -1,7 +1,9 @@
 #include "WireCellGen/NoiseSource.h"
 
-#include "WireCellUtil/Persist.h"
+#include "WireCellIface/SimpleTrace.h"
+#include "WireCellIface/SimpleFrame.h"
 
+#include "WireCellUtil/Persist.h"
 #include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
@@ -12,13 +14,11 @@ using namespace std;
 using namespace WireCell;
 
 Gen::NoiseSource::NoiseSource()
-    : m_filename("")
-    , m_scale(1.0)
-{
-}
-Gen::NoiseSource::NoiseSource(const std::string& noise_spectrum_data_filename, double scale)
-    : m_filename(noise_spectrum_data_filename)
-    , m_scale(scale)
+    : m_time(0.0*units::ns)
+    , m_readout(5.0*units::ms)
+    , m_tick(0.5*units::us)
+    , m_frame_count(0)
+    , m_anode_tn("AnodePlane")
 {
 }
 
@@ -30,53 +30,50 @@ Gen::NoiseSource::~NoiseSource()
 WireCell::Configuration Gen::NoiseSource::default_configuration() const
 {
     Configuration cfg;
-    cfg["spectrum_filename"] = m_filename;
-    cfg["scale"] = m_scale;
+    cfg["start_time"] = m_time;
+    cfg["readout_time"] = m_readout;
+    cfg["sample_period"] = m_tick;
+    cfg["first_frame_number"] = m_frame_count;
+
+    cfg["anode"] = m_anode_tn;
+
     return cfg;
 }
 
 void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 {
-    // unpack configuration using hard coded defaults if the parameter is not set.
-    m_filename = get(cfg, "spectrum_filename", m_filename);
-    m_scale = get(cfg, "scale", m_scale);
-
-    if (m_filename == "") {
-        cerr << "Gen::NoiseSource: no noise spectrum data file given\n";
-        return;                 // fixme: throw exception here
+    m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
+    m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    if (!m_anode) {
+        cerr << "Gen::Ductor: failed to get anode: \"" << m_anode_tn << "\"\n";
+        return;
     }
-
-    // fixme: should hoist this into a first class citizen ala WireSchema or Response.
-    // Use the schema matching Response.
-
-    // The noise spectrum is an array of values covering frequencies
-    // from 0 to the Nyquist frequency.  Note, this is one-half of the
-    // entire frequency domain.  The "negative" frequencies are omitted.
-    // top['noise_spectrum']['array'].keys()
-    // ['shape', 'elements']
-    // top['noise_spectrum']['nyquist']
-    // 1000000.0
-
-    Json::Value jtop = WireCell::Persist::load(m_filename);
-    Json::Value jnoise = jtop["noise_spectrum"];
-    const double nyquist = jnoise["array"]["nyquist"].asDouble();
-    const int nsamps = jnoise["array"]["shape"][0].asInt();
-    Json::Value jarray = jnoise["array"]["elements"];
-    m_spectra.clear();
-    m_spectra.resize(nsamps);
-    for (int ind=0; ind<nsamps; ++ind) {
-        const double voltage= m_scale*jarray[ind].asDouble();
-        m_spectra[ind] = voltage;
-    }
-    
-    //.....
+    m_readout = get<double>(cfg, "readout_time", m_readout);
+    m_time = get<double>(cfg, "start_time", m_time);
+    m_tick = get<double>(cfg, "sample_period", m_tick);
+    m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
 }
 
 
+Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
+{
+    return Waveform::realseq_t(); // not yet
+    
+}
+
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 {
-    frame = nullptr;            // not yet implemented
-    return false;
+    ITrace::vector traces;
+    const int tbin = 0;
+    for (auto chid : m_anode->channels()) {
+        Waveform::realseq_t noise = waveform(chid);
+        auto trace = make_shared<SimpleTrace>(chid, tbin, noise);
+        traces.push_back(trace);
+    }
+    frame = make_shared<SimpleFrame>(m_frame_count, m_time, traces, m_tick);
+    m_time += m_readout;
+    ++m_frame_count;
+    return true;
 }
 
 

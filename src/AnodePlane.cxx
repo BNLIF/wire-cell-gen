@@ -9,7 +9,6 @@
 #include "WireCellIface/SimpleWire.h"
 #include "WireCellUtil/NamedFactory.h"
 
-
 #include <string>
 
 WIRECELL_FACTORY(AnodePlane, WireCell::Gen::AnodePlane, WireCell::IAnodePlane, WireCell::IConfigurable);
@@ -106,8 +105,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     Assert(!store.anodes.empty());
 
     const Vector Xaxis(1.0,0,0);
-
-
+    m_channels.clear();
 
     for (size_t ianode=0; ianode<store.anodes.size(); ++ianode) {
         const int other_ident = store.anodes[ianode].ident;
@@ -148,13 +146,19 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
                 for (int iwire=0; iwire<nwires; ++iwire) {
                     auto& s_wire = store.wires[s_plane.wires[iwire]];
+                    const int chanid = s_wire.channel;
+                    m_channels.push_back(chanid);
+
                     Ray ray(s_wire.tail, s_wire.head);
-                    wires[iwire] = make_shared<SimpleWire>(wire_plane_id, s_wire.ident,
-                                                           iwire, s_wire.channel,
-                                                           ray, s_wire.segment);
+                    auto iwireptr = make_shared<SimpleWire>(wire_plane_id, s_wire.ident,
+                                                            iwire, chanid,
+                                                            ray, s_wire.segment);
+                    wires[iwire] = iwireptr;
+                    m_c2wires[chanid].push_back(iwireptr);
+
                     total_wire += ray_vector(ray);
                     bb(ray);
-                    m_c2wpid[s_wire.channel] = wire_plane_id.ident();
+                    m_c2wpid[chanid] = wire_plane_id.ident();
                     // if (iwire == 0) {
                     //     cerr << "nwires=" << nwires << " ch=" << s_wire.channel
                     //      << ", wpid=" << wire_plane_id
@@ -198,7 +202,11 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         } // face
 
         break; // this class only handles single-anode plane detectors
+
     }          // anode
+    std::sort(m_channels.begin(), m_channels.end());
+    auto chend = std::unique(m_channels.begin(), m_channels.end());
+    m_channels.resize( std::distance(m_channels.begin(), chend) );
 }
 
 
@@ -225,3 +233,16 @@ WirePlaneId Gen::AnodePlane::resolve(int channel) const
 }
 
 
+std::vector<int> Gen::AnodePlane::channels() const
+{
+    return m_channels;
+}
+
+IWire::vector Gen::AnodePlane::wires(int channel) const
+{
+    auto it = m_c2wires.find(channel);
+    if (it == m_c2wires.end()) {
+        return IWire::vector();
+    }
+    return it->second;
+}

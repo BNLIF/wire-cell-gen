@@ -32,6 +32,9 @@ namespace WireCell {
             virtual IAnodeFace::pointer face(int ident) const;
             virtual IAnodeFace::vector faces() const { return m_faces; }
             virtual WirePlaneId resolve(int channel) const;
+            virtual std::vector<int> channels() const;
+            virtual IWire::vector wires(int channel) const;
+
 
         private:
 
@@ -41,8 +44,8 @@ namespace WireCell {
             Response::Schema::FieldResponse m_fr;
 
             std::unordered_map<int, int> m_c2wpid;
-
-
+            std::unordered_map<int, IWire::vector> m_c2wires;
+            std::vector<int> m_channels;
         };
     }
 
