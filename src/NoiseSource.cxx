@@ -45,7 +45,7 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
-        cerr << "Gen::Ductor: failed to get anode: \"" << m_anode_tn << "\"\n";
+        cerr << "Gen::NoiseSource: failed to get anode: \"" << m_anode_tn << "\"\n";
         return;
     }
     m_readout = get<double>(cfg, "readout_time", m_readout);
@@ -57,7 +57,7 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 
 Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 {
-    return Waveform::realseq_t(); // not yet
+    return Waveform::realseq_t(m_readout/m_tick, 0.0*units::volt); // dummy offset for now
     
 }
 
@@ -65,11 +65,15 @@ bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 {
     ITrace::vector traces;
     const int tbin = 0;
+    int nsamples = 0;
     for (auto chid : m_anode->channels()) {
         Waveform::realseq_t noise = waveform(chid);
         auto trace = make_shared<SimpleTrace>(chid, tbin, noise);
         traces.push_back(trace);
+        nsamples += noise.size();
     }
+    cerr << "Gen::NoiseSource: made " << traces.size() << " traces, "
+         << nsamples << " samples\n";
     frame = make_shared<SimpleFrame>(m_frame_count, m_time, traces, m_tick);
     m_time += m_readout;
     ++m_frame_count;

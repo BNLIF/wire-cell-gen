@@ -1,4 +1,5 @@
 #include "WireCellGen/Fourdee.h"
+#include "WireCellGen/FrameUtil.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/ConfigManager.h"
 #include "WireCellUtil/ExecMon.h"
@@ -26,6 +27,8 @@ Gen::Fourdee::~Fourdee()
 WireCell::Configuration Gen::Fourdee::default_configuration() const
 {
     Configuration cfg;                    // todo:
+
+    // the 4 d's and proof the developer can not count:
     put(cfg, "DepoSource", "TrackDepos"); // have
     put(cfg, "Drifter", "Drifter");       // have, needs work
     put(cfg, "Ductor", "Ductor");         // have
@@ -42,26 +45,24 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
     std::string tn="";
     Configuration cfg = thecfg;
 
-    m_depos = Factory::lookup<IDepoSource>(get<string>(cfg, "DepoSource"));
-    // fixme: need to convert MeV to number of electrons with: Fano,
-    // Number_electrons_per_mev and Recombination.
-    m_drifter = Factory::lookup<IDrifter>(get<string>(cfg, "Drifter",""));
-    m_ductor = Factory::lookup<IDuctor>(get<string>(cfg, "Ductor",""));
+    m_depos = Factory::lookup_tn<IDepoSource>(get<string>(cfg, "DepoSource"));
+    m_drifter = Factory::lookup_tn<IDrifter>(get<string>(cfg, "Drifter",""));
+    m_ductor = Factory::lookup_tn<IDuctor>(get<string>(cfg, "Ductor",""));
     tn = get<string>(cfg, "Dissonance","");
     if (tn.empty()) {           // noise is optional
         m_dissonance = nullptr;
     }
     else {
-        m_dissonance = Factory::lookup<IFrameSource>(tn);
+        m_dissonance = Factory::lookup_tn<IFrameSource>(tn);
     }
     tn = get<string>(cfg, "Digitizer","");
     if (tn.empty()) {           // digitizer is optional, voltage saved w.o. it.
         m_digitizer = nullptr;
     }
     else {
-        m_digitizer = Factory::lookup<IFrameFilter>(tn);
+        m_digitizer = Factory::lookup_tn<IFrameFilter>(tn);
     }
-    m_output = Factory::lookup<IFrameSink>(get<string>(cfg, "FrameSink",""));
+    m_output = Factory::lookup_tn<IFrameSink>(get<string>(cfg, "FrameSink",""));
     
 
     // fixme: check for failures
@@ -122,6 +123,7 @@ void Gen::Fourdee::execute()
     int ndepos = 0;
     int ndrifted = 0;
     ExecMon em;
+    cerr << "Gen::Fourdee: staring\n";
     while (true) {
         ++count;
 
@@ -163,15 +165,16 @@ void Gen::Fourdee::execute()
             for (IFrameFilter::input_pointer voltframe : frames) {
                 em("got frame");
 
-                /// fixme: needs implementing of "add()".
-                // if (m_dissonance) {
-                //     IFrame::pointer noise;
-                //     if (!(*m_dissonance)(noise)) {
-                //         cerr << "Stopping on " << type(*m_dissonance) << endl;
-                //         goto bail;
-                //     }
-                //     voltframe = add(voltframe, noise);
-                // }
+                if (m_dissonance) {
+                    cerr << "Gen::FourDee: including noise\n";
+                    IFrame::pointer noise;
+                    if (!(*m_dissonance)(noise)) {
+                        cerr << "Stopping on " << type(*m_dissonance) << endl;
+                        goto bail;
+                    }
+                    voltframe = Gen::sum(IFrame::vector{voltframe,noise}, voltframe->ident());
+                    em("got noise");
+                }
 
                 IFrameFilter::output_pointer adcframe;
                 if (m_digitizer) {
@@ -184,7 +187,7 @@ void Gen::Fourdee::execute()
                     adcframe = voltframe;
                 }
                 em("digitized");
-                cerr << "frame with " << adcframe->traces()->size() << " traces\n";
+                cerr << "Gen::Fourdee: frame with " << adcframe->traces()->size() << " traces\n";
                 if (!(*m_output)(adcframe)) {
                     cerr << "Stopping on " << type(*m_output) << endl;
                     goto bail;
