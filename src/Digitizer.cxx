@@ -57,7 +57,7 @@ void Gen::Digitizer::configure(const Configuration& cfg)
         cerr << "Gen::Digitizer: failed to get anode: \"" << m_anode_tn << "\"\n";
         Assert(m_anode);
     }
-    Assert(m_anode->resolve(1104).valid());
+    //Assert(m_anode->resolve(1104).valid());  // test for microboone setup
 
     m_resolution = get(cfg, "resolution", m_resolution);
     m_gain = get(cfg, "gain", m_gain);
