@@ -42,7 +42,6 @@ void Gen::hyDrifter::configure(const WireCell::Configuration& cfg)
     m_DT = get<double>(cfg, "DT", m_DT);
     m_lifetime = get<double>(cfg, "lifetime", m_lifetime);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
-    m_fano = get<double>(cfg, "fano", m_fano);
     cerr << "Configured Gen::hyDrifter with anode plane " << m_anode_tn << endl;
 }
 
