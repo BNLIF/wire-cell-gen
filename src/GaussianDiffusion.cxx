@@ -120,8 +120,12 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 	    for (size_t it = 0; it < ntss; ++it) {
 		const float oldval = ret(ip,it);
                 unfluc_sum += oldval;
-		std::poisson_distribution<int> poisson(oldval);
-		float nelectrons = poisson(generator);
+        // should be a multinomial distribution, n_i follows binomial distribution
+        // but n_i, n_j has covariance -n_tot * p_i * p_j
+        // normalize later to approximate this multinomial distribution (how precise?)
+        // how precise? better than poisson and 10000 total charge corresponds to a <1% level error.
+		std::binomial_distribution<int> binomial((int)m_deposition->charge(), oldval/m_deposition->charge());
+		float nelectrons = binomial(generator);
 		fluc_sum += nelectrons;
 		ret(ip,it) = nelectrons;
 	    }
