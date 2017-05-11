@@ -135,7 +135,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 // just an index.  So we play ball for now.
 
                 // WirePlaneId wire_plane_id(s_plane.ident); // dubious
-                WirePlaneId wire_plane_id(iplane2layer[s_plane.ident]);
+                WirePlaneId wire_plane_id(iplane2layer[s_plane.ident], iface, ianode);
                 cerr << wire_plane_id << endl;
                 Assert(wire_plane_id.index() >= 0); 
 
