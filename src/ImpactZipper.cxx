@@ -59,7 +59,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
         const double imp_pos = ib.center(imp);
         const double rel_imp_pos = imp_pos - wire_pos;
-        //std::cerr << "IZ: imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
+        //std::cerr << "IZ: " << " imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
 
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
         if (share) {            // fixme: make a configurable option

@@ -99,7 +99,7 @@ int main(const int argc, char *argv[])
     bool fluctuate = true; // note, "point" negates this below
 
     // Generate some trivial tracks
-    const double stepsize = 1*units::mm;
+    const double stepsize = 0.01*units::mm;
     Gen::TrackDepos tracks(stepsize);
 
     // This is the number of ionized electrons for a MIP assumed by MB noise paper.
@@ -126,7 +126,7 @@ int main(const int argc, char *argv[])
     if (track_types.find("isoch") < track_types.size()) {
         tracks.add_track(event_time,
                          Ray(event_vertex,
-                             event_vertex+Vector(0, 100*units::us*drift_speed, 1*units::m)),
+                             event_vertex+Vector(0, 0, 50*units::mm)),
                          charge_per_depo);
     }
     // "driftlike" track diagonal in space and drift time
@@ -163,6 +163,11 @@ int main(const int argc, char *argv[])
         tracks.add_track(event_time,
                          Ray(event_vertex,
                              event_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
+                         -1.0*units::eplus);
+        auto second_vertex = event_vertex + Vector(0,0, -1*units::mm);
+        tracks.add_track(event_time-0.5*units::us,
+                         Ray(second_vertex,
+                             second_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
                          -1.0*units::eplus);
     }
 
@@ -259,7 +264,7 @@ int main(const int argc, char *argv[])
         const int wbinf = min(rbins.nbins()-1, rbins.bin(pmm.second) + 40);
         const int nwbins = 1+wbinf-wbin0;
 
-        // Dead recon
+        // Dead reckon
         const int tbin0 = 3500, tbinf=5500;
         const int ntbins = tbinf-tbin0;
 
@@ -268,6 +273,12 @@ int main(const int argc, char *argv[])
         for (int iwire=wbin0; iwire <= wbinf; ++iwire) {
             auto wave = zipper.waveform(iwire);
             auto tot = Waveform::sum(wave);
+            if (tot != 0.0) {
+                auto mm = std::minmax_element(wave.begin(), wave.end());
+                cerr << "^ Wire " << iwire << " tot=" << tot/units::uV << " uV"
+                     << " mm=[" << (*mm.first)/units::uV << "," << (*mm.second)/units::uV << "] uV "
+                     << endl;
+            }
 
             tottot += tot;
             if (std::abs(iwire-1000) <=1) { // central wires for "point"
@@ -311,7 +322,10 @@ int main(const int argc, char *argv[])
             hist->GetXaxis()->SetRangeUser(3900,4000);
             hist->GetYaxis()->SetRangeUser(990, 1010);
         }
-
+        if (track_types.find("isoch") < track_types.size()) {
+            hist->GetXaxis()->SetRangeUser(3900,4000);
+            hist->GetYaxis()->SetRangeUser(995, 1020);
+        }
         em("filled TH2F");
         hist->Write();
         em("wrote TH2F");
