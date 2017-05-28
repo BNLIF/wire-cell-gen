@@ -232,6 +232,10 @@ WirePlaneId Gen::AnodePlane::resolve(int channel) const
     return WirePlaneId(got->second);
 }
 
+IChannel::pointer Gen::AnodePlane::channel(int ident) const
+{
+    return nullptr;             // not yet
+}
 
 std::vector<int> Gen::AnodePlane::channels() const
 {

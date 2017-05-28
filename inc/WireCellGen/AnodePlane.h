@@ -33,6 +33,7 @@ namespace WireCell {
             virtual IAnodeFace::vector faces() const { return m_faces; }
             virtual WirePlaneId resolve(int channel) const;
             virtual std::vector<int> channels() const;
+            virtual IChannel::pointer channel(int ident) const;
             virtual IWire::vector wires(int channel) const;
 
 
