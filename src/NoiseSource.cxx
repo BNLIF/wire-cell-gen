@@ -13,12 +13,13 @@ WIRECELL_FACTORY(NoiseSource, WireCell::Gen::NoiseSource, WireCell::IFrameSource
 using namespace std;
 using namespace WireCell;
 
-Gen::NoiseSource::NoiseSource()
+Gen::NoiseSource::NoiseSource(const std::string& model, const std::string& anode)
     : m_time(0.0*units::ns)
     , m_readout(5.0*units::ms)
     , m_tick(0.5*units::us)
     , m_frame_count(0)
-    , m_anode_tn("AnodePlane")
+    , m_anode_tn(anode)
+    , m_model_tn(model)
 {
 }
 
@@ -36,18 +37,22 @@ WireCell::Configuration Gen::NoiseSource::default_configuration() const
     cfg["first_frame_number"] = m_frame_count;
 
     cfg["anode"] = m_anode_tn;
+    cfg["model"] = m_model_tn;
 
     return cfg;
 }
 
 void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 {
-    m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
+    m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
         cerr << "Gen::NoiseSource: failed to get anode: \"" << m_anode_tn << "\"\n";
         return;
     }
+    m_model_tn = get(cfg, "model", m_model_tn);
+    m_model = Factory::lookup_tn<IChannelSpectrum>(m_model_tn);
+
     m_readout = get<double>(cfg, "readout_time", m_readout);
     m_time = get<double>(cfg, "start_time", m_time);
     m_tick = get<double>(cfg, "sample_period", m_tick);
@@ -57,8 +62,18 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 
 Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 {
-    return Waveform::realseq_t(m_readout/m_tick, 0.0*units::volt); // dummy offset for now
-    
+    // fixme/todo:
+    // In here use the noise model to:
+
+    // 1) get the amplitude spectrum.  Be careful to hold as reference to avoid copy
+
+    // auto& spec = (*m_model)(channel_ident);
+
+    // 2) properly sample it
+    // 3) convert back to time domain (use function "idft()")
+
+    // a dummy for now    
+    return Waveform::realseq_t(m_readout/m_tick, 0.0*units::volt); 
 }
 
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)

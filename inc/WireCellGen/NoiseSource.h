@@ -11,6 +11,7 @@
 #include "WireCellIface/IFrameSource.h"
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/IChannelSpectrum.h"
 #include "WireCellUtil/Waveform.h"
 
 #include <string>
@@ -20,7 +21,7 @@ namespace WireCell {
 
         class NoiseSource : public IFrameSource, public IConfigurable {
         public:
-            NoiseSource();
+            NoiseSource(const std::string& model = "", const std::string& anode="AnodePlane");
             // fixme: add constructor that set parameter defaults from c++ for unit tests
             virtual ~NoiseSource();
 
@@ -36,9 +37,10 @@ namespace WireCell {
 
         private:
             IAnodePlane::pointer m_anode;
+            IChannelSpectrum::pointer m_model;
             double m_time, m_readout, m_tick;
             int m_frame_count;
-            std::string m_anode_tn;
+            std::string m_anode_tn, m_model_tn;
             
         };
     }
