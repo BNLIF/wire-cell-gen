@@ -28,7 +28,7 @@ namespace WireCell {
         class EmpiricalNoiseModel : public IChannelSpectrum , public IConfigurable {
         public:
             EmpiricalNoiseModel(const std::string& spectra_file = "",
-                                const double minium_frequency = 2.0*units::megahertz / 10000, // assuming 10k samples
+                                const int nyquist_nsamples = 10000/2, // assuming 10k samples 
                                 const double nyquist_frequency = 2.0*units::megahertz / 2.0,
                                 const double wire_length_scale = 1.0*units::cm,
                                 const std::string anode_tn = "AnodePlane");
@@ -48,7 +48,7 @@ namespace WireCell {
             // Resample the frequency space amplitude taken with the
             // given sampling frequency parameters and return a new
             // one that matches those for the class.
-            amplitude_t resample(double minfreq, double nyqfreq, const amplitude_t& amp) const;
+            amplitude_t resample(double nyqfreq, const amplitude_t& amp) const;
 
             // Return a new amplitude which is the interpolation
             // between those given in the spectra file.
@@ -59,7 +59,8 @@ namespace WireCell {
             IAnodePlane::pointer m_anode;
 
             std::string m_spectra_file;
-            double m_minfreq, m_nyqfreq, m_wlres;
+            int m_nsamples;
+            double m_nyqfreq, m_wlres;
             std::string m_anode_tn;
             
             // associate wire length and its noise amplitude spectrum 

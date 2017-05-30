@@ -13,12 +13,12 @@ WIRECELL_FACTORY(EmpiricalNoiseModel, WireCell::Gen::EmpiricalNoiseModel,
 using namespace WireCell;
 
 Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
-                                              const double minium_frequency,
+                                              const int nsamples,
                                               const double nyquist_frequency,
                                               const double wire_length_scale,
                                               const std::string anode_tn)
     : m_spectra_file(spectra_file)
-    , m_minfreq(minium_frequency)
+    , m_nsamples(nsamples)
     , m_nyqfreq(nyquist_frequency)
     , m_wlres(wire_length_scale)
     , m_anode_tn(anode_tn)
@@ -36,18 +36,17 @@ WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
 
     /// The file holding the spectral data
     cfg["spectra_file"] = m_spectra_file;
-    cfg["minimum_frequency"] = m_minfreq; // remember this is in WCT SoU for frequency!
+    cfg["nsamples"] = m_nsamples; // number of samples up to Nyquist frequency
     cfg["nyquist_frequency"] = m_nyqfreq; // remember this is in WCT SoU for frequency!
     cfg["wire_length_scale"] = m_wlres;    // 
     cfg["anode"] = m_anode_tn;            // name of IAnodePlane component
 
-
     return cfg;
 }
 
-IChannelSpectrum::amplitude_t Gen::EmpiricalNoiseModel::resample(double minfreq, double nyqfreq, const amplitude_t& amp) const
+IChannelSpectrum::amplitude_t Gen::EmpiricalNoiseModel::resample(double nyqfreq, const amplitude_t& amp) const
 {
-    if (minfreq == m_minfreq && nyqfreq == m_nyqfreq) {
+    if ((int)amp.size() == m_nsamples && nyqfreq == m_nyqfreq) {
         return amp;
     }
 
@@ -62,7 +61,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
 
     m_spectra_file = get(cfg, "spectra_file", m_spectra_file);
-    m_minfreq = get(cfg, "minimum_frequency", m_minfreq);
+    m_nsamples = get(cfg, "nsamples", m_nsamples);
     m_nyqfreq = get(cfg, "nyquist_frequency", m_nyqfreq);
     m_wlres = get(cfg, "wire_length_scale", m_wlres);
 
@@ -74,17 +73,16 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     m_wire_amplitudes.clear();
     m_wire_amplitudes.resize(nentries);
     for (auto jentry : jdat) { // list of dicts ordered by increasing wire length
-        auto jlen = jentry["length"];     // wire length 
-        auto jspec = jentry["spectrum"];  // spectrum
-        auto jmin = jspec["minimum_frequency"]; // frequency sampling used for
-        auto jnyq = jspec["nyquist_frequency"]; // this data
-        auto jamp = jspec["amplitude"];         // the sampled amplitude 
+        auto jlen = jentry["wire_length"];
+        auto jnyq = jentry["nyquist"];   // 
+        auto jamp = jentry["amplitude"]; // array of sampled amplitude
+                                         // up to Nyquist frequency
         const int nsamp = jamp.size();
         amplitude_t amp(nsamp);
         for (int ind=0; ind<nsamp; ++ind) {
-            amp[ind] = jspec[ind].asFloat();
+            amp[ind] = jamp[ind].asFloat();
         }
-        auto rsamp = resample(jmin.asDouble(), jnyq.asDouble(), amp);
+        auto rsamp = resample(jnyq.asDouble(), amp);
         m_wire_amplitudes.push_back(make_pair(jlen.asDouble(), rsamp));
     }        
 }
