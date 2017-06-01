@@ -24,12 +24,13 @@ Waveform::compseq_t& Gen::ImpactData::spectrum() const
     return m_spectrum;
 }
 
-void Gen::ImpactData::calculate(int nticks) const
+void Gen::ImpactData::calculate_constant(int nticks) const
 {
     if (m_waveform.size() > 0) {
         return;
     }
     m_waveform.resize(nticks, 0.0);
+    m_weights.resize(nticks, 0.5);
 
     for (auto diff : m_diffusions) {
 
@@ -54,6 +55,11 @@ void Gen::ImpactData::calculate(int nticks) const
     m_spectrum = Waveform::dft(m_waveform);
 }
 
+void Gen::ImpactData::calculate_linear(int nticks) const
+{
+    // fixme: this is just a place holder for Hanyu
+    calculate_constant(nticks);
+}
 
 
 // std::pair<int,int> Gen::ImpactData::strip() const

@@ -37,10 +37,19 @@ namespace WireCell {
               
 	       - fluctuate :: set to true if charge-preserving Poisson
                  fluctuations are applied.
-	     */
-	    BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
-			    double nsigma=3.0, bool fluctuate=false);
 
+               - calcstrat :: set a calculation strategy that gives
+                 how the microscopic distribution of charge between
+                 two impacts will be interpolated toward either edge.
+
+	     */
+
+            /// Useful to client code to mark a calculation strategy. 
+            enum ImpactDataCalculationStrategy { constant=1, linear=2 };
+
+	    BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
+			    double nsigma=3.0, bool fluctuate=false,
+                            ImpactDataCalculationStrategy calcstrat = constant);
 
             const Pimpos& pimpos() const { return m_pimpos; }
             const Binning& tbins() const { return m_tbins; }
@@ -53,7 +62,7 @@ namespace WireCell {
 	    /// GaussianDiffusion to one impact.  
 	    void add(std::shared_ptr<GaussianDiffusion> gd, int impact_index);
 
-	    /// Drop any stored ImpactData withing the half open
+	    /// Drop any stored ImpactData within the half open
 	    /// impact index range.
 	    void erase(int begin_impact_index, int end_impact_index);
 
@@ -89,6 +98,7 @@ namespace WireCell {
 
 	    double m_nsigma;
 	    bool m_fluctuate;
+            ImpactDataCalculationStrategy m_calcstrat;
 
 	    // current window set by user.
 	    std::pair<int,int> m_window;

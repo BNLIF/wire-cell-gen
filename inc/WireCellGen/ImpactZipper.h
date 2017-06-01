@@ -17,7 +17,9 @@ namespace WireCell {
         {
             const PlaneImpactResponse& m_pir;
             BinnedDiffusion& m_bd;
+
         public:
+
             ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd);
             virtual ~ImpactZipper();
 

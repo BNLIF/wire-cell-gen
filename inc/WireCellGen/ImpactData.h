@@ -18,8 +18,9 @@ namespace WireCell {
 	class ImpactData {
 	    int m_impact;
 	    mutable Waveform::realseq_t m_waveform;
-	    mutable Waveform::compseq_t m_spectrum;
-	    
+	    mutable Waveform::compseq_t m_spectrum;	    
+	    mutable Waveform::realseq_t m_weights;
+
 	    // Record the diffusions and their pitch bin that contribute to this impact position.
 	    std::vector<GaussianDiffusion::pointer> m_diffusions;
             
@@ -41,13 +42,25 @@ namespace WireCell {
 
             const std::vector<GaussianDiffusion::pointer>& diffusions() const { return m_diffusions; }
 
-            /** Calculate the slice in time across the collected
-             * GaussianDiffusion objects.
+            /** The `calculate_*()` methods finalize the underlying
+             * waveform data for this slice in time across the
+             * collected GaussianDiffusion object.
              *
-             * This method is idempotent and must be called before
-             * waveform() and spectrum().
+             * These methods are idempotent and one must be called
+             * before waveform(), spectrum() and weightform() return
+             * valid results.
             */
-	    void calculate(int nticks) const;
+
+            /** Calculate the impact data and treat the intra-impact
+             * charge distribution as constant. (All weights are 0.5).
+             */
+	    void calculate_constant(int nticks) const;
+
+            /** Calculate the impact data assuming a linear weighting
+             * and honoring the Gaussian distribution.
+             */
+            void calculate_linear(int nticks) const;
+
 
 	    /**  Return the time domain waveform of drifted/diffused
              *  charge at this impact position. See `calculate()`. */
@@ -56,6 +69,16 @@ namespace WireCell {
 	    /** Return the discrete Fourier transform of the above.
              * See `calculate()`. */
 	    Waveform::compseq_t& spectrum() const;
+
+            /** The "weightform" is a waveform of weights and gives,
+             * for each tick, a measure of where the charge is
+             * "concentrated" (by some measure) along the distance
+             * from the low impact number edge to the high impact
+             * number edge.  In general, the weights depend on the
+             * local (microscopic) charge distribution as well as
+             * which `calculate_*()` method was used.
+             */
+	    Waveform::realseq_t& weightform() const;
 
 	    /** Return the associated impact number.  This provides a
 	    sample count along the pitch direction starting from some
@@ -72,6 +95,7 @@ namespace WireCell {
              * which have only zero values outside. */
             //std::pair<int,int> strip() const;
 	};
+
     }
 }
 
