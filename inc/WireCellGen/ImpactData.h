@@ -20,6 +20,7 @@ namespace WireCell {
 	    mutable Waveform::realseq_t m_waveform;
 	    mutable Waveform::compseq_t m_spectrum;	    
 	    mutable Waveform::realseq_t m_weights;
+	    mutable Waveform::realseq_t m_weight_spectrum;
 
 	    // Record the diffusions and their pitch bin that contribute to this impact position.
 	    std::vector<GaussianDiffusion::pointer> m_diffusions;
@@ -79,6 +80,7 @@ namespace WireCell {
              * which `calculate_*()` method was used.
              */
 	    Waveform::realseq_t& weightform() const;
+	    Waveform::realseq_t& weight_spectrum() const;
 
 	    /** Return the associated impact number.  This provides a
 	    sample count along the pitch direction starting from some

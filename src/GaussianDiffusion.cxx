@@ -96,6 +96,12 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
         return;
     }
     
+
+    // make charge weights for later interpolation.
+    /// fixme: for hanyu.
+    
+
+    // start making the time vs impact patch of charge.
     patch_t ret = patch_t::Zero(npss, ntss);
     double raw_sum=0.0;
 

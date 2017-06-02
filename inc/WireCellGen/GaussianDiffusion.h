@@ -83,6 +83,8 @@ namespace WireCell {
 	    /// Call set_sampling() first.
 	    const patch_t& patch() const;
 
+            const std::vector<double> weights() const;
+
             /// Return the absolute time bin in the binning corresponding to column 0 of the patch.
             int toffset_bin() const { return m_toffset_bin; }
 
@@ -102,6 +104,8 @@ namespace WireCell {
 	    GausDesc m_time_desc, m_pitch_desc;
 
 	    patch_t m_patch;
+            std::vector<double> m_qweights;
+
             int m_toffset_bin;
             int m_poffset_bin;
 	};

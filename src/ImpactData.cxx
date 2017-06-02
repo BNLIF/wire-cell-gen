@@ -24,6 +24,16 @@ Waveform::compseq_t& Gen::ImpactData::spectrum() const
     return m_spectrum;
 }
 
+Waveform::compseq_t& Gen::ImpactData::weightform() const
+{
+    return m_weights;
+}
+
+Waveform::compseq_t& Gen::ImpactData::weight_spectrum() const
+{
+    return m_weight_spectrum;
+}
+
 void Gen::ImpactData::calculate_constant(int nticks) const
 {
     if (m_waveform.size() > 0) {
@@ -53,6 +63,7 @@ void Gen::ImpactData::calculate_constant(int nticks) const
     }
 
     m_spectrum = Waveform::dft(m_waveform);
+    m_weight_spectrum = Waveform::dft(m_weights);
 }
 
 void Gen::ImpactData::calculate_linear(int nticks) const
