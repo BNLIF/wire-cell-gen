@@ -24,7 +24,7 @@ Waveform::compseq_t& Gen::ImpactData::spectrum() const
     return m_spectrum;
 }
 
-Waveform::compseq_t& Gen::ImpactData::weightform() const
+Waveform::realseq_t& Gen::ImpactData::weightform() const
 {
     return m_weights;
 }

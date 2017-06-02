@@ -45,6 +45,11 @@ namespace WireCell {
              * normalized assuming integral of Gaussian over entire
              * domain is 1.0. */
 	    std::vector<double> binint(double start, double step, int nbins) const;
+
+            /** Integrate Gaussian diffusion with linear weighting 
+             *  to redistribute the charge to the two neartest impact positions
+             *  for linear interpolation of the field response */
+        std::vector<double> weight(double start, double step, int nbins, std::vector<double> pvec) const;
 	    
 	};
 

@@ -28,9 +28,9 @@ Gen::hyDrifter::hyDrifter(const std::string& anode_tn)
     , m_location(-1)            // cache
     , m_speed(-1)               // cache
     , m_input()
-    , m_eos(false)
     , m_fano(0.1)           // fano factor
     , m_recomb(0.7)         // recombination probability
+    , m_eos(false)
 {
 }
 

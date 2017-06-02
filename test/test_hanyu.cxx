@@ -88,8 +88,8 @@ int main(int argc, char *argv[])
     // for sim_wf fill one by one adjacent, otherwise a crash of memory
     int sim_wf_ind = 0; 
 
-    // number of wires for uvw
-    Int_t nwire[3]={2400, 2400, 3456};
+    // number of wires for uvw, configuration in .json
+    //Int_t nwire[3]={2400, 2400, 3456};
 
     // Y plane field response normalized to 1.6e-19C, preamp response output is 14 with input 1. Nothing else supposed in the scale. 
     double scale_factor = 2.4576e15/1000.; 
@@ -104,8 +104,6 @@ int main(int argc, char *argv[])
         }
     }
     // end
-
-    const char* uvw = "UVW";
 
     // 2D garfield wires are all parallel so we "lie" them into 3D
     // Angle is positive and same for U and V.
@@ -271,7 +269,7 @@ int main(int argc, char *argv[])
             // end, next step will cut off zero region
   
             auto mm = Waveform::edge(wave);
-            if (mm.first == wave.size()) { // all zero
+            if ((unsigned)mm.first == wave.size()) { // all zero
                 continue;
             }
 
