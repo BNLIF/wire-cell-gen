@@ -6,6 +6,9 @@
 #include "WireCellUtil/Persist.h"
 
 #include "WireCellUtil/NamedFactory.h"
+
+#include <iostream>             // debug
+
 WIRECELL_FACTORY(EmpiricalNoiseModel, WireCell::Gen::EmpiricalNoiseModel,
                  WireCell::IChannelSpectrum, WireCell::IConfigurable);
 
@@ -22,9 +25,10 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
     , m_period(period)
     , m_wlres(wire_length_scale)
     , m_anode_tn(anode_tn)
-    , m_amp_cache(4)    // fixme: hard-coded max number of wire planes
+    , m_amp_cache(4)
 {
 }
+
 
 Gen::EmpiricalNoiseModel::~EmpiricalNoiseModel()
 {
@@ -86,6 +90,8 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         nsptr->shaping = jentry["shaping"].asFloat(); 
         nsptr->wirelen = jentry["wirelen"].asFloat(); 
         nsptr->constant = jentry["const"].asFloat();
+
+        std::cerr << "loading: " << nsptr->plane << " " << nsptr->wirelen << std::endl;
 
         auto jfreqs = jentry["freqs"];
         const int nfreqs = jfreqs.size();

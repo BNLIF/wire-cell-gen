@@ -62,7 +62,7 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 
 Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 {
-    // fixme/todo:
+    // FIXME/TODO:
     // In here use the noise model to:
 
     // 1) get the amplitude spectrum.  Be careful to hold as reference to avoid copy
