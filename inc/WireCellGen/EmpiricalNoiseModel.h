@@ -28,8 +28,8 @@ namespace WireCell {
         class EmpiricalNoiseModel : public IChannelSpectrum , public IConfigurable {
         public:
             EmpiricalNoiseModel(const std::string& spectra_file = "",
-                                const int nyquist_nsamples = 10000/2, // assuming 10k samples 
-                                const double nyquist_frequency = 2.0*units::megahertz / 2.0,
+                                const int nsamples = 10000/2, // assuming 10k samples 
+                                const double period = 0.5*units::us,
                                 const double wire_length_scale = 1.0*units::cm,
                                 const std::string anode_tn = "AnodePlane");
 
@@ -45,14 +45,26 @@ namespace WireCell {
 
             // Local methods
 
-            // Resample the frequency space amplitude taken with the
-            // given sampling frequency parameters and return a new
-            // one that matches those for the class.
-            amplitude_t resample(double nyqfreq, const amplitude_t& amp) const;
+            // fixme: this should be factored out into wire-cell-util.
+            struct NoiseSpectrum {
+                int plane;      // plane identifier number
+                int nsamples;   // number of samples used in preparing spectrum
+                double period;  // sample period [time] used in preparing spectrum
+                double gain;    // amplifier gain [voltage/charge]
+                double shaping; // amplifier shaping time [time]
+                double wirelen; // total length of wire conductor [length]
+                double constant; // amplifier independent constant noise component [voltage/frequency]
+                std::vector<float> freqs; // the frequencies at which the spectrum is sampled
+                std::vector<float> amps;  // the amplitude [voltage/frequency] of the spectrum.
+            };
+
+            // Resample a NoiseSpectrum to match what the model was
+            // configured to provide.  This method modifies in place.
+            void resample(NoiseSpectrum& spectrum) const;
 
             // Return a new amplitude which is the interpolation
             // between those given in the spectra file.
-            amplitude_t interpolate(double wire_length) const;
+            amplitude_t interpolate(int plane, double wire_length) const;
 
 
         private:
@@ -60,16 +72,17 @@ namespace WireCell {
 
             std::string m_spectra_file;
             int m_nsamples;
-            double m_nyqfreq, m_wlres;
+            double m_period, m_wlres;
             std::string m_anode_tn;
             
-            // associate wire length and its noise amplitude spectrum 
-            typedef std::pair<double, amplitude_t> wire_amplitude_t;
-            std::vector<wire_amplitude_t> m_wire_amplitudes;
+
+            std::map<int, std::vector<NoiseSpectrum*> > m_spectral_data;
 
             // cache amplitudes to the nearest integral distance.
             mutable std::unordered_map<int, int> m_chid_to_intlen;
-            mutable std::unordered_map<int, amplitude_t> m_amp_cache;
+
+            typedef std::unordered_map<int, amplitude_t> len_amp_cache_t;
+            mutable std::vector<len_amp_cache_t> m_amp_cache;
 
         };
 
