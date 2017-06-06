@@ -12,7 +12,7 @@
 WIRECELL_FACTORY(EmpiricalNoiseModel, WireCell::Gen::EmpiricalNoiseModel,
                  WireCell::IChannelSpectrum, WireCell::IConfigurable);
 
-
+ 
 using namespace WireCell;
 
 Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
