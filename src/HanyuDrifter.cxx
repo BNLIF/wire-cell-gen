@@ -1,4 +1,4 @@
-#include "WireCellGen/hanyu_Drifter.h"
+#include "WireCellGen/HanyuDrifter.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/String.h"
