@@ -21,6 +21,7 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
                                               const double wire_length_scale,
 					      const double time_scale,
 					      const double gain_scale,
+					      const double freq_scale,
                                               const std::string anode_tn)
     : m_spectra_file(spectra_file)
     , m_nsamples(nsamples)
@@ -28,6 +29,7 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
     , m_wlres(wire_length_scale)
   , m_tres(time_scale)
   , m_gres(gain_scale)
+  , m_fres(freq_scale)
     , m_anode_tn(anode_tn)
     , m_amp_cache(4)
 {
@@ -49,6 +51,7 @@ WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
     cfg["wire_length_scale"] = m_wlres;    // 
     cfg["time_scale"] = m_tres;
     cfg["gain_scale"] = m_gres;
+    cfg["freq_scale"] = m_fres;
     cfg["anode"] = m_anode_tn;            // name of IAnodePlane component
 
     return cfg;
@@ -90,6 +93,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     m_wlres = get(cfg, "wire_length_scale", m_wlres);
     m_tres = get(cfg, "time_scale", m_tres);
     m_gres = get(cfg, "gain_scale", m_gres);
+    m_fres = get(cfg, "freq_scale", m_fres);
 
     // Load the data file assuming.  The file should be a list of
     // dictionaries matching the
@@ -116,15 +120,17 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         const int nfreqs = jfreqs.size();
         nsptr->freqs.resize(nfreqs, 0.0);
         for (int ind=0; ind<nfreqs; ++ind) {
-            nsptr->freqs[ind] = jfreqs[ind].asFloat();
+            nsptr->freqs[ind] = jfreqs[ind].asFloat() * m_fres;
 	    //std::cout << nsptr->freqs[ind] << " " << std::endl;
         }
         auto jamps = jentry["amps"];
         const int namps = jamps.size();
-        nsptr->amps.resize(namps, 0.0);
+        nsptr->amps.resize(namps+1, 0.0);
         for (int ind=0; ind<namps; ++ind) {
             nsptr->amps[ind] = jamps[ind].asFloat();
         }
+	// put the constant term at the end of the amplitude ... 
+	nsptr->amps[namps] = nsptr->constant;
 
         resample(*nsptr);
         m_spectral_data[nsptr->plane].push_back(nsptr); // assumes ordered by wire length!
@@ -168,16 +174,25 @@ IChannelSpectrum::amplitude_t Gen::EmpiricalNoiseModel::interpolate(int iplane, 
         const double mu = dist/delta;
 
         const int nsamp = lo->amps.size();
-        amplitude_t amp(nsamp+1);
+        amplitude_t amp(nsamp);
         for (int isamp=0; isamp<nsamp; ++isamp) { // regular amplitude ... 
             amp[isamp] = lo->amps[isamp]*(1-mu) + hi->amps[isamp]*mu;
         }
-	amp[nsamp] = lo->constant*(1-mu) + hi->constant*mu; // do the constant term ...
+	// amp[nsamp] = lo->constant*(1-mu) + hi->constant*mu; // do the constant term ...
         return amp;
     }
     // should not get here
     return amplitude_t();
 
+}
+
+const std::vector<float>& Gen::EmpiricalNoiseModel::freq() const
+{
+  // assume frequency is universal ... 
+  const int iplane = 0;
+  auto it = m_spectral_data.find(iplane);
+  const auto& spectra = it->second;
+  return spectra.front()->freqs;
 }
 
 const double Gen::EmpiricalNoiseModel::shaping_time(int chid) const

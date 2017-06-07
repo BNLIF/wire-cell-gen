@@ -58,6 +58,8 @@ int main(int argc, char* argv[])
         cerr << "ch:" << chid << " " << amp.size()
              << " tot=" << tot << " " << empnomo.gain(chid)/(units::mV/units::fC)
 	     << " " << empnomo.shaping_time(chid)/units::us
+	     << " " << empnomo.freq().size() 
+	     << " " << amp.size() 
              << endl;
 	//break;
     }

@@ -33,6 +33,7 @@ namespace WireCell {
                                 const double wire_length_scale = 1.0*units::cm,
 				const double time_scale = 1.0*units::ns,
 				const double gain_scale = 1.0*units::volt/units::eplus,
+				const double freq_scale = 1.0*units::megahertz,
                                 const std::string anode_tn = "AnodePlane");
 
             virtual ~EmpiricalNoiseModel();
@@ -41,7 +42,7 @@ namespace WireCell {
             virtual const amplitude_t& operator()(int chid) const;
 
 	    // get constant term
-	    // virtual const double constant(int chid) const;
+	    virtual const std::vector<float>& freq() const;
 	    // get gain 
 	    virtual const double gain(int chid) const;
 	    // get shaping time
@@ -83,7 +84,7 @@ namespace WireCell {
             std::string m_spectra_file;
             int m_nsamples;
 	    double m_period, m_wlres;
-            double m_tres, m_gres;
+            double m_tres, m_gres, m_fres;
 	    std::string m_anode_tn;
             
 
