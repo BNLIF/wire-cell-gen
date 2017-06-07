@@ -292,6 +292,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
 	comb_amp.at(i) *= ch_gain/db_gain;
       }
     }
+
     if (fabs(ch_shaping-db_shaping) > 0.01*ch_shaping){
       // scale the amplitude by different shaping time ...   
       int nconfig = ch_shaping/units::us/0.1;
