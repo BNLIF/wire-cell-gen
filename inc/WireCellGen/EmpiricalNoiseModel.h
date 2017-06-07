@@ -43,9 +43,9 @@ namespace WireCell {
 
 	    // get constant term
 	    virtual const std::vector<float>& freq() const;
-	    // get gain 
+	    // get json file gain 
 	    virtual const double gain(int chid) const;
-	    // get shaping time
+	    // get json file shaping time
 	    virtual const double shaping_time(int chid) const;
 	    
 
@@ -100,8 +100,9 @@ namespace WireCell {
             mutable std::vector<len_amp_cache_t> m_amp_cache;
 
 	    // need to convert the electronics response in here ... 
-	    typedef std::unordered_map<int, Waveform::complex_t> elec_resp_cache;
-
+	    Waveform::realseq_t m_elec_resp_freq;
+	    mutable std::unordered_map<int, Waveform::realseq_t> m_elec_resp_cache;
+	    mutable amplitude_t comb_amp;
         };
 
     }

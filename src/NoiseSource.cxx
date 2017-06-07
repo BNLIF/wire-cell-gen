@@ -67,9 +67,12 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 
     // 1) get the amplitude spectrum.  Be careful to hold as reference to avoid copy
 
-    // auto& spec = (*m_model)(channel_ident);
-
+  auto& spec = (*m_model)(channel_ident);
+  //  auto& freqs = m_model->freq();
+  std::cout << spec.size() << std::endl;
+  
     // 2) properly sample it
+  
     // 3) convert back to time domain (use function "idft()")
 
     // a dummy for now    
