@@ -19,17 +19,17 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
                                               const int nsamples,
                                               const double period,
                                               const double wire_length_scale,
-					      const double time_scale,
-					      const double gain_scale,
-					      const double freq_scale,
+					      // const double time_scale,
+					      // const double gain_scale,
+					      // const double freq_scale,
                                               const std::string anode_tn)
     : m_spectra_file(spectra_file)
     , m_nsamples(nsamples)
     , m_period(period)
     , m_wlres(wire_length_scale)
-  , m_tres(time_scale)
-  , m_gres(gain_scale)
-  , m_fres(freq_scale)
+    // , m_tres(time_scale)
+    // , m_gres(gain_scale)
+    // , m_fres(freq_scale)
     , m_anode_tn(anode_tn)
     , m_amp_cache(4)
 {
@@ -38,6 +38,17 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
 
 Gen::EmpiricalNoiseModel::~EmpiricalNoiseModel()
 {
+}
+
+void Gen::EmpiricalNoiseModel::gen_elec_resp_default(){
+  
+  double shaping[5]={1,1.1,2,2.2,3};
+  for (int i=0;i!=5;i++){
+    Response::ColdElec elec_resp(1, shaping[i]);
+    auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+    
+  }
+  //auto to_sig   =   to_ce.generate(WireCell::Waveform::Domain(0, m_nsamples*m_tick), m_nsamples);
 }
 
 WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
@@ -49,9 +60,9 @@ WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
     cfg["nsamples"] = m_nsamples; // number of samples up to Nyquist frequency
     cfg["period"] = m_period; 
     cfg["wire_length_scale"] = m_wlres;    // 
-    cfg["time_scale"] = m_tres;
-    cfg["gain_scale"] = m_gres;
-    cfg["freq_scale"] = m_fres;
+    // cfg["time_scale"] = m_tres;
+    // cfg["gain_scale"] = m_gres;
+    // cfg["freq_scale"] = m_fres;
     cfg["anode"] = m_anode_tn;            // name of IAnodePlane component
 
     return cfg;
@@ -91,9 +102,9 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     m_nsamples = get(cfg, "nsamples", m_nsamples);
     m_period = get(cfg, "period", m_period);
     m_wlres = get(cfg, "wire_length_scale", m_wlres);
-    m_tres = get(cfg, "time_scale", m_tres);
-    m_gres = get(cfg, "gain_scale", m_gres);
-    m_fres = get(cfg, "freq_scale", m_fres);
+    // m_tres = get(cfg, "time_scale", m_tres);
+    // m_gres = get(cfg, "gain_scale", m_gres);
+    // m_fres = get(cfg, "freq_scale", m_fres);
 
     // Load the data file assuming.  The file should be a list of
     // dictionaries matching the
@@ -108,10 +119,10 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
 
         nsptr->plane = jentry["plane"].asInt();
         nsptr->nsamples = jentry["nsamples"].asInt();
-        nsptr->period = jentry["period"].asFloat() * m_tres;  
-        nsptr->gain = jentry["gain"].asFloat() *m_gres;    
-        nsptr->shaping = jentry["shaping"].asFloat() * m_tres; 
-        nsptr->wirelen = jentry["wirelen"].asFloat() * m_wlres; 
+        nsptr->period = jentry["period"].asFloat();// * m_tres;  
+        nsptr->gain = jentry["gain"].asFloat();// *m_gres;    
+        nsptr->shaping = jentry["shaping"].asFloat();// * m_tres; 
+        nsptr->wirelen = jentry["wirelen"].asFloat();// * m_wlres; 
         nsptr->constant = jentry["const"].asFloat();
 
         std::cerr << "loading: " << nsptr->plane << " " << nsptr->wirelen/units::cm << " cm" << std::endl;
@@ -120,7 +131,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         const int nfreqs = jfreqs.size();
         nsptr->freqs.resize(nfreqs, 0.0);
         for (int ind=0; ind<nfreqs; ++ind) {
-            nsptr->freqs[ind] = jfreqs[ind].asFloat() * m_fres;
+	  nsptr->freqs[ind] = jfreqs[ind].asFloat();// * m_fres;
 	    //std::cout << nsptr->freqs[ind] << " " << std::endl;
         }
         auto jamps = jentry["amps"];
@@ -230,7 +241,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
 
 	// len is already in cm ... 
 	// cache every cm ...
-        ilen = int(len);
+        ilen = int(len/m_wlres);
         m_chid_to_intlen[chid] = ilen;
     }
     else {
