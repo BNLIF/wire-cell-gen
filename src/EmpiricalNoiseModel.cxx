@@ -50,14 +50,25 @@ WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
 
 void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
 {
+  // std::cout << spectrum.nsamples << " " << m_nsamples << " " << spectrum.period << " " <<
+  // m_period << std::endl;
+
     if (spectrum.nsamples == m_nsamples && spectrum.period == m_period) {
         return;
     }
     
-    ////////////////////////////////////////////////////////////
-    // FIXME/TODO: Now, resample and modify in place the spectrum to
-    // match nsamples and period.
-    ////////////////////////////////////////////////////////////
+    double scale = sqrt(m_nsamples/(spectrum.nsamples*1.0) * spectrum.period / (m_period*1.0));
+
+    spectrum.constant *= scale;
+
+    for (int ind = 0; ind!=spectrum.amps.size(); ind++){
+      spectrum.amps[ind] *= scale;
+    }
+
+    
+    //std::cout << spectrum.constant << " " << spectrum.amps[0] << std::endl;
+
+    
 
     return;
 }
@@ -98,6 +109,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         nsptr->freqs.resize(nfreqs, 0.0);
         for (int ind=0; ind<nfreqs; ++ind) {
             nsptr->freqs[ind] = jfreqs[ind].asFloat();
+	    //std::cout << nsptr->freqs[ind] << " " << std::endl;
         }
         auto jamps = jentry["amps"];
         const int namps = jamps.size();

@@ -58,6 +58,7 @@ int main(int argc, char* argv[])
         cerr << "ch:" << chid << " " << amp.size()
              << " tot=" << tot
              << endl;
+	//break;
     }
 
 
