@@ -46,6 +46,7 @@ Gen::EmpiricalNoiseModel::~EmpiricalNoiseModel()
 void Gen::EmpiricalNoiseModel::gen_elec_resp_default(){
   // double shaping[5]={1,1.1,2,2.2,3}; // us
   
+  // calculate the frequencies ... 
   m_elec_resp_freq.resize(m_nsamples,0);
   for (unsigned int i=0;i!=m_elec_resp_freq.size();i++){
     if (i<=m_elec_resp_freq.size()/2.){
@@ -97,17 +98,91 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
         return;
     }
     
+    // scale the amplitude ... 
     double scale = sqrt(m_nsamples/(spectrum.nsamples*1.0) * spectrum.period / (m_period*1.0));
     spectrum.constant *= scale;
     for (unsigned int ind = 0; ind!=spectrum.amps.size(); ind++){
       spectrum.amps[ind] *= scale;
     }
     
+    // interpolate ... 
     
-    //std::cout << spectrum.constant << " " << spectrum.amps[0] << std::endl;
+    amplitude_t temp_amplitudes(m_nsamples,0);
+    int count_low  = 0;
+    int count_high = 1;
+    float mu=0;
+    for (int i=0;i!=m_nsamples;i++){
+      double frequency = m_elec_resp_freq.at(i);
+      if (frequency <= spectrum.freqs[0]){
+	count_low = 0;
+     	count_high = 1;
+     	mu = 0;
+      }else if (frequency >= spectrum.freqs.back()){
+     	count_low = spectrum.freqs.size()-2;
+     	count_high = spectrum.freqs.size()-1;
+     	mu = 1;
+      }else{
+     	for (int j=0;j!=spectrum.freqs.size();j++){
+	  if (frequency>spectrum.freqs.at(j)){
+	    count_low = j;
+	    count_high = j+1;
+	  }else{
+	    break;
+	  }
+     	}
+     	mu = (frequency - spectrum.freqs.at(count_low)) / (spectrum.freqs.at(count_high)-spectrum.freqs.at(count_low));
+      }
+      
+      //std::cout << i << " " << frequency/units::megahertz << " " << spectrum.freqs.at(count_low)/units::megahertz << " " << spectrum.freqs.at(count_high)/units::megahertz << " " << mu << std::endl;
+      
+      temp_amplitudes.at(i) = (1-mu) * spectrum.amps[count_low] + mu * spectrum.amps[count_high];
+      
+    }
 
+    //std::cout << spectrum.amps.size() << std::endl;
+    spectrum.amps = temp_amplitudes;
+    spectrum.amps.push_back(spectrum.constant);
+    //std::cout << "a " << spectrum.amps.size() << std::endl;
+
+      // // now need interprte ... 
+      // 
+      // for (int i=0;i!=nbin;i++){
+      // 	float frequency = freqs.at(i);
+      // 	int counter_low = 0, counter_high = 1;
+      // 	float mu;
+      // 	if (frequency < m_elec_resp_freq.front()) {
+      // 	  counter_low = 0;
+      // 	  counter_high = 1;
+      // 	  
+      // 	}else if (frequency > m_elec_resp_freq.back()) {
+      // 	  counter_low = m_elec_resp_freq.size()-2;
+      // 	  counter_high = m_elec_resp_freq.size()-1;
+      // 	  mu = 1;
+      // 	}else{
+      // 	  for (unsigned int j=0;j<m_elec_resp_freq.size();j++){
+      // 	    if (frequency>m_elec_resp_freq.at(j)){
+      // 	      counter_low = j;
+      // 	      counter_high = j+1;
+      // 	    }else{
+      // 	      break;
+      // 	    }
+      // 	  }
+      // 	  
+      // 	  //std::cout << mu << std::endl;
+      // 	  //std::cout << frequency << " " << m_elec_resp_freq.at(counter_low) << " " << m_elec_resp_freq.at(counter_high) << std::endl;
+      // 	}
+	
+      // 	float scale1= (1-mu) * resp1->second.at(counter_low) + mu * resp1->second.at(counter_high);
+      // 	float scale2= (1-mu) * resp2->second.at(counter_low) + mu * resp2->second.at(counter_high); 
+      // 	if (scale2 !=0){
+      // 	  comb_amp.at(i) *= scale1/scale2;
+      // 	}else{
+      // 	  comb_amp.at(i) =0;
+      // 	}
     
-
+    
+    // std::cout << spectrum.constant << " " << spectrum.amps[0] << std::endl;
+    
     return;
 }
 
@@ -165,7 +240,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
             nsptr->amps[ind] = jamps[ind].asFloat();
         }
 	// put the constant term at the end of the amplitude ... 
-	nsptr->amps[namps] = nsptr->constant;
+	// nsptr->amps[namps] = nsptr->constant;
 
         resample(*nsptr);
         m_spectral_data[nsptr->plane].push_back(nsptr); // assumes ordered by wire length!
@@ -299,7 +374,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
 	comb_amp.at(i) *= ch_gain/db_gain;
       }
     }
-
+    
     if (fabs(ch_shaping-db_shaping) > 0.01*ch_shaping){
       // scale the amplitude by different shaping time ...   
       int nconfig = ch_shaping/units::us/0.1;
@@ -329,49 +404,14 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
 	m_elec_resp_cache[nconfig] = ele_resp_amp;
       }
       resp2 = m_elec_resp_cache.find(nconfig);
-
+      
       // std::cout << resp1->second.size() << " " << resp2->second.size() << std::endl;
-
-      // now need interprte ... 
-      std::vector<float> freqs = freq();
       for (int i=0;i!=nbin;i++){
-	float frequency = freqs.at(i);
-	int counter_low = 0, counter_high = 1;
-	float mu;
-	if (frequency < m_elec_resp_freq.front()) {
-	  counter_low = 0;
-	  counter_high = 1;
-	  mu = 0;
-	}else if (frequency > m_elec_resp_freq.back()) {
-	  counter_low = m_elec_resp_freq.size()-2;
-	  counter_high = m_elec_resp_freq.size()-1;
-	  mu = 1;
-	}else{
-	  for (unsigned int j=0;j<m_elec_resp_freq.size();j++){
-	    if (frequency>m_elec_resp_freq.at(j)){
-	      counter_low = j;
-	      counter_high = j+1;
-	    }else{
-	      break;
-	    }
-	  }
-	  mu = (frequency - m_elec_resp_freq.at(counter_low)) / (m_elec_resp_freq.at(counter_high)-m_elec_resp_freq.at(counter_low));
-	  //std::cout << mu << std::endl;
-	  //std::cout << frequency << " " << m_elec_resp_freq.at(counter_low) << " " << m_elec_resp_freq.at(counter_high) << std::endl;
-	}
-	
-	float scale1= (1-mu) * resp1->second.at(counter_low) + mu * resp1->second.at(counter_high);
-	float scale2= (1-mu) * resp2->second.at(counter_low) + mu * resp2->second.at(counter_high); 
-	if (scale2 !=0){
-	  comb_amp.at(i) *= scale1/scale2;
-	}else{
-	  comb_amp.at(i) =0;
-	}
-	//std::cout << mu << " " << scale1/scale2 << " " << resp1->second.at(0) << std::endl;
+	comb_amp.at(i) *= resp1->second.at(i)/resp2->second.at(i);
       }
       
+      //std::cout << mu << " " << scale1/scale2 << " " << resp1->second.at(0) << std::endl;
     }
-
     
     
     // add the constant terms ... 
@@ -379,6 +419,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
       comb_amp.at(i) = sqrt(pow(comb_amp.at(i),2) + pow(constant,2)); // units still in mV
       //std::cout << comb_amp.at(i)/units::mV << " " << constant / units::mV<< std::endl;
     }
+    std::cout << comb_amp.at(0)/units::mV << std::endl;
 
     
     // put stuff back in comb_amp ... 
