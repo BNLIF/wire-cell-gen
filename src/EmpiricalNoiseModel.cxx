@@ -33,6 +33,7 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
     , m_anode_tn(anode_tn)
     , m_amp_cache(4)
 {
+  gen_elec_resp_default();
 }
 
 
@@ -41,14 +42,31 @@ Gen::EmpiricalNoiseModel::~EmpiricalNoiseModel()
 }
 
 void Gen::EmpiricalNoiseModel::gen_elec_resp_default(){
+  // double shaping[5]={1,1.1,2,2.2,3}; // us
   
-  double shaping[5]={1,1.1,2,2.2,3};
-  for (int i=0;i!=5;i++){
-    Response::ColdElec elec_resp(1, shaping[i]);
-    auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
-    
+  m_elec_resp_freq.resize(m_nsamples,0);
+  for (int i=0;i!=m_elec_resp_freq.size();i++){
+    if (i<=m_elec_resp_freq.size()/2.){
+      m_elec_resp_freq.at(i) = i / (m_elec_resp_freq.size() *1.0) * 1./m_period ; // the second half is useless ... 
+    }else{
+      m_elec_resp_freq.at(i) = (m_elec_resp_freq.size()-i) / (m_elec_resp_freq.size() *1.0) * 1./m_period ; // the second half is useless ... 
+    }
+      
+    // if (m_elec_resp_freq.at(i) > 1./m_period / 2.){
+    //   m_elec_resp_freq.resize(i);
+    //   break;
+    // }
+    //std::cout << m_elec_resp_freq.at(i) / units::megahertz << std::endl;
   }
-  //auto to_sig   =   to_ce.generate(WireCell::Waveform::Domain(0, m_nsamples*m_tick), m_nsamples);
+
+  // for (int i=0;i!=5;i++){
+  //   Response::ColdElec elec_resp(1, shaping[i]); // default at 1 mV/fC
+  //   auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+  //   auto filt   = Waveform::dft(sig);
+  //   int nconfig = shaping[i]/ 0.1;
+  //   auto ele_resp_amp = Waveform::magnitude(filt);
+  //   m_elec_resp_cache[nconfig] = ele_resp_amp;
+  // }
 }
 
 WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
@@ -57,7 +75,7 @@ WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
 
     /// The file holding the spectral data
     cfg["spectra_file"] = m_spectra_file;
-    cfg["nsamples"] = m_nsamples; // number of samples up to Nyquist frequency
+    cfg["nsamples"] = m_nsamples;          // number of samples up to Nyquist frequency
     cfg["period"] = m_period; 
     cfg["wire_length_scale"] = m_wlres;    // 
     // cfg["time_scale"] = m_tres;
@@ -78,13 +96,11 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
     }
     
     double scale = sqrt(m_nsamples/(spectrum.nsamples*1.0) * spectrum.period / (m_period*1.0));
-
     spectrum.constant *= scale;
-
     for (int ind = 0; ind!=spectrum.amps.size(); ind++){
       spectrum.amps[ind] *= scale;
     }
-
+    
     
     //std::cout << spectrum.constant << " " << spectrum.amps[0] << std::endl;
 
@@ -126,6 +142,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         nsptr->constant = jentry["const"].asFloat();
 
         std::cerr << "loading: " << nsptr->plane << " " << nsptr->wirelen/units::cm << " cm" << std::endl;
+	//std::cout << nsptr->constant << std::endl;
 
         auto jfreqs = jentry["freqs"];
         const int nfreqs = jfreqs.size();
@@ -237,9 +254,6 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
         for (auto wire : wires) {
             len += ray_length(wire->ray());
         }
-
-
-	// len is already in cm ... 
 	// cache every cm ...
         ilen = int(len/m_wlres);
         m_chid_to_intlen[chid] = ilen;
@@ -248,18 +262,125 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
         ilen = chlen->second;
     }
 
+    // saved content
     auto wpid = m_anode->resolve(chid);
     const int iplane = wpid.index();
-
-    // find 
     auto& amp_cache = m_amp_cache[iplane];
     auto lenamp = amp_cache.find(ilen);
     if (lenamp == amp_cache.end()) {
       auto amp = interpolate(iplane, ilen*m_wlres); // interpolate ... 
-        amp_cache[ilen] = amp;
-        return amp_cache[ilen];
+      amp_cache[ilen] = amp;
     }
-    return lenamp->second;
+    lenamp = amp_cache.find(ilen);
+    
+    // prepare to scale ... 
+    float db_gain = gain(chid);
+    float db_shaping = shaping_time(chid);
+
+    // get channel gain
+    float ch_gain = 14 * units::mV/units::fC, ch_shaping = 2.2 * units::us; 
+    float constant = lenamp->second.back();
+    int nbin = lenamp->second.size()-1;
+
+    //    amplitude_t comb_amp;
+    comb_amp = lenamp->second;
+    comb_amp.pop_back();
+    
+    if (fabs(ch_gain - db_gain ) > 0.01 * ch_gain){
+      // scale the amplitude, not the constant term ...  
+      for (int i=0;i!=nbin;i++){
+	comb_amp.at(i) *= ch_gain/db_gain;
+      }
+    }
+    if (fabs(ch_shaping-db_shaping) > 0.01*ch_shaping){
+      // scale the amplitude by different shaping time ...   
+      int nconfig = ch_shaping/units::us/0.1;
+      auto resp1 = m_elec_resp_cache.find(nconfig);
+      if (resp1 == m_elec_resp_cache.end()){
+	Response::ColdElec elec_resp(10, ch_shaping); // default at 1 mV/fC
+	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+	auto filt   = Waveform::dft(sig);
+	auto ele_resp_amp = Waveform::magnitude(filt);
+
+	ele_resp_amp.resize(m_elec_resp_freq.size());
+	m_elec_resp_cache[nconfig] = ele_resp_amp;
+
+	//std::cout << sig.at(10) << " " << ch_shaping/units::us << std::endl;
+      }
+      resp1 = m_elec_resp_cache.find(nconfig);
+      
+      nconfig = db_shaping/units::us/0.1;
+      auto resp2 = m_elec_resp_cache.find(nconfig);
+      if (resp2 == m_elec_resp_cache.end()){
+	Response::ColdElec elec_resp(10, db_shaping); // default at 1 mV/fC
+	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+	auto filt   = Waveform::dft(sig);
+	auto ele_resp_amp = Waveform::magnitude(filt);
+
+	ele_resp_amp.resize(m_elec_resp_freq.size());
+	m_elec_resp_cache[nconfig] = ele_resp_amp;
+      }
+      resp2 = m_elec_resp_cache.find(nconfig);
+
+      // std::cout << resp1->second.size() << " " << resp2->second.size() << std::endl;
+
+      // now need interprte ... 
+      std::vector<float> freqs = freq();
+      for (int i=0;i!=nbin;i++){
+	float frequency = freqs.at(i);
+	int counter_low = 0, counter_high = 1;
+	float mu;
+	if (frequency < m_elec_resp_freq.front()) {
+	  counter_low = 0;
+	  counter_high = 1;
+	  mu = 0;
+	}else if (frequency > m_elec_resp_freq.back()) {
+	  counter_low = m_elec_resp_freq.size()-2;
+	  counter_high = m_elec_resp_freq.size()-1;
+	  mu = 1;
+	}else{
+	  for (int j=0;j<m_elec_resp_freq.size();j++){
+	    if (frequency>m_elec_resp_freq.at(j)){
+	      counter_low = j;
+	      counter_high = j+1;
+	    }else{
+	      break;
+	    }
+	  }
+	  mu = (frequency - m_elec_resp_freq.at(counter_low)) / (m_elec_resp_freq.at(counter_high)-m_elec_resp_freq.at(counter_low));
+	  //std::cout << mu << std::endl;
+	  //std::cout << frequency << " " << m_elec_resp_freq.at(counter_low) << " " << m_elec_resp_freq.at(counter_high) << std::endl;
+	}
+	
+	float scale1= (1-mu) * resp1->second.at(counter_low) + mu * resp1->second.at(counter_high);
+	float scale2= (1-mu) * resp2->second.at(counter_low) + mu * resp2->second.at(counter_high); 
+	if (scale2 !=0){
+	  comb_amp.at(i) *= scale1/scale2;
+	}else{
+	  comb_amp.at(i) =0;
+	}
+	//std::cout << mu << " " << scale1/scale2 << " " << resp1->second.at(0) << std::endl;
+      }
+      
+    }
+
+    
+    
+    // add the constant terms ... 
+    for (int i=0;i!=nbin;i++){
+      comb_amp.at(i) = sqrt(pow(comb_amp.at(i),2) + pow(constant,2)); // units still in mV
+      //std::cout << comb_amp.at(i)/units::mV << " " << constant / units::mV<< std::endl;
+    }
+
+    
+    // put stuff back in comb_amp ... 
+
+
+
+    return comb_amp;
+    // return amp_cache[ilen];
+    // }
+    // return lenamp->second;
 }
 
 
