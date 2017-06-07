@@ -31,12 +31,23 @@ namespace WireCell {
                                 const int nsamples = 10000/2, // assuming 10k samples 
                                 const double period = 0.5*units::us,
                                 const double wire_length_scale = 1.0*units::cm,
+				/* const double time_scale = 1.0*units::ns, */
+				/* const double gain_scale = 1.0*units::volt/units::eplus, */
+				/* const double freq_scale = 1.0*units::megahertz, */
                                 const std::string anode_tn = "AnodePlane");
 
             virtual ~EmpiricalNoiseModel();
 
             /// IChannelSpectrum
             virtual const amplitude_t& operator()(int chid) const;
+
+	    // get constant term
+	    virtual const std::vector<float>& freq() const;
+	    // get gain 
+	    virtual const double gain(int chid) const;
+	    // get shaping time
+	    virtual const double shaping_time(int chid) const;
+	    
 
             /// IConfigurable
             virtual void configure(const WireCell::Configuration& config);
@@ -62,6 +73,9 @@ namespace WireCell {
             // configured to provide.  This method modifies in place.
             void resample(NoiseSpectrum& spectrum) const;
 
+	    // generate the default electronics response function at 1 mV/fC gain
+	    void gen_elec_resp_default();
+
             // Return a new amplitude which is the interpolation
             // between those given in the spectra file.
             amplitude_t interpolate(int plane, double wire_length) const;
@@ -72,8 +86,9 @@ namespace WireCell {
 
             std::string m_spectra_file;
             int m_nsamples;
-            double m_period, m_wlres;
-            std::string m_anode_tn;
+	    double m_period, m_wlres;
+	    // double m_tres, m_gres, m_fres;
+	    std::string m_anode_tn;
             
 
             std::map<int, std::vector<NoiseSpectrum*> > m_spectral_data;
@@ -83,6 +98,9 @@ namespace WireCell {
 
             typedef std::unordered_map<int, amplitude_t> len_amp_cache_t;
             mutable std::vector<len_amp_cache_t> m_amp_cache;
+
+	    // need to convert the electronics response in here ... 
+	    typedef std::unordered_map<int, Waveform::complex_t> elec_resp_cache;
 
         };
 
