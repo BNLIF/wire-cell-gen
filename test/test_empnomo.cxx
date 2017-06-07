@@ -56,7 +56,8 @@ int main(int argc, char* argv[])
             tot += v;
         }
         cerr << "ch:" << chid << " " << amp.size()
-             << " tot=" << tot
+             << " tot=" << tot << " " << empnomo.gain(chid)/(units::mV/units::fC)
+	     << " " << empnomo.shaping_time(chid)/units::us
              << endl;
 	//break;
     }

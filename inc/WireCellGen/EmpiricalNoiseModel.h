@@ -31,12 +31,22 @@ namespace WireCell {
                                 const int nsamples = 10000/2, // assuming 10k samples 
                                 const double period = 0.5*units::us,
                                 const double wire_length_scale = 1.0*units::cm,
+				const double time_scale = 1.0*units::ns,
+				const double gain_scale = 1.0*units::volt/units::eplus,
                                 const std::string anode_tn = "AnodePlane");
 
             virtual ~EmpiricalNoiseModel();
 
             /// IChannelSpectrum
             virtual const amplitude_t& operator()(int chid) const;
+
+	    // get constant term
+	    // virtual const double constant(int chid) const;
+	    // get gain 
+	    virtual const double gain(int chid) const;
+	    // get shaping time
+	    virtual const double shaping_time(int chid) const;
+	    
 
             /// IConfigurable
             virtual void configure(const WireCell::Configuration& config);
@@ -72,8 +82,9 @@ namespace WireCell {
 
             std::string m_spectra_file;
             int m_nsamples;
-            double m_period, m_wlres;
-            std::string m_anode_tn;
+	    double m_period, m_wlres;
+            double m_tres, m_gres;
+	    std::string m_anode_tn;
             
 
             std::map<int, std::vector<NoiseSpectrum*> > m_spectral_data;
