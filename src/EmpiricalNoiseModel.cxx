@@ -22,7 +22,8 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
 					      // const double time_scale,
 					      // const double gain_scale,
 					      // const double freq_scale,
-                                              const std::string anode_tn)
+                                              const std::string anode_tn,
+                                              const std::string chanstat_tn)
     : m_spectra_file(spectra_file)
     , m_nsamples(nsamples)
     , m_period(period)
@@ -31,6 +32,7 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
     // , m_gres(gain_scale)
     // , m_fres(freq_scale)
     , m_anode_tn(anode_tn)
+    , m_chanstat_tn(chanstat_tn)
     , m_amp_cache(4)
 {
   gen_elec_resp_default();
@@ -45,7 +47,7 @@ void Gen::EmpiricalNoiseModel::gen_elec_resp_default(){
   // double shaping[5]={1,1.1,2,2.2,3}; // us
   
   m_elec_resp_freq.resize(m_nsamples,0);
-  for (int i=0;i!=m_elec_resp_freq.size();i++){
+  for (unsigned int i=0;i!=m_elec_resp_freq.size();i++){
     if (i<=m_elec_resp_freq.size()/2.){
       m_elec_resp_freq.at(i) = i / (m_elec_resp_freq.size() *1.0) * 1./m_period ; // the second half is useless ... 
     }else{
@@ -97,7 +99,7 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
     
     double scale = sqrt(m_nsamples/(spectrum.nsamples*1.0) * spectrum.period / (m_period*1.0));
     spectrum.constant *= scale;
-    for (int ind = 0; ind!=spectrum.amps.size(); ind++){
+    for (unsigned int ind = 0; ind!=spectrum.amps.size(); ind++){
       spectrum.amps[ind] *= scale;
     }
     
@@ -113,6 +115,11 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
 {
     m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    m_chanstat_tn = get(cfg, "chanstat", m_chanstat_tn);
+    m_chanstat = Factory::lookup_tn<IChannelStatus>(m_chanstat_tn);
+    // use like eg:
+    // double gain = m_chanstat->preamp_gain(chid);
+    // double shaping = m_chanstat->preamp_shaping(chid);
 
     m_spectra_file = get(cfg, "spectra_file", m_spectra_file);
     m_nsamples = get(cfg, "nsamples", m_nsamples);
@@ -340,7 +347,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
 	  counter_high = m_elec_resp_freq.size()-1;
 	  mu = 1;
 	}else{
-	  for (int j=0;j<m_elec_resp_freq.size();j++){
+	  for (unsigned int j=0;j<m_elec_resp_freq.size();j++){
 	    if (frequency>m_elec_resp_freq.at(j)){
 	      counter_low = j;
 	      counter_high = j+1;

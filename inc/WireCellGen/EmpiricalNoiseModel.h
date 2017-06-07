@@ -15,6 +15,7 @@
 #include "WireCellIface/IChannelSpectrum.h"
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/IChannelStatus.h"
 
 #include "WireCellUtil/Units.h"
 
@@ -34,7 +35,8 @@ namespace WireCell {
 				/* const double time_scale = 1.0*units::ns, */
 				/* const double gain_scale = 1.0*units::volt/units::eplus, */
 				/* const double freq_scale = 1.0*units::megahertz, */
-                                const std::string anode_tn = "AnodePlane");
+                                const std::string anode_tn = "AnodePlane",
+                                const std::string chanstat_tn = "StaticChannelStatus");
 
             virtual ~EmpiricalNoiseModel();
 
@@ -83,12 +85,13 @@ namespace WireCell {
 
         private:
             IAnodePlane::pointer m_anode;
+            IChannelStatus::pointer m_chanstat;
 
             std::string m_spectra_file;
             int m_nsamples;
 	    double m_period, m_wlres;
 	    // double m_tres, m_gres, m_fres;
-	    std::string m_anode_tn;
+	    std::string m_anode_tn, m_chanstat_tn;
             
 
             std::map<int, std::vector<NoiseSpectrum*> > m_spectral_data;

@@ -4,6 +4,7 @@
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IChannelStatus.h"
 
 #include <cstdlib>
 #include <string>
@@ -40,6 +41,24 @@ int main(int argc, char* argv[])
     acfg["wires"] = filenames[2];
     anodecfg->configure(acfg);
 
+    auto chanstat = Factory::lookup<IChannelStatus>("StaticChannelStatus");
+    auto chanstatcfg = Factory::lookup<IConfigurable>("StaticChannelStatus");
+    {
+        // In the real app this would be in a JSON or Jsonnet config
+        // file in wire-cell-cfg.  Here, just to avoid an external
+        // file we define a couple hard-coded deviant values somewhat
+        // laboriously
+        auto cfg = chanstatcfg->default_configuration();
+        cfg["deviants"] = Json::arrayValue;
+        cfg["deviants"][0]["chid"] = 100;
+        cfg["deviants"][0]["gain"] = 4.7*units::mV/units::fC;
+        cfg["deviants"][0]["shaping"] = 1.0*units::us;
+        cfg["deviants"][1]["chid"] = 200;
+        cfg["deviants"][1]["gain"] = 4.7*units::mV/units::fC;
+        cfg["deviants"][1]["shaping"] = 1.0*units::us;
+        chanstatcfg->configure(cfg);
+    }
+
     cerr << "Creating EmpiricalNoiseModel...\n";
     Gen::EmpiricalNoiseModel empnomo(filenames[0]);
     cerr << "Get default con fig\n";
@@ -63,7 +82,6 @@ int main(int argc, char* argv[])
              << endl;
 	break;
     }
-
 
 
     return 0;
