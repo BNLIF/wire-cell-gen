@@ -23,7 +23,7 @@ Gen::Ductor::Ductor()
     , m_fluctuate(true)
     , m_frame_count(0)
     , m_anode_tn("AnodePlane")
-
+    , m_eos(false)
 {
 }
 
@@ -126,8 +126,18 @@ void Gen::Ductor::process(output_queue& frames)
 }
 
 
+void Gen::Ductor::reset()
+{
+    m_depos.clear();
+    m_eos = false;
+}
+
 bool Gen::Ductor::operator()(const input_pointer& depo, output_queue& frames)
 {
+    if (m_eos) {
+	return false;
+    }
+
     double target_time = m_start_time + m_readout_time;
     if (!depo || depo->time() > target_time) {
         process(frames);
@@ -136,6 +146,11 @@ bool Gen::Ductor::operator()(const input_pointer& depo, output_queue& frames)
     if (depo) {
         m_depos.push_back(depo);
     }
+    else {
+        m_eos = true;
+    }
+
+
 
     return true;
 }

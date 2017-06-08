@@ -93,6 +93,7 @@ double Gen::Drifter::proper_time(IDepo::pointer depo)
 void Gen::Drifter::reset()
 {
     m_input.clear();
+    m_eos = false;
 }
 
 // fixme: this needs to be moved into a random number generator
