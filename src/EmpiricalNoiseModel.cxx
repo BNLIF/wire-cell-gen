@@ -122,7 +122,7 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
      	count_high = spectrum.freqs.size()-1;
      	mu = 1;
       }else{
-     	for (int j=0;j!=spectrum.freqs.size();j++){
+     	for (unsigned int j=0;j!=spectrum.freqs.size();j++){
 	  if (frequency>spectrum.freqs.at(j)){
 	    count_low = j;
 	    count_high = j+1;

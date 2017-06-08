@@ -77,7 +77,7 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
   // 2) properly sample it
   std::default_random_engine generator;
   std::normal_distribution<double> distribution(0,1);
-  for (int i=0;i<spec.size();i++){
+  for (unsigned int i=0;i<spec.size();i++){
     double amplitude = spec.at(i) * sqrt(2./3.1415926);// / units::mV;
     //std::cout << distribution(generator) * amplitude << " " << distribution(generator) * amplitude << std::endl;
     double real_part = distribution(generator) * amplitude;
