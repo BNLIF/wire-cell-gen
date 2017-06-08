@@ -257,12 +257,15 @@ IChannelSpectrum::amplitude_t Gen::EmpiricalNoiseModel::interpolate(int iplane, 
 
     const auto& spectra = it->second;
 
+    
+
     // Linearly interpolate spectral data to wire length.
 
     // Any wire lengths
     // which are out of bounds causes the nearest result to be
     // returned (flat extrapolation)
     const NoiseSpectrum* front = spectra.front();
+    //std::cout << wire_length << " " << front->wirelen << std::endl;
     if (wire_length <= front->wirelen) {
         return front->amps;
     }
@@ -337,12 +340,16 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
             len += ray_length(wire->ray());
         }
 	// cache every cm ...
-        ilen = int(len/m_wlres);
+	ilen = int(len/m_wlres);
+        // there might be  aproblem with the wire length's unit
+	//ilen = int(len);
         m_chid_to_intlen[chid] = ilen;
     }
     else {
         ilen = chlen->second;
     }
+    //std::cout << ilen*m_wlres << " " << ilen << " " << ilen*m_wlres/units::cm << std::endl;
+
 
     // saved content
     auto wpid = m_anode->resolve(chid);
@@ -360,7 +367,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
     double db_shaping = shaping_time(chid);
 
     // get channel gain
-    //float ch_gain = 14 * units::mV/units::fC, ch_shaping = 1.0 * units::us; 
+    //float ch_gain = 14 * units::mV/units::fC, ch_shaping = 2.0 * units::us; 
     
     double ch_gain = m_chanstat->preamp_gain(chid);
     double ch_shaping = m_chanstat->preamp_shaping(chid);
@@ -384,6 +391,8 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
       int nconfig = ch_shaping/units::us/0.1;
       auto resp1 = m_elec_resp_cache.find(nconfig);
       if (resp1 == m_elec_resp_cache.end()){
+	//	std::cout << "hh" << std::endl;
+
 	Response::ColdElec elec_resp(10, ch_shaping); // default at 1 mV/fC
 	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
 	auto filt   = Waveform::dft(sig);

@@ -59,6 +59,8 @@ int main(int argc, char* argv[])
     {
         auto cfg = noisemodelcfg->default_configuration();
         cfg["spectra_file"] = filenames[0];
+	// cfg["period"] = 1.0*units::us;
+	// cfg["nsamples"] = 5000;
         noisemodelcfg->configure(cfg);
     }
 

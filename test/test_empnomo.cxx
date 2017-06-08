@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 	     << " " << empnomo.freq().size() 
 	     << " " << amp.size() 
              << endl;
-	break;
+	//break;
     }
 
 
