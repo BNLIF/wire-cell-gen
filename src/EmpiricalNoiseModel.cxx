@@ -115,8 +115,19 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
 {
     m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    if (!m_anode) {
+        std::cerr << "Gen::EmpiricalNoiseModel: error: no such anode: " << m_anode_tn << std::endl;
+        // fixme: raise exception
+    }
+
     m_chanstat_tn = get(cfg, "chanstat", m_chanstat_tn);
     m_chanstat = Factory::lookup_tn<IChannelStatus>(m_chanstat_tn);
+    if (!m_chanstat) {
+        std::cerr << "Gen::EmpiricalNoiseModel: error: no such channel status: " << m_chanstat_tn << std::endl;
+        // fixme: raise exception
+    }
+
+
     // use like eg:
     // double gain = m_chanstat->preamp_gain(chid);
     // double shaping = m_chanstat->preamp_shaping(chid);
@@ -148,7 +159,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         nsptr->wirelen = jentry["wirelen"].asFloat();// * m_wlres; 
         nsptr->constant = jentry["const"].asFloat();
 
-        std::cerr << "loading: " << nsptr->plane << " " << nsptr->wirelen/units::cm << " cm" << std::endl;
+        //std::cerr << "loading: " << nsptr->plane << " " << nsptr->wirelen/units::cm << " cm" << std::endl;
 	//std::cout << nsptr->constant << std::endl;
 
         auto jfreqs = jentry["freqs"];
