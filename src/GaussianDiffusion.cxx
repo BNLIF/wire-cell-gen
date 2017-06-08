@@ -64,10 +64,6 @@ std::vector<double> Gen::GausDesc::binint(double start, double step, int nbins) 
 // Integral of charge spectrum <pvec> done by GausDesc::binint (do not do it again using Erf())
 std::vector<double> Gen::GausDesc::weight(double start, double step, int nbins, std::vector<double> pvec) const
 {
-    std::cerr<<"start: "<<start<<std::endl;
-    std::cerr<<"step: "<<step<<std::endl;
-    std::cerr<<"center:"<<center<<std::endl;
-
     std::vector<double> wt;
     if(!sigma){
         wt.resize(1, 0);
