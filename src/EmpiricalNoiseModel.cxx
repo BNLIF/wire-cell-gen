@@ -110,7 +110,7 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
     amplitude_t temp_amplitudes(m_nsamples,0);
     int count_low  = 0;
     int count_high = 1;
-    float mu=0;
+    double mu=0;
     for (int i=0;i!=m_nsamples;i++){
       double frequency = m_elec_resp_freq.at(i);
       if (frequency <= spectrum.freqs[0]){
@@ -356,12 +356,16 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
     lenamp = amp_cache.find(ilen);
     
     // prepare to scale ... 
-    float db_gain = gain(chid);
-    float db_shaping = shaping_time(chid);
+    double db_gain = gain(chid);
+    double db_shaping = shaping_time(chid);
 
     // get channel gain
-    float ch_gain = 14 * units::mV/units::fC, ch_shaping = 2.2 * units::us; 
-    float constant = lenamp->second.back();
+    //float ch_gain = 14 * units::mV/units::fC, ch_shaping = 1.0 * units::us; 
+    
+    double ch_gain = m_chanstat->preamp_gain(chid);
+    double ch_shaping = m_chanstat->preamp_shaping(chid);
+
+    double constant = lenamp->second.back();
     int nbin = lenamp->second.size()-1;
 
     //    amplitude_t comb_amp;
@@ -419,7 +423,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
       comb_amp.at(i) = sqrt(pow(comb_amp.at(i),2) + pow(constant,2)); // units still in mV
       //std::cout << comb_amp.at(i)/units::mV << " " << constant / units::mV<< std::endl;
     }
-    std::cout << comb_amp.at(0)/units::mV << std::endl;
+    //    std::cout << comb_amp.at(0)/units::mV << " " << ch_shaping/units::us << std::endl;
 
     
     // put stuff back in comb_amp ... 

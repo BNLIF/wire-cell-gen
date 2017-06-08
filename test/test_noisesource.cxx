@@ -97,7 +97,8 @@ int main(int argc, char* argv[])
         int chid = trace->channel();
         const auto& qvec = trace->charge();
         for (int ind=0; ind<nticks; ++ind) {
-            hist->Fill(ind+0.5, chid+0.5, qvec[ind]);
+	  // convert to ADC ... 
+	  hist->Fill(ind+0.5, chid+0.5, qvec[ind]/units::mV * 4096/2000.);
         }
     }
     em("filled histogram");
