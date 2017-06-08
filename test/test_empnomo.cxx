@@ -49,13 +49,13 @@ int main(int argc, char* argv[])
         // file we define a couple hard-coded deviant values somewhat
         // laboriously
         auto cfg = chanstatcfg->default_configuration();
-        cfg["deviants"] = Json::arrayValue;
-        cfg["deviants"][0]["chid"] = 100;
-        cfg["deviants"][0]["gain"] = 4.7*units::mV/units::fC;
-        cfg["deviants"][0]["shaping"] = 1.0*units::us;
-        cfg["deviants"][1]["chid"] = 200;
-        cfg["deviants"][1]["gain"] = 4.7*units::mV/units::fC;
-        cfg["deviants"][1]["shaping"] = 1.0*units::us;
+        // cfg["deviants"] = Json::arrayValue;
+        // cfg["deviants"][0]["chid"] = 100;
+        // cfg["deviants"][0]["gain"] = 4.7*units::mV/units::fC;
+        // cfg["deviants"][0]["shaping"] = 1.0*units::us;
+        // cfg["deviants"][1]["chid"] = 200;
+        // cfg["deviants"][1]["gain"] = 4.7*units::mV/units::fC;
+        // cfg["deviants"][1]["shaping"] = 1.0*units::us;
         chanstatcfg->configure(cfg);
     }
 
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 	     << " " << empnomo.freq().size() 
 	     << " " << amp.size() 
              << endl;
-	break;
+	//break;
     }
 
 

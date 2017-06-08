@@ -29,7 +29,7 @@ namespace WireCell {
         class EmpiricalNoiseModel : public IChannelSpectrum , public IConfigurable {
         public:
             EmpiricalNoiseModel(const std::string& spectra_file = "",
-                                const int nsamples = 10000/2, // assuming 10k samples 
+                                const int nsamples = 10000, // assuming 10k samples 
                                 const double period = 0.5*units::us,
                                 const double wire_length_scale = 1.0*units::cm,
 				/* const double time_scale = 1.0*units::ns, */

@@ -7,6 +7,7 @@
 #include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
+#include <random>
 
 WIRECELL_FACTORY(NoiseSource, WireCell::Gen::NoiseSource, WireCell::IFrameSource, WireCell::IConfigurable);
 
@@ -62,21 +63,43 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 
 Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 {
-    // FIXME/TODO:
-    // In here use the noise model to:
+  // In here use the noise model to:
 
-    // 1) get the amplitude spectrum.  Be careful to hold as reference to avoid copy
-
+  // 1) get the amplitude spectrum.  Be careful to hold as reference to avoid copy
   auto& spec = (*m_model)(channel_ident);
-  //  auto& freqs = m_model->freq();
-  std::cout << spec.size() << std::endl;
   
-    // 2) properly sample it
-  
-    // 3) convert back to time domain (use function "idft()")
+  //std::cout << spec.size() << " " << m_readout/m_tick << std::endl;
+  // for (int i=0;i!=spec.size();i++){
+  //   std::cout << i << " " << spec.at(i)/units::mV << std::endl;
+  // }
+  WireCell::Waveform::compseq_t noise_freq(spec.size(),0); 
+  //std::cout << medians_freq.size() << std::endl;
+  // 2) properly sample it
+  std::default_random_engine generator;
+  std::normal_distribution<double> distribution(0,1);
+  for (int i=0;i<spec.size();i++){
+    double amplitude = spec.at(i) * sqrt(2./3.1415926);// / units::mV;
+    //std::cout << distribution(generator) * amplitude << " " << distribution(generator) * amplitude << std::endl;
+    double real_part = distribution(generator) * amplitude;
+    double imag_part = distribution(generator) * amplitude;
+    // if (i<=spec.size()/2.){
+    noise_freq.at(i).real(real_part);
+    noise_freq.at(i).imag(imag_part);//= complex_t(real_part,imag_part);
+    // }else{
+    //   noise_freq.at(i) = std::conj(noise_freq.at(spec.size()-i));
+    // }
 
-    // a dummy for now    
-    return Waveform::realseq_t(m_readout/m_tick, 0.0*units::volt); 
+    // std::cout << " " << noise_freq.at(i) << " " << real_part << " " << imag_part << std::endl;
+  }
+  
+  
+  
+  // 3) convert back to time domain (use function "idft()")
+  Waveform::realseq_t noise_time = WireCell::Waveform::idft(noise_freq);
+
+  return noise_time;
+  // a dummy for now    
+  //return Waveform::realseq_t(m_readout/m_tick, 0.0*units::volt); 
 }
 
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
