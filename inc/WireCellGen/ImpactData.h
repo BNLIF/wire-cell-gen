@@ -52,15 +52,12 @@ namespace WireCell {
              * valid results.
             */
 
-            /** Calculate the impact data and treat the intra-impact
-             * charge distribution as constant. (All weights are 0.5).
+            /** Calculate the impact data assuming a weighting, 
+             * linear or constant (all = 0.5),
+             * and honoring the Gaussian distribution (diffusion).
              */
-	    void calculate_constant(int nticks) const;
+	    void calculate(int nticks) const;
 
-            /** Calculate the impact data assuming a linear weighting
-             * and honoring the Gaussian distribution.
-             */
-            void calculate_linear(int nticks) const;
 
 
 	    /**  Return the time domain waveform of drifted/diffused

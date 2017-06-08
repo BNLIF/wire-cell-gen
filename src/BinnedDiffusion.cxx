@@ -30,7 +30,8 @@ bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double si
         double nmin_sigma = time_desc.distance(m_tbins.min());
         double nmax_sigma = time_desc.distance(m_tbins.max());
 
-        if (nmin_sigma > m_nsigma || nmax_sigma < -m_nsigma) {
+        double eff_nsigma = sigma_time>0?m_nsigma:0;
+        if (nmin_sigma > eff_nsigma || nmax_sigma < -eff_nsigma) {
             std::cerr << "Depo too far away in time sigma: [" << nmin_sigma << "," << nmax_sigma << "]\n";
             return false;
         }
@@ -43,7 +44,8 @@ bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double si
         double nmin_sigma = pitch_desc.distance(ibins.min());
         double nmax_sigma = pitch_desc.distance(ibins.max());
 
-        if (nmin_sigma > m_nsigma || nmax_sigma < -m_nsigma) {
+        double eff_nsigma = sigma_pitch>0?m_nsigma:0;
+        if (nmin_sigma > eff_nsigma || nmax_sigma < -eff_nsigma) {
             std::cerr << "Depo too far away in pitch sigma: [" << nmin_sigma << "," << nmax_sigma << "]\n";
             return false;
         }
@@ -107,15 +109,10 @@ Gen::ImpactData::pointer Gen::BinnedDiffusion::impact_data(int bin) const
 
     // make sure all diffusions have been sampled 
     for (auto diff : idptr->diffusions()) {
-        diff->set_sampling(m_tbins, ib, m_nsigma, m_fluctuate);
+        diff->set_sampling(m_tbins, ib, m_nsigma, m_fluctuate, m_calcstrat);
     }
 
-    if (m_calcstrat == linear) {
-        idptr->calculate_linear(m_tbins.nbins());
-    }
-    else {
-        idptr->calculate_constant(m_tbins.nbins());
-    }
+    idptr->calculate(m_tbins.nbins());
     return idptr;
 }
 

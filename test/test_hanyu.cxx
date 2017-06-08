@@ -30,7 +30,7 @@
 using namespace WireCell;
 using namespace std;
 
-//#define TIME
+#define TIME
 
 int main(int argc, char *argv[])
 {
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     //Int_t nwire[3]={2400, 2400, 3456};
 
     // Y plane field response normalized to 1.6e-19C, preamp response output is 14 with input 1. Nothing else supposed in the scale. 
-    double scale_factor = 2.4576e15/1000.; 
+    double scale_factor = 1.0; 
     TH1F* hbaseline[3];
     Int_t baseline_val[3] = {1800, 1800, 500};
     for(Int_t i=0; i<3; i++)

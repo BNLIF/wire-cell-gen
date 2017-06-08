@@ -55,8 +55,8 @@ int main(const int argc, char *argv[])
     const double angle = 60*units::degree;
     const Vector upitch(0, -sin(angle),  cos(angle));
     const Vector uwire (0,  cos(angle),  sin(angle));
-    const Vector vpitch(0,  cos(angle),  sin(angle));
-    const Vector vwire (0, -sin(angle),  cos(angle));
+    const Vector vpitch(0,  sin(angle),  cos(angle));
+    const Vector vwire (0,  cos(angle), -sin(angle));
     const Vector wpitch(0, 0, 1);
     const Vector wwire (0, 1, 0);
     Response::Schema::lie(fr.planes[0], upitch, uwire);
@@ -108,7 +108,7 @@ int main(const int argc, char *argv[])
     const double charge_per_depo = -(dqdx)*stepsize;
 
     const double event_time = t0 + 1*units::ms;
-    const Point event_vertex(1*units::m, 0*units::m, 0*units::m);
+    const Point event_vertex(1*units::m, 0*units::m, 0.4*units::mm);
 
     // mostly "prolonged" track in X direction
     if (track_types.find("prolong") < track_types.size()) {
@@ -164,11 +164,11 @@ int main(const int argc, char *argv[])
                          Ray(event_vertex,
                              event_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
                          -1.0*units::eplus);
-        auto second_vertex = event_vertex + Vector(0,0, -1*units::mm);
-        tracks.add_track(event_time-0.5*units::us,
-                         Ray(second_vertex,
-                             second_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
-                         -1.0*units::eplus);
+     //   auto second_vertex = event_vertex + Vector(0,0, -3*units::mm);
+     //   tracks.add_track(event_time-10*units::us,
+       //                  Ray(second_vertex,
+         //                    second_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
+           //              -1.0*units::eplus);
     }
 
     em("made tracks");
@@ -190,7 +190,7 @@ int main(const int argc, char *argv[])
         Pimpos& pimpos = uvw_pimpos[plane_id];
 
         // add deposition to binned diffusion
-        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, fluctuate);
+        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, fluctuate/*, Gen::BinnedDiffusion::ImpactDataCalculationStrategy::constant*/); // default is linear interpolation
         em("made BinnedDiffusion");
         for (auto depo : depos) {
             auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
@@ -203,7 +203,7 @@ int main(const int argc, char *argv[])
             // Peak response of a delta function of current
             // integrating over time to one electron charge would give
             // 1eplus * 14mV/fC = 2.24 microvolt.  
-            const double sigma_time = 0.1*units::us; 
+            const double sigma_time = 0.03*units::us; 
             const double sigma_pitch = 0.1*units::mm;
 
             bool ok = bindiff.add(drifted, sigma_time, sigma_pitch);

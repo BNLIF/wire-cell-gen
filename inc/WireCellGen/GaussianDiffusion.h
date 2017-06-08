@@ -6,6 +6,7 @@
 #include "WireCellIface/IDepo.h"
 
 #include <memory>
+#include <iostream>
 
 namespace WireCell {
     namespace Gen {
@@ -31,11 +32,19 @@ namespace WireCell {
 
             /// Return the distance in number of sigma that x is from the center
             double distance(double x) {
-                return (x-center)/sigma;
+                double ret = 0.0;
+                if(!sigma){
+                    ret = x-center;   
+                }
+                else{
+                    ret = (x-center)/sigma;
+                }
+                return ret;
             }
 
             std::pair<double,double> sigma_range(double nsigma=3.0) {
                 return std::make_pair(center-sigma*nsigma, center+sigma*nsigma);
+
             }
 
             /** Sample the Gaussian at points on a uniform linear grid. */
@@ -69,10 +78,11 @@ namespace WireCell {
 	    /** Create a diffused deposition.
 	     */
 
-	    GaussianDiffusion(const IDepo::pointer& depo,
+           GaussianDiffusion(const IDepo::pointer& depo,
 			      const GausDesc& time_desc, 
 			      const GausDesc& pitch_desc);
 
+            
             /// This fills the patch once matching the given time and
             /// pitch binning. The patch is limited to the 2D sample
             /// points that cover the subdomain determined by the
@@ -80,8 +90,9 @@ namespace WireCell {
             /// total-charge preserving Poisson fluctuation is applied
             /// bin-by-bin to the sampling.  Each cell of the patch
             /// represents the 2D bin-centered sampling of the Gaussian.
+            
             void set_sampling(const Binning& tbin, const Binning& pbin,
-                              double nsigma = 3.0, bool fluctuate=false);
+                              double nsigma = 3.0, bool fluctuate=false, unsigned int weightstrat = 1/*see BinnedDiffusion ImpactDataCalculationStrategy*/);
 
 	    /// Get the diffusion patch as an array of N_pitch rows X
 	    /// N_time columns.  Index as patch(i_pitch, i_time).

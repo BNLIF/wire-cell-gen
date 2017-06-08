@@ -40,7 +40,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     // The BinnedDiffusion is indexed by absolute impact and the
     // PlaneImpactResponse relative impact.
     for (int imp = min_impact; imp <= max_impact; ++imp) {
-
+        
         // ImpactData
         auto id = m_bd.impact_data(imp);
         if (!id) {
@@ -51,9 +51,17 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
         }
         
         const Waveform::compseq_t& charge_spectrum = id->spectrum();
+        // for interpolation
+        const Waveform::compseq_t& weightcharge_spectrum = id->weight_spectrum();
+   
         if (charge_spectrum.empty()) {
             // should not happen
             std::cerr << "ImpactZipper: no charge for absolute impact number: " << imp << std::endl;
+            continue;
+        }
+        if (weightcharge_spectrum.empty()) {
+            // weight == 0, should not happen
+            std::cerr << "ImpactZipper: no weight charge for absolute impact number: " << imp << std::endl;
             continue;
         }
 
@@ -73,7 +81,19 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             Waveform::compseq_t rs2 = two_ir.second->spectrum();            
             
             for (int ind=0; ind < nsamples; ++ind) {
-                conv_spectrum[ind] = complex_one_half*(rs1[ind]+rs2[ind])*charge_spectrum[ind];
+                //conv_spectrum[ind] = complex_one_half*(rs1[ind]+rs2[ind])*charge_spectrum[ind];
+            
+                // linear interpolation: wQ*rs1 + (Q-wQ)*rs2
+                conv_spectrum[ind] = weightcharge_spectrum[ind]*rs1[ind]+(charge_spectrum[ind]-weightcharge_spectrum[ind])*rs2[ind];
+                /* debugging */
+                /* if(iwire == 1000 && ind>1000 && ind<2000) { */
+                /* std::cerr<<"rs1 spectrum: "<<imp<<"|"<<ind<<": "<<std::abs(rs1[ind])<<std::endl; */
+                /* std::cerr<<"rs2 spectrum: "<<imp<<"|"<<ind<<": "<<std::abs(rs2[ind])<<std::endl; */
+                /* std::cerr<<"rs1 charge spectrum "<<ind<<": "<<weightcharge_spectrum[ind]<<std::endl; */
+                /* std::cerr<<"rs2 charge spectrum "<<ind<<": "<<charge_spectrum[ind]-weightcharge_spectrum[ind]<<std::endl; */
+              /* //std::cerr<<"rs1 charge spectrum "<<ind<<": "<<complex_one_half*charge_spectrum[ind]<<std::endl; */
+              /* //std::cerr<<"rs2 charge spectrum "<<ind<<": "<<complex_one_half*charge_spectrum[ind]<<std::endl; */
+                /* } */
             }
         }
         else {
