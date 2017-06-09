@@ -15,13 +15,13 @@
 using namespace std;
 using namespace WireCell;
 
-double norm(std::complex<double> val) {
+double normalize(std::complex<double> val) {
     return std::abs(val);
 }
-double norm(double val) {
+double normalize(double val) {
     return val;
 }
-double norm(int val) {
+double normalize(int val) {
     return (double)val;
 }
 
@@ -29,7 +29,7 @@ template<typename NumType, int nbins=10, int nstars = 100, int ntries=100000>
 void histify(std::function<NumType()> gen) {
     int hist[nbins+2]={};
     for (int count=0; count<ntries; ++count) {
-        double num = norm(gen());
+        double num = normalize(gen());
         ++num;                  // shift to accommodate under/overflow
         if (num<=0) num=0;
         if (num>nbins) num = nbins+1;
