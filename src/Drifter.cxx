@@ -10,7 +10,6 @@
 
 #include <boost/range.hpp>
 
-#include <random>
 #include <sstream>
 #include <iostream>
 
@@ -19,8 +18,9 @@ WIRECELL_FACTORY(Drifter, WireCell::Gen::Drifter, WireCell::IDrifter, WireCell::
 using namespace std;
 using namespace WireCell;
 
-Gen::Drifter::Drifter(const std::string& anode_tn)
+Gen::Drifter::Drifter(const std::string& anode_tn, const std::string& rng_tn)
     : m_anode_tn(anode_tn)
+    , m_rng_tn(rng_tn)
     , m_DL(7.2 * units::centimeter2/units::second) // from arXiv:1508.07059v2
     , m_DT(12.0 * units::centimeter2/units::second) // ditto
     , m_lifetime(8*units::ms) // read off RHS of figure 6 in MICROBOONE-NOTE-1003-PUB
@@ -34,13 +34,20 @@ Gen::Drifter::Drifter(const std::string& anode_tn)
 
 void Gen::Drifter::configure(const WireCell::Configuration& cfg)
 {
+    m_rng_tn = get(cfg, "rng", m_rng_tn);
+    m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    if (!m_rng) {
+        cerr << "Gen::Drifter::configure: no such IRandom: " << m_rng_tn << endl;
+        // fixme: raise exception.
+    }
+
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     this->set_anode();
     m_DL = get<double>(cfg, "DL", m_DL);
     m_DT = get<double>(cfg, "DT", m_DT);
     m_lifetime = get<double>(cfg, "lifetime", m_lifetime);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
-    cerr << "Configured Gen::Drifter with anode plane " << m_anode_tn << endl;
+    cerr << "Gen::Drifter: configured with anode plane " << m_anode_tn << endl;
 }
 
 WireCell::Configuration Gen::Drifter::default_configuration() const
@@ -98,12 +105,12 @@ void Gen::Drifter::reset()
 
 // fixme: this needs to be moved into a random number generator
 // provided through an interface.  For now, just use std.
-int random_poisson(double mean)
-{
-    std::default_random_engine generator; // fixme: this should be a shared, long-lived object....
-    std::poisson_distribution<int> distribution(mean);
-    return distribution(generator);
-}
+// int random_poisson(double mean)
+// {
+//     std::default_random_engine generator; // fixme: this should be a shared, long-lived object....
+//     std::poisson_distribution<int> distribution(mean);
+//     return distribution(generator);
+// }
 
 IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
 {
@@ -126,7 +133,7 @@ IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
     double dQ = Qi * (1 - exp(-dt/m_lifetime));
     // how many electrons remain, with fluctuation.
     if (m_fluctuate) {
-        dQ = random_poisson(dQ);
+        dQ = m_rng->poisson(dQ)();
     }
     const double Qf = Qi - dQ;
 

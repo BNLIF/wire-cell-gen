@@ -24,6 +24,9 @@ namespace WireCell {
             /// Return a function sampling a binomial distribution
             virtual intfunc_t binomial(int max, double prob);
 
+            /// Return a function sampling a Poisson distribution. 
+            virtual intfunc_t poisson(double mean);
+
             /// Return a function sampling a normal distribution.
             virtual realfunc_t normal(double mean, double sigma);
 

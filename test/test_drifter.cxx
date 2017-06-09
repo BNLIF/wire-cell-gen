@@ -5,6 +5,9 @@
 #include "WireCellUtil/TimeKeeper.h"
 #include "WireCellUtil/BoundingBox.h"
 #include "WireCellUtil/RangeFeed.h"
+#include "WireCellUtil/PluginManager.h"
+#include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IConfigurable.h"
 
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -95,11 +98,12 @@ IDepo::vector test_drifted()
     IDepo::vector result, activity(*get_depos());
     activity.push_back(nullptr); // EOS
 
-    WireCell::Gen::Drifter drifter;
+    auto drifter = Factory::lookup<IDrifter>("Drifter");
+    Assert(drifter);
 
     WireCell::IDrifter::output_queue outq;
     for (auto in : activity) {
-	bool ok = drifter(in, outq);
+	bool ok = (*drifter)(in, outq);
 	Assert(ok);
 	for (auto d : outq) {
 	    result.push_back(d);
@@ -122,7 +126,32 @@ IDepo::vector test_drifted()
 
 int main(int argc, char* argv[])
 {
+    // Here we must explicitly handle some things that the wire-cell
+    // or other main application handles.
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
+    {
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = rngcfg->default_configuration();
+        rngcfg->configure(cfg);
+    }
+    {
+        auto anodecfg = Factory::lookup<IConfigurable>("AnodePlane");
+        auto cfg = anodecfg->default_configuration();
+        cfg["wires"] = "microboone-celltree-wires-v2.json.bz2";
+        cfg["fields"] = "garfield-1d-3planes-21wires-6impacts-v6.json.bz2";
+        anodecfg->configure(cfg);
+    }
+    {
+        auto dcfg = Factory::lookup<IConfigurable>("Drifter");
+        auto cfg = dcfg->default_configuration();
+        cfg["anode"] = "AnodePlane";
+        dcfg->configure(cfg);
+    }
+
+
     TimeKeeper tk("test_drifter");
+    
 
     test_sort();
     cout << tk("sorted") << endl;

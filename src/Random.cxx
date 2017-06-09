@@ -59,6 +59,11 @@ public:
         std::binomial_distribution<int> distribution(max, prob);
         return std::bind(distribution, m_rng);
     }
+    virtual intfunc_t poisson(double mean) {
+          std::poisson_distribution<int> distribution(mean);
+          return std::bind(distribution, m_rng);
+    }
+
     virtual realfunc_t normal(double mean, double sigma) {
         std::normal_distribution<double> distribution(mean, sigma);
         return std::bind(distribution, m_rng);
@@ -118,6 +123,10 @@ WireCell::Configuration Gen::Random::default_configuration() const
 IRandom::intfunc_t Gen::Random::binomial(int max, double prob)
 {
     return m_pimpl->binomial(max, prob);
+}
+IRandom::intfunc_t Gen::Random::poisson(double mean)
+{
+    return m_pimpl->poisson(mean);
 }
 
 IRandom::realfunc_t Gen::Random::normal(double mean, double sigma)
