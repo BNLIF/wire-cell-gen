@@ -64,34 +64,42 @@ void test_named(std::string generator_name)
         rndcfg->configure(cfg);
     }
 
+
+    // Beware, this is evil.  Busting out the shared pointer and using
+    // histify<> here is just to save some typing in this test.  It's
+    // okay in this test because histify<> goes not live longer than
+    // we hold the shared pointer.
+    IRandom* ptr = &(*rnd);
+
     cout << "binomial(9,0.5)\n";
-    histify(rnd->binomial(9,0.5));
+    histify<int>(std::bind(&IRandom::binomial, ptr, 9, 0.5));
         
     cout << "normal(5.0,3.0)\n";
-    histify(rnd->normal(5.0, 3.0));
+    histify<double>(std::bind(&IRandom::normal, ptr, 5.0,3.0));
 
     cout << "uniform(0.0,10.0)\n";
-    histify(rnd->uniform(0.0,10.0));
+    histify<double>(std::bind(&IRandom::uniform, ptr, 0.0, 10.0));
     cout << "uniform(2.0,5.0)\n";
-    histify(rnd->uniform(2.0,5.0));
+    histify<double>(std::bind(&IRandom::uniform, ptr, 2.0,5.0));
 
     cout << "range(0,10)\n";
-    histify(rnd->range(0,10));
+    histify<int>(std::bind(&IRandom::range, rnd, 0,10));
     cout << "range(2,4)\n";
-    histify(rnd->range(2,4));
-
-    cout << "binormal(2,1,2,1) (magnitude)\n";
-    histify(rnd->binormal(2,1,2,1));
+    histify<int>(std::bind(&IRandom::range, rnd, 2,4));
 }
 
 void test_repeat()
 {
     auto rnd = Factory::lookup<IRandom>("Random");
 
-    auto g1 = rnd->normal(0,1);
-    std::vector<double> v1{g1(), g1(), g1(), g1(), g1()};
-    auto g2 = rnd->normal(0,1);
-    std::vector<double> v2{g2(), g2(), g2(), g2(), g2()};
+    const int ntries = 5;
+    std::vector<double> v1(ntries), v2(ntries);
+    for (int ind=0; ind<ntries; ++ind) {
+        v1[ind] = rnd->normal(0,1);
+    }
+    for (int ind=0; ind<ntries; ++ind) {
+        v2[ind] = rnd->normal(0,1);
+    }
     for (size_t ind=0; ind<v1.size(); ++ind) {
         cerr << v1[ind] << "\t" << v2[ind] << endl;
         Assert(std::abs(v1[ind] - v2[ind]) > 1.0e-8);

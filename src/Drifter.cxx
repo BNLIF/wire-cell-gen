@@ -124,7 +124,7 @@ IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
     double dQ = Qi * (1 - exp(-dt/m_lifetime));
     // how many electrons remain, with fluctuation.
     if (m_fluctuate) {
-        dQ = m_rng->poisson(dQ)();
+        dQ = m_rng->poisson(dQ);
     }
     const double Qf = Qi - dQ;
 

@@ -135,9 +135,9 @@ IDepo::pointer Gen::hyDrifter::transport(IDepo::pointer depo)
         // use a binomial distribution with np = Qi, 1-p = m_fano
         // this approximates a Gaussian distribution and has a physical limit >0
         //double Qi2 = random_binomial((int)Qi/(1-m_fano), 1-m_fano);
-        double Qi2 = m_rng->binomial((int)Qi/(1-m_fano), 1-m_fano)();
+        double Qi2 = m_rng->binomial((int)Qi/(1-m_fano), 1-m_fano);
         // binomial distribution
-        dQ = m_rng->binomial((int)Qi2, recombprob*absorbprob)();
+        dQ = m_rng->binomial((int)Qi2, recombprob*absorbprob);
     }
     const double Qf = Qi - dQ;
 

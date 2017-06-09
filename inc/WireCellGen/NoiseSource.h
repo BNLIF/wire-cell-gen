@@ -39,7 +39,7 @@ namespace WireCell {
             virtual Waveform::realseq_t waveform(int channel_ident);
 
         private:
-            IRandom::realfunc_t m_gaus;
+            IRandom::pointer m_rng;
             IAnodePlane::pointer m_anode;
             IChannelSpectrum::pointer m_model;
             double m_time, m_readout, m_tick;

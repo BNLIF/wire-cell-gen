@@ -47,12 +47,11 @@ WireCell::Configuration Gen::NoiseSource::default_configuration() const
 void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 {
     m_rng_tn = get(cfg, "rng", m_rng_tn);
-    auto rng = Factory::lookup_tn<IRandom>(m_rng_tn);
-    if (!rng) {
+    m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    if (!m_rng) {
         cerr << "Gen::NoiseSource: failed to get IRandom: \"" << m_rng_tn << "\"\n";
         return;
     }
-    m_gaus = rng->normal(0.0, 1.0);
 
     m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
@@ -87,8 +86,8 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
   for (unsigned int i=0;i<spec.size();i++){
     double amplitude = spec.at(i) * sqrt(2./3.1415926);// / units::mV;
     //std::cout << distribution(generator) * amplitude << " " << distribution(generator) * amplitude << std::endl;
-    double real_part = m_gaus() * amplitude;
-    double imag_part = m_gaus() * amplitude;
+    double real_part = m_rng->normal(0,1) * amplitude;
+    double imag_part = m_rng->normal(0,1) * amplitude;
     // if (i<=spec.size()/2.){
     noise_freq.at(i).real(real_part);
     noise_freq.at(i).imag(imag_part);//= complex_t(real_part,imag_part);
