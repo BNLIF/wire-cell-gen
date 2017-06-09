@@ -15,6 +15,8 @@
 
 #include "WireCellUtil/NamedFactory.h"
 
+#include <random>
+
 WIRECELL_FACTORY(Random, WireCell::Gen::Random, WireCell::IRandom, WireCell::IConfigurable);
 
 using namespace WireCell;
@@ -48,7 +50,10 @@ template<typename URNG>
 class RandomT : public IRandom {
     URNG m_rng;
 public:
-    RandomT(std::seed_seq seeds) : m_rng(seeds){};
+    RandomT(std::vector<unsigned int> seeds) {
+        std::seed_seq seed(seeds.begin(), seeds.end());
+        m_rng.seed(seed);
+    }
 
     virtual intfunc_t binomial(int max, double prob) {
         std::binomial_distribution<int> distribution(max, prob);
@@ -86,16 +91,15 @@ void Gen::Random::configure(const WireCell::Configuration& cfg)
     if (m_pimpl) {
         delete m_pimpl;
     }
-    std::seed_seq seeds(m_seeds.begin(), m_seeds.end());
     if (gen == "default") {
-        m_pimpl = new RandomT<std::default_random_engine>(seeds);
+        m_pimpl = new RandomT<std::default_random_engine>(m_seeds);
     }
     else if (gen == "twister") {
-        m_pimpl = new RandomT<std::mt19937>(seeds);
+        m_pimpl = new RandomT<std::mt19937>(m_seeds);
     }
     else {
         std::cerr << "Gen::Random::configure: warning: unknown random engine: \"" << gen << "\" using default\n";
-        m_pimpl = new RandomT<std::default_random_engine>(seeds);
+        m_pimpl = new RandomT<std::default_random_engine>(m_seeds);
     }
 }
 
