@@ -10,6 +10,11 @@
 #include "WireCellGen/BinnedDiffusion.h"
 #include "WireCellGen/ImpactZipper.h"
 
+#include "WireCellUtil/PluginManager.h"
+#include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IRandom.h"
+#include "WireCellIface/IConfigurable.h"
+
 #include "TFile.h"
 #include "TH2F.h"
 
@@ -22,6 +27,15 @@ using namespace WireCell;
 
 int main(int argc, char *argv[])
 {
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
+    {
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = rngcfg->default_configuration();
+        rngcfg->configure(cfg);
+    }
+
+
     if (argc<4) {
         std::cerr << "usage: test_depos2waves <cfg.json> <garfield.json[.bz2]> <output.root>" << std::endl;
         return 1;
@@ -109,6 +123,11 @@ int main(int argc, char *argv[])
         std::cerr << "drifted: " << drifted->pos()/units::mm << " mm @ " << drifted->time()/units::ms << " s\n";
     }
 
+    const bool fluctuate = convert<bool>(cfg["fluctuate"]);
+    IRandom::pointer rng = nullptr;
+    if (fluctuate) {
+        rng = Factory::lookup<IRandom>("Random");
+    }
     // final drift sim
     for (int iplane=0; iplane<3; ++iplane) {
         auto& pr = fr.planes[iplane];
@@ -119,7 +138,6 @@ int main(int argc, char *argv[])
         const int nwires = convert<int>(cfg["nwires"][iplane]);
         const double halfwireextent = wire_pitch * (nwires/2);
         const double ndiffision_sigma = convert<double>(cfg["nsigma"]);
-        const bool fluctuate = convert<bool>(cfg["fluctuate"]);
 
         Pimpos pimpos(nwires, -halfwireextent, halfwireextent,
                       uvw_wire[iplane], uvw_pitch[iplane],
@@ -129,7 +147,7 @@ int main(int argc, char *argv[])
                   << " half extent:" << halfwireextent
                   << " nimpacts/region: " << nregion_bins << std::endl;
         
-        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, fluctuate);
+        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, rng);
         for (auto depo : drifted_depos) {
             bindiff.add(depo, depo->extent_long() / drift_speed, depo->extent_tran());
         }

@@ -35,8 +35,8 @@ namespace WireCell {
 	       - nsigma :: number of sigma the 2D (transverse X
                  longitudinal) Gaussian extends.
               
-	       - fluctuate :: set to true if charge-preserving Poisson
-                 fluctuations are applied.
+	       - fluctuate :: set to an IRandom if charge-preserving
+                 Poisson fluctuations are to be applied.
 
                - calcstrat :: set a calculation strategy that gives
                  how the microscopic distribution of charge between
@@ -48,7 +48,7 @@ namespace WireCell {
             enum ImpactDataCalculationStrategy { constant=1, linear=2 };
 
 	    BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
-			    double nsigma=3.0, bool fluctuate=false,
+			    double nsigma=3.0, IRandom::pointer fluctuate=nullptr,
                             ImpactDataCalculationStrategy calcstrat = constant);
 
             const Pimpos& pimpos() const { return m_pimpos; }
@@ -97,7 +97,7 @@ namespace WireCell {
             const Binning& m_tbins;
 
 	    double m_nsigma;
-	    bool m_fluctuate;
+            IRandom::pointer m_fluctuate;
             ImpactDataCalculationStrategy m_calcstrat;
 
 	    // current window set by user.

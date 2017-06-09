@@ -16,13 +16,14 @@ using namespace std;
 using namespace WireCell;
 
 Gen::Ductor::Ductor()
-    : m_start_time(0.0*units::ns)
+    : m_anode_tn("AnodePlane")
+    , m_rng_tn("Random")
+    , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
     , m_drift_speed(1.0*units::mm/units::us)
     , m_nsigma(3.0)
     , m_fluctuate(true)
     , m_frame_count(0)
-    , m_anode_tn("AnodePlane")
     , m_eos(false)
 {
 }
@@ -51,6 +52,7 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
 
     /// Name of component providing the anode plane.
     put(cfg, "anode", m_anode_tn);
+    put(cfg, "rng", m_rng_tn);
 
     return cfg;
 }
@@ -66,6 +68,12 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
+    m_rng = nullptr;
+    if (m_fluctuate) {
+        m_rng_tn = get(cfg, "rng", m_rng_tn);
+        m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    }
+
     m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
     m_start_time = get<double>(cfg, "start_time", m_start_time);
     m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
@@ -90,7 +98,7 @@ void Gen::Ductor::process(output_queue& frames)
                 tick = tbins.binsize();
             }
 
-            Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_fluctuate);
+            Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_rng);
             for (auto depo : m_depos) {
                 bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
             }

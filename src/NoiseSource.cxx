@@ -7,20 +7,20 @@
 #include "WireCellUtil/NamedFactory.h"
 
 #include <iostream>
-#include <random>
 
 WIRECELL_FACTORY(NoiseSource, WireCell::Gen::NoiseSource, WireCell::IFrameSource, WireCell::IConfigurable);
 
 using namespace std;
 using namespace WireCell;
 
-Gen::NoiseSource::NoiseSource(const std::string& model, const std::string& anode)
+Gen::NoiseSource::NoiseSource(const std::string& model, const std::string& anode, const std::string& rng)
     : m_time(0.0*units::ns)
     , m_readout(5.0*units::ms)
     , m_tick(0.5*units::us)
     , m_frame_count(0)
     , m_anode_tn(anode)
     , m_model_tn(model)
+    , m_rng_tn(rng)
 {
 }
 
@@ -39,12 +39,21 @@ WireCell::Configuration Gen::NoiseSource::default_configuration() const
 
     cfg["anode"] = m_anode_tn;
     cfg["model"] = m_model_tn;
+    cfg["rng"] = m_rng_tn;
 
     return cfg;
 }
 
 void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 {
+    m_rng_tn = get(cfg, "rng", m_rng_tn);
+    auto rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    if (!rng) {
+        cerr << "Gen::NoiseSource: failed to get IRandom: \"" << m_rng_tn << "\"\n";
+        return;
+    }
+    m_gaus = rng->normal(0.0, 1.0);
+
     m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
@@ -75,13 +84,11 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
   WireCell::Waveform::compseq_t noise_freq(spec.size(),0); 
   //std::cout << medians_freq.size() << std::endl;
   // 2) properly sample it
-  std::default_random_engine generator;
-  std::normal_distribution<double> distribution(0,1);
   for (unsigned int i=0;i<spec.size();i++){
     double amplitude = spec.at(i) * sqrt(2./3.1415926);// / units::mV;
     //std::cout << distribution(generator) * amplitude << " " << distribution(generator) * amplitude << std::endl;
-    double real_part = distribution(generator) * amplitude;
-    double imag_part = distribution(generator) * amplitude;
+    double real_part = m_gaus() * amplitude;
+    double imag_part = m_gaus() * amplitude;
     // if (i<=spec.size()/2.){
     noise_freq.at(i).real(real_part);
     noise_freq.at(i).imag(imag_part);//= complex_t(real_part,imag_part);

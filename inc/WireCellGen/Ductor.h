@@ -8,6 +8,7 @@
 #include "WireCellIface/IDuctor.h"
 
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/IRandom.h"
 
 namespace WireCell {
     namespace Gen {
@@ -29,7 +30,12 @@ namespace WireCell {
 
         private:
 
+            // The "Type:Name" of the IAnodePlane (default is "AnodePlane")
+            std::string m_anode_tn;
+            std::string m_rng_tn;
+
             IAnodePlane::pointer m_anode;
+            IRandom::pointer m_rng;
             IDepo::vector m_depos;
 
             double m_start_time;
@@ -41,10 +47,8 @@ namespace WireCell {
             int m_frame_count;
             bool m_eos;
 
-            // The "Type:Name" of the IAnodePlane (default is "AnodePlane")
-            std::string m_anode_tn;
-
             void process(output_queue& frames);
+
 
         };
     }

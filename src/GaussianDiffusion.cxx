@@ -1,6 +1,5 @@
 #include "WireCellGen/GaussianDiffusion.h"
 
-#include <random>
 #include <iostream>		// debugging
 
 using namespace WireCell;
@@ -124,7 +123,9 @@ Gen::GaussianDiffusion::GaussianDiffusion(const IDepo::pointer& depo,
 
 void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time tick binning
                                           const Binning& pbin, // overall impact position binning
-                                          double nsigma, bool fluctuate, unsigned int weightstrat)
+                                          double nsigma,
+                                          IRandom::pointer fluctuate,
+                                          unsigned int weightstrat)
 {
     if (m_patch.size() > 0) {
         return;
@@ -187,7 +188,6 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     double fluc_sum = 0;
     if (fluctuate) {
         double unfluc_sum = 0;
-	std::default_random_engine generator;
 
 	for (size_t ip = 0; ip < npss; ++ip) {
 	    for (size_t it = 0; it < ntss; ++it) {
@@ -197,8 +197,8 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
         // but n_i, n_j has covariance -n_tot * p_i * p_j
         // normalize later to approximate this multinomial distribution (how precise?)
         // how precise? better than poisson and 10000 total charge corresponds to a <1% level error.
-		std::binomial_distribution<int> binomial((int)m_deposition->charge(), oldval/m_deposition->charge());
-		float nelectrons = binomial(generator);
+                auto bnf = fluctuate->binomial((int)m_deposition->charge(), oldval/m_deposition->charge());
+                float nelectrons = bnf();
 		fluc_sum += nelectrons;
 		ret(ip,it) = nelectrons;
 	    }

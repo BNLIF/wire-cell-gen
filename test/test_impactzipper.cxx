@@ -7,6 +7,11 @@
 #include "WireCellUtil/Binning.h"
 #include "WireCellUtil/Testing.h"
 
+#include "WireCellUtil/PluginManager.h"
+#include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IRandom.h"
+#include "WireCellIface/IConfigurable.h"
+
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TLine.h"
@@ -22,6 +27,14 @@ using namespace std;
 
 int main(const int argc, char *argv[])
 {
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
+    {
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = rngcfg->default_configuration();
+        rngcfg->configure(cfg);
+    }
+
     string track_types = "point";
     if (argc > 1) {
         track_types = argv[1];
@@ -185,12 +198,19 @@ int main(const int argc, char *argv[])
     //canvas->Print("test_impactzipper.pdf[","pdf");
 
 
+    
+
+    IRandom::pointer rng = nullptr;
+    if (fluctuate) {
+        rng = Factory::lookup<IRandom>("Random");
+    }
+
     for (int plane_id = 0; plane_id < 3; ++plane_id) {
         em("start loop over planes");
         Pimpos& pimpos = uvw_pimpos[plane_id];
 
         // add deposition to binned diffusion
-        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, fluctuate/*, Gen::BinnedDiffusion::ImpactDataCalculationStrategy::constant*/); // default is linear interpolation
+        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, rng/*, Gen::BinnedDiffusion::ImpactDataCalculationStrategy::constant*/); // default is linear interpolation
         em("made BinnedDiffusion");
         for (auto depo : depos) {
             auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);

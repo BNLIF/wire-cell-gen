@@ -38,7 +38,6 @@ void Gen::Drifter::configure(const WireCell::Configuration& cfg)
     m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
     if (!m_rng) {
         cerr << "Gen::Drifter::configure: no such IRandom: " << m_rng_tn << endl;
-        // fixme: raise exception.
     }
 
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
@@ -103,14 +102,6 @@ void Gen::Drifter::reset()
     m_eos = false;
 }
 
-// fixme: this needs to be moved into a random number generator
-// provided through an interface.  For now, just use std.
-// int random_poisson(double mean)
-// {
-//     std::default_random_engine generator; // fixme: this should be a shared, long-lived object....
-//     std::poisson_distribution<int> distribution(mean);
-//     return distribution(generator);
-// }
 
 IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
 {

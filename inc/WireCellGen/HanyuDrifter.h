@@ -5,6 +5,7 @@
 
 #include "WireCellIface/IDrifter.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellIface/IRandom.h"
 #include "WireCellUtil/Units.h"
 
 #include <deque>
@@ -23,7 +24,9 @@ namespace WireCell {
          */
         class hyDrifter : public IDrifter, public IConfigurable {
         public:
-            hyDrifter(const std::string& anode_plane_component="");
+            hyDrifter(const std::string& anode_plane_component="",
+                      const std::string& rng_tn = "Random");
+                      
 
             /// WireCell::IDrifter interface.
             virtual void reset();
@@ -45,6 +48,7 @@ namespace WireCell {
         private:
 
             std::string m_anode_tn;
+            std::string m_rng_tn;
 
             // Longitudinal and Transverse coefficients of diffusion
             // in units of [length^2]/[time].
@@ -75,6 +79,7 @@ namespace WireCell {
             void set_anode();
 
 
+            IRandom::pointer m_rng;
         };
 
     }

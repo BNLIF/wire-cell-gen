@@ -12,6 +12,8 @@
 #include "WireCellUtil/Binning.h"
 #include "WireCellUtil/Testing.h"
 
+#include "WireCellIface/IRandom.h"
+
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TLine.h"
@@ -77,7 +79,7 @@ int main(const int argc, char *argv[])
     Point field_origin(100*units::mm, 0, 0);
     const double drift_speed = 1.0*units::mm/units::us;
     const double nsigma = 3.0;
-    bool fluctuate = false;
+    IRandom::pointer fluctuate = nullptr;
     /// Time/Pitch Gaussian
     const double sigma_time = 0.0*units::us;
     const double sigma_pitch = 0.3*units::mm;

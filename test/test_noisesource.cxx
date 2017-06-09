@@ -6,6 +6,7 @@
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IRandom.h"
 #include "WireCellIface/IChannelSpectrum.h"
 #include "WireCellIface/IFrameSource.h"
 
@@ -43,38 +44,42 @@ int main(int argc, char* argv[])
     
     ExecMon em;
 
-    // In the real WCT this is done by wire-cell and driven by user
-    // configuration.  
-    auto anode = Factory::lookup<IAnodePlane>("AnodePlane");
-    auto anodecfg = Factory::lookup<IConfigurable>("AnodePlane");
+    // In a real WCT application all this configuration is done by
+    // wire-cell (or hosting application) and driven by user
+    // configuration files.  Here we have to expose some tedium.
     {
+        auto rng = Factory::lookup<IRandom>("Random");
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        rngcfg->configure(rngcfg->default_configuration());
+    }
+    {
+        auto anodecfg = Factory::lookup<IConfigurable>("AnodePlane");
         auto cfg = anodecfg->default_configuration();
         cfg["fields"] = filenames[1];
         cfg["wires"] = filenames[2];
         anodecfg->configure(cfg);
     }
-
-    auto noisemodel = Factory::lookup<IChannelSpectrum>("EmpiricalNoiseModel");
-    auto noisemodelcfg = Factory::lookup<IConfigurable>("EmpiricalNoiseModel");
     {
+        auto noisemodelcfg = Factory::lookup<IConfigurable>("EmpiricalNoiseModel");
         auto cfg = noisemodelcfg->default_configuration();
         cfg["spectra_file"] = filenames[0];
 	// cfg["period"] = 1.0*units::us;
 	// cfg["nsamples"] = 5000;
         noisemodelcfg->configure(cfg);
     }
-
-    auto noisesrc = Factory::lookup<IFrameSource>("NoiseSource");
-    auto noisesrccfg = Factory::lookup<IConfigurable>("NoiseSource");
     {
+        auto noisesrccfg = Factory::lookup<IConfigurable>("NoiseSource");
         auto cfg = noisesrccfg->default_configuration();
         cfg["anode"] = "AnodePlane";
         cfg["model"] = "EmpiricalNoiseModel";
+        cfg["rng"] = "Random";
         noisesrccfg->configure(cfg);
     }
 
     em("configuration done");
     
+    auto noisesrc = Factory::lookup<IFrameSource>("NoiseSource");
+
     IFrame::pointer frame;
     bool ok = (*noisesrc)(frame);
     em("got noise frame");

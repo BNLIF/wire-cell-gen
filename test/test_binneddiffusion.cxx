@@ -5,6 +5,11 @@
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Units.h"
 
+#include "WireCellUtil/PluginManager.h"
+#include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IRandom.h"
+#include "WireCellIface/IConfigurable.h"
+
 #include "TApplication.h"
 #include "TCanvas.h"
 #include "TStyle.h"
@@ -60,7 +65,9 @@ Binning tbins(nticks, t0, t0 + readout_time);
 const int npmwires = 10;
 
 
-void test_track(Meta& meta, double charge, double track_time, const Ray& track_ray, double stepsize, bool fluctuate)
+void test_track(Meta& meta, double charge, double track_time,
+                const Ray& track_ray, double stepsize,
+                IRandom::pointer fluctuate)
 {
     const int ndiffision_sigma = 3.0;
 
@@ -224,6 +231,15 @@ void test_track(Meta& meta, double charge, double track_time, const Ray& track_r
 
 int main(int argc, char* argv[])
 {
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
+    {
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = rngcfg->default_configuration();
+        rngcfg->configure(cfg);
+    }
+    auto rng = Factory::lookup<IRandom>("Random");
+
     const char* me = argv[0];
 
     TFile* rootfile = TFile::Open(Form("%s.root", me), "RECREATE");
@@ -237,7 +253,10 @@ int main(int argc, char* argv[])
 		  Point(1*units::m+delta, 0, +delta));
     const double stepsize = 1*units::mm;
     const double charge = 1e5;
-    test_track(meta, charge, track_time, track_ray, stepsize, true);
+
+
+
+    test_track(meta, charge, track_time, track_ray, stepsize, rng);
 
     meta.print("]");
     rootfile->Close();

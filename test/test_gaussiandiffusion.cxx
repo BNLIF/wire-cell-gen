@@ -4,6 +4,10 @@
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/PluginManager.h"
+#include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IRandom.h"
+#include "WireCellIface/IConfigurable.h"
 
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -52,7 +56,7 @@ void test_binint()
 }
     
 
-void test_gd(bool fluctuate)
+void test_gd(IRandom::pointer fluctuate)
 {
     const double nsigma = 3.0;
 
@@ -139,6 +143,15 @@ void test_gd(bool fluctuate)
 
 int main(int argc, char* argv[])
 {
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
+    {
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = rngcfg->default_configuration();
+        rngcfg->configure(cfg);
+    }
+    auto rng = Factory::lookup<IRandom>("Random");
+
     const char* me = argv[0];
 
     TApplication* theApp = 0;
@@ -153,9 +166,9 @@ int main(int argc, char* argv[])
     test_binint();
     canvas.Print(Form("%s.pdf",me),"pdf");    
 
-    test_gd(false);
+    test_gd(nullptr);
     canvas.Print(Form("%s.pdf",me),"pdf");
-    test_gd(true);
+    test_gd(rng);
     canvas.Print(Form("%s.pdf",me),"pdf");
 
     if (theApp) {

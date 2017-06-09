@@ -8,7 +8,7 @@ using namespace std;
 using namespace WireCell;
 
 Gen::BinnedDiffusion::BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
-                                      double nsigma, bool fluctuate,
+                                      double nsigma, IRandom::pointer fluctuate,
                                       ImpactDataCalculationStrategy calcstrat)
     : m_pimpos(pimpos)
     , m_tbins(tbins)

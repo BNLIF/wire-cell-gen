@@ -7,6 +7,7 @@
 #include "WireCellUtil/RangeFeed.h"
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellIface/IRandom.h"
 #include "WireCellIface/IConfigurable.h"
 
 #include "TApplication.h"

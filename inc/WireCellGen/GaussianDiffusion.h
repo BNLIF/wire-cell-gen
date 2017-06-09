@@ -4,6 +4,7 @@
 #include "WireCellUtil/Array.h"
 #include "WireCellUtil/Binning.h"
 #include "WireCellIface/IDepo.h"
+#include "WireCellIface/IRandom.h"
 
 #include <memory>
 #include <iostream>
@@ -86,13 +87,16 @@ namespace WireCell {
             /// This fills the patch once matching the given time and
             /// pitch binning. The patch is limited to the 2D sample
             /// points that cover the subdomain determined by the
-            /// number of sigma.  If fluctuate is true then a
-            /// total-charge preserving Poisson fluctuation is applied
-            /// bin-by-bin to the sampling.  Each cell of the patch
-            /// represents the 2D bin-centered sampling of the Gaussian.
+            /// number of sigma.  If there should be Poisson
+            /// fluctuations applied pass in an IRandom.  Total charge
+            /// is charge is preserved.  Each cell of the patch
+            /// represents the 2D bin-centered sampling of the
+            /// Gaussian.
             
             void set_sampling(const Binning& tbin, const Binning& pbin,
-                              double nsigma = 3.0, bool fluctuate=false, unsigned int weightstrat = 1/*see BinnedDiffusion ImpactDataCalculationStrategy*/);
+                              double nsigma = 3.0, 
+                              IRandom::pointer fluctuate=nullptr, 
+                              unsigned int weightstrat = 1/*see BinnedDiffusion ImpactDataCalculationStrategy*/);
 
 	    /// Get the diffusion patch as an array of N_pitch rows X
 	    /// N_time columns.  Index as patch(i_pitch, i_time).

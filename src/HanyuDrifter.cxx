@@ -10,7 +10,6 @@
 
 #include <boost/range.hpp>
 
-#include <random>
 #include <sstream>
 #include <iostream>
 
@@ -19,8 +18,9 @@ WIRECELL_FACTORY(hyDrifter, WireCell::Gen::hyDrifter, WireCell::IDrifter, WireCe
 using namespace std;
 using namespace WireCell;
 
-Gen::hyDrifter::hyDrifter(const std::string& anode_tn)
+Gen::hyDrifter::hyDrifter(const std::string& anode_tn, const std::string& rng_tn)
     : m_anode_tn(anode_tn)
+    , m_rng_tn(rng_tn)
     , m_DL(7.2 * units::centimeter2/units::second) // from arXiv:1508.07059v2
     , m_DT(12.0 * units::centimeter2/units::second) // ditto
     , m_lifetime(8*units::ms) // read off RHS of figure 6 in MICROBOONE-NOTE-1003-PUB
@@ -36,6 +36,11 @@ Gen::hyDrifter::hyDrifter(const std::string& anode_tn)
 
 void Gen::hyDrifter::configure(const WireCell::Configuration& cfg)
 {
+    m_rng_tn = get(cfg, "rng", m_rng_tn);
+    m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    if (!m_rng) {
+        cerr << "Gen::Drifter::configure: no such IRandom: " << m_rng_tn << endl;
+    }
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     this->set_anode();
     m_DL = get<double>(cfg, "DL", m_DL);
@@ -97,14 +102,6 @@ void Gen::hyDrifter::reset()
     m_input.clear();
 }
 
-// fixme: this needs to be moved into a random number generator
-// provided through an interface.  For now, just use std.
-int random_binomial(int range, double probability)
-{
-    std::default_random_engine generator; // fixme: this should be a shared, long-lived object....
-    std::binomial_distribution<int> distribution(range, probability);
-    return distribution(generator);
-}
 
 
 IDepo::pointer Gen::hyDrifter::transport(IDepo::pointer depo)
@@ -137,9 +134,10 @@ IDepo::pointer Gen::hyDrifter::transport(IDepo::pointer depo)
         // fano factor
         // use a binomial distribution with np = Qi, 1-p = m_fano
         // this approximates a Gaussian distribution and has a physical limit >0
-        double Qi2 = random_binomial((int)Qi/(1-m_fano), 1-m_fano);
+        //double Qi2 = random_binomial((int)Qi/(1-m_fano), 1-m_fano);
+        double Qi2 = m_rng->binomial((int)Qi/(1-m_fano), 1-m_fano)();
         // binomial distribution
-        dQ = random_binomial((int)Qi2, recombprob*absorbprob);
+        dQ = m_rng->binomial((int)Qi2, recombprob*absorbprob)();
     }
     const double Qf = Qi - dQ;
 
