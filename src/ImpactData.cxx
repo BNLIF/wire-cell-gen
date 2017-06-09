@@ -34,17 +34,18 @@ Waveform::compseq_t& Gen::ImpactData::weight_spectrum() const
     return m_weight_spectrum;
 }
 
-void Gen::ImpactData::calculate_constant(int nticks) const
+void Gen::ImpactData::calculate(int nticks) const
 {
     if (m_waveform.size() > 0) {
         return;
     }
     m_waveform.resize(nticks, 0.0);
-    m_weights.resize(nticks, 0.5);
+    m_weights.resize(nticks, 0.0);
 
     for (auto diff : m_diffusions) {
 
 	const auto patch = diff->patch();
+    const auto qweight = diff->weights();
 
         const int poffset_bin = diff->poffset_bin();
         const int pbin = m_impact - poffset_bin;
@@ -59,17 +60,13 @@ void Gen::ImpactData::calculate_constant(int nticks) const
         for (int tbin=0; tbin<nt; ++tbin) {
             const int absbin = tbin+toffset_bin;
             m_waveform[absbin] += patch(pbin, tbin);
+            // for interpolation
+            m_weights[absbin] += qweight[pbin]*patch(pbin, tbin);
         }
     }
 
     m_spectrum = Waveform::dft(m_waveform);
     m_weight_spectrum = Waveform::dft(m_weights);
-}
-
-void Gen::ImpactData::calculate_linear(int nticks) const
-{
-    // fixme: this is just a place holder for Hanyu
-    calculate_constant(nticks);
 }
 
 

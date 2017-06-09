@@ -56,14 +56,14 @@ namespace WireCell {
             // If true, fluctuate by number of absorbed electrons.
             bool m_fluctuate;
 
+            // cached, get from anode object.
+            double m_location, m_speed; 
+            
             // fano factor to fluctuate ionization electrons 
             double m_fano; 
 
             // recombination probability
             double m_recomb;
-
-            // cached, get from anode object.
-            double m_location, m_speed; 
 
             // Input buffer sorted by proper time
             DepoTauSortedSet m_input;
