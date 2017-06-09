@@ -8,9 +8,11 @@
 #include "WireCellIface/IRandom.h"
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellUtil/ExecMon.h"
+#include "WireCellUtil/Testing.h"
 
 #include <iostream>
 #include <complex>
+#include <vector>
 
 using namespace std;
 using namespace WireCell;
@@ -82,6 +84,21 @@ void test_named(std::string generator_name)
     histify(rnd->binormal(2,1,2,1));
 }
 
+void test_repeat()
+{
+    auto rnd = Factory::lookup<IRandom>("Random");
+
+    auto g1 = rnd->normal(0,1);
+    std::vector<double> v1{g1(), g1(), g1(), g1(), g1()};
+    auto g2 = rnd->normal(0,1);
+    std::vector<double> v2{g2(), g2(), g2(), g2(), g2()};
+    for (size_t ind=0; ind<v1.size(); ++ind) {
+        cerr << v1[ind] << "\t" << v2[ind] << endl;
+        Assert(std::abs(v1[ind] - v2[ind]) > 1.0e-8);
+    }
+
+}
+
 int main()
 {
     ExecMon em("starting");
@@ -101,7 +118,11 @@ int main()
     test_named("bogus");
     em("bogus generator");
 
+    test_repeat();
+    em("test repeat");
+
     cout << em.summary() << endl;
+
     return 0;
 }
 
