@@ -52,6 +52,7 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
         cerr << "Gen::NoiseSource: failed to get IRandom: \"" << m_rng_tn << "\"\n";
         return;
     }
+    cerr << "Gen::NoiseSource: using IRandom: \"" << m_rng_tn << "\"\n";
 
     m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
