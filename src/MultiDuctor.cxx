@@ -85,13 +85,13 @@ struct ReturnBool {
          std::cerr << "Gen::MultiDuctor::configure: error: unknown anode: " << m_anode_tn << std::endl;
          return;
      }
-     auto chain = cfg["chain"];
-     if (chain.isNull()) {
-         std::cerr << "Gen::MultiDuctor::configure: warning: configured with empty chain\n";
+     auto jchains = cfg["chains"];
+     if (jchains.isNull()) {
+         std::cerr << "Gen::MultiDuctor::configure: warning: configured with empty collection of chains\n";
          return;
      }
 
-     /// fixme: this is totally going to break when going to multi-faced anodes.
+     /// fixme: this is totally going to break when going to two-faced anodes.
      std::vector<const Pimpos*> pimpos;
      for (auto face : m_anode->faces()) {
          for (auto plane : face->planes()) {
@@ -100,40 +100,59 @@ struct ReturnBool {
          break;                 // fixme: 
      }
 
-     for (auto jrule : chain) {
-         auto rule = jrule["rule"].asString();
-         auto ductor_tn = jrule["ductor"].asString();
-         auto ductor = Factory::lookup_tn<IDuctor>(ductor_tn);
-         if (!ductor) {
-             std::cerr << "Gen::MultiDuctor: failed to lookup (sub) Ductor: " << ductor_tn << std::endl;
-             continue;          // fixme: need to throw exception
-         }
-         auto jargs = jrule["args"];
-         if (rule == "wirebounds") {
-             m_subductors.push_back(SubDuctor(Wirebounds(pimpos, jargs), ductor));
-             continue;
-         }
-         if (rule == "bool") {
-             m_subductors.push_back(SubDuctor(ReturnBool(jargs), ductor));
-         }
-     }
+     for (auto jchain : jchains) {
 
+         ductorchain_t dchain;
+
+         for (auto jrule : jchain) {
+             auto rule = jrule["rule"].asString();
+             auto ductor_tn = jrule["ductor"].asString();
+             auto ductor = Factory::lookup_tn<IDuctor>(ductor_tn);
+             if (!ductor) {
+                 std::cerr << "Gen::MultiDuctor: failed to lookup (sub) Ductor: " << ductor_tn << std::endl;                 
+                 continue;          // fixme: need to throw exception
+             }
+             auto jargs = jrule["args"];
+             if (rule == "wirebounds") {
+                 dchain.push_back(SubDuctor(Wirebounds(pimpos, jargs), ductor));
+                 continue;
+             }
+             if (rule == "bool") {
+                 dchain.push_back(SubDuctor(ReturnBool(jargs), ductor));
+             }
+             m_chains.push_back(dchain);
+         }
+     } // loop to store chains of ductors
  }
 
  void Gen::MultiDuctor::reset()
  {
+     // forward message
+     for (auto& chain : m_chains) {
+         for (auto& sd : chain) {
+             sd.ductor->reset();
+         }
+     }
  }
 
  bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& frames)
  {
-     for (auto sd : m_subductors) {
-         if (!sd.check(depo)) {
-             continue;
+     bool all_okay = true;
+     int count = 0;
+     for (auto& chain : m_chains) {
+         for (auto& sd : chain) {
+             if (!sd.check(depo)) {
+                 continue;
+             }
+             ++count;
+             bool ok = (*sd.ductor)(depo, frames);
+             all_okay = all_okay && ok;
          }
-         return (*sd.ductor)(depo, frames);
      }
-     std::cerr << "Gen::MultiDuctor: no appropriate Ductor for depo at: " << depo->pos() << std::endl;
-     return false;
+     if (!count) {
+         std::cerr << "Gen::MultiDuctor: no appropriate Ductor for depo at: " << depo->pos() << std::endl;
+     }
+     return all_okay;
  }
 
 

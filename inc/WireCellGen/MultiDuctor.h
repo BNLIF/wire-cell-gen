@@ -37,7 +37,8 @@ namespace WireCell {
                 IDuctor::pointer ductor;
                 SubDuctor(std::function<bool(IDepo::pointer depo)> f, IDuctor::pointer d) : check(f), ductor(d) {}
             };
-            std::vector<SubDuctor> m_subductors;            
+            typedef std::vector<SubDuctor> ductorchain_t;
+            std::vector<ductorchain_t> m_chains;            
             
 
         };
