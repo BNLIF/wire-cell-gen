@@ -109,10 +109,10 @@ int main(const int argc, char *argv[])
 
     // Diffusion
     const int ndiffision_sigma = 3.0;
-    bool fluctuate = true; // note, "point" negates this below
+    bool fluctuate = false; // note, "point" negates this below
 
     // Generate some trivial tracks
-    const double stepsize = 0.01*units::mm;
+    const double stepsize = 0.003*units::mm;
     Gen::TrackDepos tracks(stepsize);
 
     // This is the number of ionized electrons for a MIP assumed by MB noise paper.
@@ -121,7 +121,7 @@ int main(const int argc, char *argv[])
     const double charge_per_depo = -(dqdx)*stepsize;
 
     const double event_time = t0 + 1*units::ms;
-    const Point event_vertex(1*units::m, 0*units::m, 0.4*units::mm);
+    const Point event_vertex(1.0*units::m, 0*units::m, 0*units::mm);
 
     // mostly "prolonged" track in X direction
     if (track_types.find("prolong") < track_types.size()) {
@@ -146,7 +146,7 @@ int main(const int argc, char *argv[])
     if (track_types.find("driftlike") < track_types.size()) {
         tracks.add_track(event_time, 
                          Ray(event_vertex,
-                             event_vertex + Vector(1*units::m, 0*units::m, 1*units::m)),
+                             event_vertex + Vector(60*units::cm, 0*units::m, 10.0*units::mm)),
                          charge_per_depo);
     }
 
@@ -173,15 +173,20 @@ int main(const int argc, char *argv[])
     // // make a .
     if (track_types.find("point") < track_types.size()) {
         fluctuate = false;
-        tracks.add_track(event_time,
-                         Ray(event_vertex,
-                             event_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
-                         -1.0*units::eplus);
-     //   auto second_vertex = event_vertex + Vector(0,0, -3*units::mm);
-     //   tracks.add_track(event_time-10*units::us,
-       //                  Ray(second_vertex,
-         //                    second_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point
-           //              -1.0*units::eplus);
+        for(int i=0; i<6; i++)
+        {
+            auto vt = event_vertex + Vector(0, 0, i*0.06*units::mm);
+            auto tt = event_time + i*10.0*units::us;
+            tracks.add_track(tt, 
+                        Ray(vt, 
+                            vt + Vector(0, 0, 0.1*stepsize)), // force 1 point
+                        -1.0*units::eplus);
+        }
+
+        /* tracks.add_track(event_time, */
+        /*                  Ray(event_vertex, */
+        /*                      event_vertex + Vector(0, 0, 0.1*stepsize)), // force 1 point */
+        /*                  -1.0*units::eplus); */
     }
 
     em("made tracks");
@@ -208,9 +213,9 @@ int main(const int argc, char *argv[])
     for (int plane_id = 0; plane_id < 3; ++plane_id) {
         em("start loop over planes");
         Pimpos& pimpos = uvw_pimpos[plane_id];
-
+        
         // add deposition to binned diffusion
-        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, rng/*, Gen::BinnedDiffusion::ImpactDataCalculationStrategy::constant*/); // default is linear interpolation
+        Gen::BinnedDiffusion bindiff(pimpos, tbins, ndiffision_sigma, rng, Gen::BinnedDiffusion::ImpactDataCalculationStrategy::constant); // default is constant interpolation
         em("made BinnedDiffusion");
         for (auto depo : depos) {
             auto drifted = std::make_shared<Gen::TransportedDepo>(depo, field_origin.x(), drift_speed);
@@ -223,8 +228,8 @@ int main(const int argc, char *argv[])
             // Peak response of a delta function of current
             // integrating over time to one electron charge would give
             // 1eplus * 14mV/fC = 2.24 microvolt.  
-            const double sigma_time = 0.03*units::us; 
-            const double sigma_pitch = 0.1*units::mm;
+            const double sigma_time = 1*units::us; 
+            const double sigma_pitch = 1.5*units::mm;
 
             bool ok = bindiff.add(drifted, sigma_time, sigma_pitch);
             if (!ok) {
@@ -339,8 +344,8 @@ int main(const int argc, char *argv[])
         }
 
         if (track_types.find("point") < track_types.size()) {
-            hist->GetXaxis()->SetRangeUser(3900,4000);
-            hist->GetYaxis()->SetRangeUser(990, 1010);
+            hist->GetXaxis()->SetRangeUser(3950,4100);
+            hist->GetYaxis()->SetRangeUser(996, 1004);
         }
         if (track_types.find("isoch") < track_types.size()) {
             hist->GetXaxis()->SetRangeUser(3900,4000);
