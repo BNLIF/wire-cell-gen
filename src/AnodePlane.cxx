@@ -4,10 +4,11 @@
 
 #include "WireCellUtil/WireSchema.h"
 #include "WireCellUtil/BoundingBox.h"
-#include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Exceptions.h"
 
 #include "WireCellIface/SimpleWire.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/String.h"
 
 #include <string>
 
@@ -16,6 +17,8 @@ WIRECELL_FACTORY(AnodePlane, WireCell::Gen::AnodePlane, WireCell::IAnodePlane, W
 
 using namespace WireCell;
 using namespace std;
+using WireCell::String::format;
+
 
 Gen::AnodePlane::AnodePlane()
     : m_ident(0)
@@ -90,19 +93,23 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     const string frfname = get<string>(cfg, "fields");
     if (frfname.empty()) {
         cerr << "Gen::AnodePlane::configure() must have a field response file name\n";
+        THROW(ValueError() << errmsg{"\"fields\" parameter must specify a field response file name"});
     }
-    Assert(!frfname.empty());
-    m_fr = Response::Schema::load(frfname.c_str());
-    Assert(m_fr.speed > 0);
 
+    m_fr = Response::Schema::load(frfname.c_str());
+    if (m_fr.speed <= 0) {
+        THROW(ValueError() << errmsg{format("illegal drift speed: %f mm/us", m_fr.speed/(units::mm/units::us))});
+    }
 
     const string wfname = get<string>(cfg, "wires");
     if (wfname.empty()) {
-        cerr << "Gen::AnodePlane::configure() must have a wire geometry file name\n";
+        THROW(ValueError() << errmsg{"\"wires\" parameter must specify a wire geometry file name"});
     }
-    Assert(!wfname.empty());
+
     WireSchema::Store store = WireSchema::load(wfname.c_str());
-    Assert(!store.anodes.empty());
+    if (store.anodes.empty()) {
+        THROW(ValueError() << errmsg{"no wire anodes defined in " + wfname});
+    }
 
     const Vector Xaxis(1.0,0,0);
     m_channels.clear();
@@ -137,7 +144,9 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 // WirePlaneId wire_plane_id(s_plane.ident); // dubious
                 WirePlaneId wire_plane_id(iplane2layer[s_plane.ident], iface, ianode);
                 cerr << wire_plane_id << endl;
-                Assert(wire_plane_id.index() >= 0); 
+                if (wire_plane_id.index() < 0) {
+                    THROW(ValueError() << errmsg{format("bad wire plane id: %d", wire_plane_id.ident())});
+                }
 
                 Vector total_wire;
                 const int nwires = s_plane.wires.size();
