@@ -4,6 +4,7 @@
 
 #include "WireCellUtil/Configuration.h"
 #include "WireCellUtil/Persist.h"
+#include "WireCellUtil/Exceptions.h"
 
 #include "WireCellUtil/NamedFactory.h"
 
@@ -189,17 +190,15 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
 void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
 {
     m_anode_tn = get(cfg, "anode", m_anode_tn);
-    m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
-        std::cerr << "Gen::EmpiricalNoiseModel: error: no such anode: " << m_anode_tn << std::endl;
-        // fixme: raise exception
+        THROW(KeyError() << errmsg{"failed to get IAnodePlane: " + m_anode_tn});
     }
 
     m_chanstat_tn = get(cfg, "chanstat", m_chanstat_tn);
-    m_chanstat = Factory::lookup_tn<IChannelStatus>(m_chanstat_tn);
+    m_chanstat = Factory::find_tn<IChannelStatus>(m_chanstat_tn);
     if (!m_chanstat) {
-        std::cerr << "Gen::EmpiricalNoiseModel: error: no such channel status: " << m_chanstat_tn << std::endl;
-        // fixme: raise exception
+        THROW(KeyError() << errmsg{"failed to get IChannelStatus: " + m_chanstat_tn});
     }
 
 
@@ -208,6 +207,10 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     // double shaping = m_chanstat->preamp_shaping(chid);
 
     m_spectra_file = get(cfg, "spectra_file", m_spectra_file);
+    if (m_spectra_file.empty()) {
+        THROW(KeyError() << errmsg{"must supply a noise spectral file"});
+    }
+        
     m_nsamples = get(cfg, "nsamples", m_nsamples);
     m_period = get(cfg, "period", m_period);
     m_wlres = get(cfg, "wire_length_scale", m_wlres);

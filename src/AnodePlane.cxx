@@ -126,7 +126,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     
         const int nfaces = s_anode.faces.size();
         m_faces.resize(nfaces);
-        cerr << "Gen::AnodePlane: found my ident " << other_ident << " with " << nfaces << " faces\n";
+        //cerr << "Gen::AnodePlane: found my ident " << other_ident << " with " << nfaces << " faces\n";
 
         for (int iface=0; iface<nfaces; ++iface) {
             auto& s_face = store.faces[s_anode.faces[iface]];
@@ -143,7 +143,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
                 // WirePlaneId wire_plane_id(s_plane.ident); // dubious
                 WirePlaneId wire_plane_id(iplane2layer[s_plane.ident], iface, ianode);
-                cerr << wire_plane_id << endl;
+                //cerr << wire_plane_id << endl;
                 if (wire_plane_id.index() < 0) {
                     THROW(ValueError() << errmsg{format("bad wire plane id: %d", wire_plane_id.ident())});
                 }

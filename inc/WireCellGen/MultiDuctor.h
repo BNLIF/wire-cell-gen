@@ -33,9 +33,12 @@ namespace WireCell {
             IAnodePlane::pointer m_anode;
 
             struct SubDuctor {
+                std::string name;
                 std::function<bool(IDepo::pointer depo)> check;
                 IDuctor::pointer ductor;
-                SubDuctor(std::function<bool(IDepo::pointer depo)> f, IDuctor::pointer d) : check(f), ductor(d) {}
+                SubDuctor(const std::string& tn,
+                          std::function<bool(IDepo::pointer depo)> f,
+                          IDuctor::pointer d) : name(tn), check(f), ductor(d) {}
             };
             typedef std::vector<SubDuctor> ductorchain_t;
             std::vector<ductorchain_t> m_chains;            

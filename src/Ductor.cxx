@@ -60,7 +60,7 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
 void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 {
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
-    m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
         cerr << "Gen::Ductor: failed to get anode: \"" << m_anode_tn << "\"\n";
         return;
@@ -71,7 +71,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     m_rng = nullptr;
     if (m_fluctuate) {
         m_rng_tn = get(cfg, "rng", m_rng_tn);
-        m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+        m_rng = Factory::find_tn<IRandom>(m_rng_tn);
     }
 
     m_readout_time = get<double>(cfg, "readout_time", m_readout_time);

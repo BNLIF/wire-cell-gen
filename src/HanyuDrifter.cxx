@@ -37,7 +37,7 @@ Gen::hyDrifter::hyDrifter(const std::string& anode_tn, const std::string& rng_tn
 void Gen::hyDrifter::configure(const WireCell::Configuration& cfg)
 {
     m_rng_tn = get(cfg, "rng", m_rng_tn);
-    m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    m_rng = Factory::find_tn<IRandom>(m_rng_tn);
     if (!m_rng) {
         cerr << "Gen::Drifter::configure: no such IRandom: " << m_rng_tn << endl;
     }
@@ -67,7 +67,7 @@ void Gen::hyDrifter::set_anode()
         cerr << "Gen::hyDrifter: no anode plane type:name configured yet\n";
         return;
     }
-    auto anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    auto anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!anode) {
         cerr << "Gen::hyDrifter: failed to get anode: \"" << m_anode_tn << "\"\n";
         return;

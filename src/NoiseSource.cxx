@@ -47,21 +47,27 @@ WireCell::Configuration Gen::NoiseSource::default_configuration() const
 void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 {
     m_rng_tn = get(cfg, "rng", m_rng_tn);
-    m_rng = Factory::lookup_tn<IRandom>(m_rng_tn);
+    m_rng = Factory::find_tn<IRandom>(m_rng_tn);
     if (!m_rng) {
-        cerr << "Gen::NoiseSource: failed to get IRandom: \"" << m_rng_tn << "\"\n";
-        return;
+        THROW(KeyError() << errmsg{"failed to get IRandom: " + m_rng_tn});
     }
-    cerr << "Gen::NoiseSource: using IRandom: \"" << m_rng_tn << "\"\n";
 
     m_anode_tn = get(cfg, "anode", m_anode_tn);
-    m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
-        cerr << "Gen::NoiseSource: failed to get anode: \"" << m_anode_tn << "\"\n";
-        return;
+        THROW(KeyError() << errmsg{"failed to get IAnodePlane: " + m_anode_tn});
     }
+
     m_model_tn = get(cfg, "model", m_model_tn);
-    m_model = Factory::lookup_tn<IChannelSpectrum>(m_model_tn);
+    m_model = Factory::find_tn<IChannelSpectrum>(m_model_tn);
+    if (!m_model) {
+        THROW(KeyError() << errmsg{"failed to get IChannelSpectrum: " + m_model_tn});
+    }
+
+    cerr << "Gen::NoiseSource: using IRandom: \"" << m_rng_tn << "\""
+         << " IAnodePlane: \"" << m_anode_tn << "\""
+         << " IChannelSpectrum: \"" << m_model_tn << "\"\n";
+
 
     m_readout = get<double>(cfg, "readout_time", m_readout);
     m_time = get<double>(cfg, "start_time", m_time);

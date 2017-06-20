@@ -52,7 +52,7 @@ WireCell::Configuration Gen::Digitizer::default_configuration() const
 void Gen::Digitizer::configure(const Configuration& cfg)
 {
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
-    m_anode = Factory::lookup_tn<IAnodePlane>(m_anode_tn);
+    m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
         cerr << "Gen::Digitizer: failed to get anode: \"" << m_anode_tn << "\"\n";
         Assert(m_anode);

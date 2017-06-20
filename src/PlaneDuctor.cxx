@@ -4,6 +4,7 @@
 #include "WireCellIface/WirePlaneId.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Persist.h"
+#include "WireCellUtil/Exceptions.h"
 
 #include <iostream>
 #include <sstream>
@@ -63,7 +64,7 @@ void PlaneDuctor::configure(const Configuration& cfg)
 	m_wpid = WirePlaneId(kWlayer, convert<int>(cfg["wpid"][1]), convert<int>(cfg["wpid"][2]));
 	break;
     default:
-	throw runtime_error("PlaneDuctor configured with unknown wire plane layer");
+        THROW(KeyError() << errmsg{"unknown wire play layer"});
     }
     m_nwires = get<int>(cfg, "nwires", m_nwires);
     m_lbin  = get<double>(cfg, "lbin_us",   m_lbin/units::microsecond)*units::microsecond;
@@ -83,10 +84,10 @@ void PlaneDuctor::reset()
 bool PlaneDuctor::operator()(const input_pointer& diff, output_queue& outq)
 {
     if (m_wpid.layer() == kUnknownLayer) {
-	throw runtime_error("PlaneDuctor configured with undefined wire plane layer");
+        THROW(KeyError() << errmsg{"unknown wire play layer"});
     }
     if (!m_nwires) {
-	throw runtime_error("PlaneDuctor configured with zero wire count");
+        THROW(KeyError() << errmsg{"zero wires"});
     }
 
     if (m_eos) {

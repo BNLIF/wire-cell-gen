@@ -45,27 +45,44 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
     std::string tn="";
     Configuration cfg = thecfg;
 
-    m_depos = Factory::lookup_tn<IDepoSource>(get<string>(cfg, "DepoSource"));
-    m_drifter = Factory::lookup_tn<IDrifter>(get<string>(cfg, "Drifter",""));
-    m_ductor = Factory::lookup_tn<IDuctor>(get<string>(cfg, "Ductor",""));
+    cerr << "Gen::Fourdee:configure:\n";
+
+    tn = get<string>(cfg, "DepoSource");
+    cerr << "\tDepoSource: " << tn << endl;
+    m_depos = Factory::find_tn<IDepoSource>(tn);
+
+    tn = get<string>(cfg, "Drifter");
+    cerr << "\tDrifter: " << tn << endl;
+    m_drifter = Factory::find_tn<IDrifter>(tn);
+
+    tn = get<string>(cfg, "Ductor");
+    cerr << "\tDuctor: " << tn << endl;
+    m_ductor = Factory::find_tn<IDuctor>(tn);
+
+        
     tn = get<string>(cfg, "Dissonance","");
     if (tn.empty()) {           // noise is optional
         m_dissonance = nullptr;
+        cerr << "\tDissonance: none\n";
     }
     else {
-        m_dissonance = Factory::lookup_tn<IFrameSource>(tn);
+        m_dissonance = Factory::find_tn<IFrameSource>(tn);
+        cerr << "\tDissonance: " << tn << endl;
     }
+
     tn = get<string>(cfg, "Digitizer","");
     if (tn.empty()) {           // digitizer is optional, voltage saved w.o. it.
         m_digitizer = nullptr;
+        cerr << "\tDigitizer: none\n";
     }
     else {
-        m_digitizer = Factory::lookup_tn<IFrameFilter>(tn);
+        m_digitizer = Factory::find_tn<IFrameFilter>(tn);
+        cerr << "\tDigitizer: " << tn << endl;
     }
-    m_output = Factory::lookup_tn<IFrameSink>(get<string>(cfg, "FrameSink",""));
-    
 
-    // fixme: check for failures
+    tn = get<string>(cfg, "FrameSink","");
+    cerr << "\tFrameSink: " << tn << endl;
+    m_output = Factory::find_tn<IFrameSink>(tn);
 }
 
 

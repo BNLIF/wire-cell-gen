@@ -29,8 +29,8 @@ WireCell::Configuration Gen::DepoFramer::default_configuration() const
 
 void Gen::DepoFramer::configure(const WireCell::Configuration& cfg)
 {
-    m_drifter = Factory::lookup_tn<IDrifter>(get(cfg, "Drifter", m_drifter_tn));
-    m_ductor = Factory::lookup_tn<IDuctor>(get(cfg, "Ductor", m_ductor_tn));
+    m_drifter = Factory::find_tn<IDrifter>(get(cfg, "Drifter", m_drifter_tn));
+    m_ductor = Factory::find_tn<IDuctor>(get(cfg, "Ductor", m_ductor_tn));
 
 }
 
