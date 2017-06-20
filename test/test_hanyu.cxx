@@ -338,13 +338,13 @@ int main(int argc, char *argv[])
             const int iwire = it.first;
             const auto& wave = it.second;
             
+            // [HY] Clone TClonesArray
+            std::vector<int>::iterator itw;
+            itw = find(raw_channelId->begin(), raw_channelId->end(), iwire+iplane*2400);
+            TH1F* h = dynamic_cast<TH1F*>(sim_wf->At(std::distance(raw_channelId->begin(), itw)));  
             for (int itick = mintick; itick < maxtick; ++itick) {
                 hist.Fill(tbins.center(itick)/units::us, iwire, wave[itick]);
 
-                // [HY] Clone TClonesArray
-                std::vector<int>::iterator it;
-                it = find(raw_channelId->begin(), raw_channelId->end(), iwire+iplane*2400);
-                TH1F* h = dynamic_cast<TH1F*>(sim_wf->At(std::distance(raw_channelId->begin(), it)));  
                 histClone.Fill(itick, iwire, h->GetBinContent(itick+1));
             }
         }

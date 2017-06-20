@@ -49,7 +49,7 @@ namespace WireCell {
 
 	    BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
 			    double nsigma=3.0, IRandom::pointer fluctuate=nullptr,
-                            ImpactDataCalculationStrategy calcstrat = constant);
+                            ImpactDataCalculationStrategy calcstrat = linear);
 
             const Pimpos& pimpos() const { return m_pimpos; }
             const Binning& tbins() const { return m_tbins; }
