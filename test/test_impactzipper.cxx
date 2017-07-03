@@ -41,7 +41,7 @@ int main(const int argc, char *argv[])
     }
     cerr << "Using tracks type: \"" << track_types << "\"\n";
 
-    string response_file = "garfield-1d-3planes-21wires-6impacts-v6.json.bz2";
+    string response_file = "ub-10-wnormed.json.bz2";
     if (argc > 2) {
         response_file = argv[2];
 	cerr << "Using Wire Cell field response file:\n"

@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
         auto anodecfg = Factory::lookup<IConfigurable>("AnodePlane");
         auto cfg = anodecfg->default_configuration();
         cfg["wires"] = "microboone-celltree-wires-v2.json.bz2";
-        cfg["fields"] = "garfield-1d-3planes-21wires-6impacts-v6.json.bz2";
+        cfg["fields"] = "ub-10-wnormed.json.bz2";
         anodecfg->configure(cfg);
     }
     {

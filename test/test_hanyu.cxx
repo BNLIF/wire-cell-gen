@@ -53,9 +53,9 @@ int main(int argc, char *argv[])
 #endif
     // Need to set WIRECELL_PATH, see env.sh
     TFile* rootfile;
-    string response_file = "garfield-1d-3planes-21wires-6impacts-v6.json.bz2";
+    string response_file = "ub-10-wnormed.json.bz2";
     if (argc < 4) {
-        std::cerr << "usage: test_depos2waves <cfg.json> <garfield.json[.bz2]> <output.root>" 
+        std::cerr << "usage: test_depos2waves <cfg.json> <field-file.json.[.bz2]> <output.root>" 
             << std::endl;
         std::cerr << "Not Wire Cell field response input file given, will try to use:\n"
             << response_file << std::endl;

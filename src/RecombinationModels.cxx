@@ -1,6 +1,9 @@
 #include "WireCellGen/RecombinationModels.h"
 
 #include "WireCellUtil/NamedFactory.h"
+
+#include <cmath>
+
 WIRECELL_FACTORY(MipRecombination, WireCell::Gen::MipRecombination,
                  WireCell::IRecombinationModel, WireCell::IConfigurable);
 WIRECELL_FACTORY(BirksRecombination, WireCell::Gen::MipRecombination,
@@ -94,7 +97,7 @@ Gen::BoxRecombination::~BoxRecombination()
 double Gen::BoxRecombination::operator()(double dE, double dX)
 {
     const double tmp = (dE/dX)*m_b/(m_efield*m_rho);
-    const double R = log(m_a + tmp)/ tmp;
+    const double R = std::log(m_a + tmp)/ tmp;
     return R*dE/m_wi;
 }
  void Gen::BoxRecombination::configure(const WireCell::Configuration& config)

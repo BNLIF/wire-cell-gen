@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 
     string filenames[3] = {
         "microboone-noise-spectra-v2.json.bz2",
-        "garfield-1d-3planes-21wires-6impacts-v6.json.bz2",
+        "ub-10-wnormed.json.bz2",
         "microboone-celltree-wires-v2.json.bz2",
     };
 
