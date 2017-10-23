@@ -24,6 +24,7 @@ int main()
 
     IFramer::output_queue frameq;
     Assert(framer(cs,frameq));
+    cerr << "test_framer: frame queue size: " << frameq.size() << endl;
     Assert(frameq.size() == 1);
 
     IFrame::pointer frame = frameq.front();
