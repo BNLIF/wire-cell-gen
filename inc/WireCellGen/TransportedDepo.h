@@ -25,6 +25,8 @@ namespace WireCell {
 	    virtual const WireCell::Point& pos() const { return m_pos; }
 	    virtual double time() const { return m_time; }
 	    virtual double charge() const { return m_from->charge(); }
+	    virtual int id() const { return m_from->id(); }
+	    virtual int pdg() const { return m_from->pdg(); }
 	    virtual WireCell::IDepo::pointer prior() const { return m_from; }
 	};
 
