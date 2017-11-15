@@ -26,9 +26,15 @@ namespace WireCell {
             virtual WireCell::Configuration default_configuration() const;
 
 	    // Internal base class for something that makes a scalar
-	    struct ScalarMaker { virtual double operator()() = 0; };
+	    struct ScalarMaker {
+		virtual double operator()() = 0;
+		virtual ~ScalarMaker() {};
+	    };
 	    // Internal base class for something that makes a scalar
-	    struct PointMaker { virtual Point operator()() = 0; };
+	    struct PointMaker {
+		virtual Point operator()() = 0;
+		virtual ~PointMaker() {};
+	    };
 
 	private:
 	    std::string m_rng_tn;
