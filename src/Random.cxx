@@ -28,6 +28,7 @@ Gen::Random::Random(const std::string& generator,
 }
 
 
+// This pimpl may turn out to be a bottle neck.
 template<typename URNG>
 class RandomT : public IRandom {
     URNG m_rng;
@@ -52,6 +53,10 @@ public:
     }
     virtual double uniform(double begin, double end) {
         std::uniform_real_distribution<double> distribution(begin, end);
+        return distribution(m_rng);
+    }
+    virtual double exponential(double mean) {
+        std::exponential_distribution<double> distribution(mean);
         return distribution(m_rng);
     }
     virtual int range(int first, int last) {
@@ -115,6 +120,11 @@ double Gen::Random::normal(double mean, double sigma)
 double Gen::Random::uniform(double begin, double end)
 {
     return m_pimpl->uniform(begin, end);
+}
+
+double Gen::Random::exponential(double mean)
+{
+    return m_pimpl->exponential(mean);
 }
 
 int Gen::Random::range(int first, int last)
