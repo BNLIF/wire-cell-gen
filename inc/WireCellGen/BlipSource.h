@@ -40,7 +40,7 @@ namespace WireCell {
 	    std::string m_rng_tn;
 	    IRandom::pointer m_rng;
 
-	    double m_time;	// current time
+	    double m_time, m_stop;
 	    ScalarMaker *m_ene, *m_tim;
 	    PointMaker *m_pos;
 

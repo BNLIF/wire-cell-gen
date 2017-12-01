@@ -1,6 +1,8 @@
 #include "WireCellGen/BlipSource.h"
 #include "WireCellIface/SimpleDepo.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/Exceptions.h"
+
 
 #include <iostream>
 
@@ -35,10 +37,16 @@ WireCell::Configuration Gen::BlipSource::default_configuration() const
     ene["type"] = "mono";	// future: spectrum, uniform, Ar39 
     ene["value"] = 20000.0;
     cfg["charge"] = ene;
+    // also, in Jsonnet can support PDFs giving probability for certain number of electrons
+    // { type="pdf",
+    //   edges=[(0.1+b*0.1)*wc.MeV for b in std.range(0,10)], // energy edges
+    //   pdf=[my_pdf_function(self.edges)]}
+
 
     Configuration tim;
     tim["type"] = "decay";
     tim["start"] = 0.0;
+    tim["stop"] = 10.0*units::ms;
     tim["activity"] = 100000*units::Bq; // Ar39 in 2 DUNE drift volumes
     cfg["time"] = tim;
 
@@ -56,12 +64,14 @@ WireCell::Configuration Gen::BlipSource::default_configuration() const
 	
 }
 
+// Simply return the number given
 struct ReturnValue : public Gen::BlipSource::ScalarMaker {
     double value;
     ReturnValue(double val) : value(val) {}
     ~ReturnValue() {}
     double operator()() { return value; }
 };
+// Choose scalar value from an exponential distribution
 struct DecayTime : public Gen::BlipSource::ScalarMaker {
     IRandom::pointer rng;
     double rate;
@@ -69,6 +79,34 @@ struct DecayTime : public Gen::BlipSource::ScalarMaker {
     ~DecayTime() {}
     double operator()() { return rng->exponential(rate); }
 };
+// draw from a PDF
+struct Pdf  : public Gen::BlipSource::ScalarMaker {
+    IRandom::pointer rng;
+    std::vector<double> cumulative;
+    std::vector<double> edges;
+    double total;
+    Pdf(IRandom::pointer rng, const std::vector<double>& pdf, const std::vector<double>& edges)
+	: rng(rng), edges(edges.begin(), edges.end()) {
+	total = 0.0;
+	cumulative.push_back(0.0);
+	for (double val : pdf) {
+	    total += val;
+	    cumulative.push_back(total);
+	}
+    }
+    double operator()() {
+	double cp = rng->uniform(0.0, total);
+	for (size_t ind=1; ind<cumulative.size(); ++ind) { // start at 2nd element
+	    if (cumulative[ind] >= cp) {
+		double rel = (cp - cumulative[ind-1]) / (cumulative[ind]-cumulative[ind-1]);
+		return edges[ind-1] + rel*(edges[ind] - edges[ind-1]);
+	    }
+	}
+	return -1;		// should not happen
+    }
+};
+
+// return point selected uniformly from some box
 struct UniformBox : public Gen::BlipSource::PointMaker {
     IRandom::pointer rng;
     Ray extent;
@@ -81,7 +119,6 @@ struct UniformBox : public Gen::BlipSource::PointMaker {
 	    rng->uniform(extent.first.z(), extent.second.z()));
     }
 };
-    
 
 void Gen::BlipSource::configure(const WireCell::Configuration& cfg)
 {
@@ -92,17 +129,23 @@ void Gen::BlipSource::configure(const WireCell::Configuration& cfg)
     if (ene["type"].asString() == "mono") {
 	m_ene = new ReturnValue(ene["value"].asDouble());
     }
+    else if (ene["type"].asString() == "pdf") {
+	m_ene = new Pdf(m_rng, get< std::vector<double> >(ene, "pdf"), get< std::vector<double> >(ene, "edges"));
+    }
     else {
 	std::cerr <<"BlipSource: no charge configuration\n";
+	THROW(ValueError() << errmsg{"BlipSource: no charge configuration"});
     }
 
     auto tim = cfg["time"];
     m_time = tim["start"].asDouble();
+    m_stop = tim["stop"].asDouble();
     if (tim["type"].asString() == "decay") {
 	m_tim = new DecayTime(m_rng, tim["activity"].asDouble());
     }
     else {
 	std::cerr <<"BlipSource: no time configuration\n";
+	THROW(ValueError() << errmsg{"BlipSource: no time configuration"});
     }
 
     auto pos = cfg["position"];
@@ -112,12 +155,19 @@ void Gen::BlipSource::configure(const WireCell::Configuration& cfg)
     }
     else {
 	std::cerr <<"BlipSource: no position configuration\n";
+	THROW(ValueError() << errmsg{"BlipSource: no position configuration"});
     }
 }
 
 bool Gen::BlipSource::operator()(IDepo::pointer& depo)
 {
     m_time += (*m_tim)();
+    if (m_time > m_stop) {
+	std::cerr <<"BlipSource: reached stop time: "
+                  << m_time/units::ms << " > " << m_stop/units::ms << std::endl;
+        depo = nullptr;
+        return true;
+    }
     depo = std::make_shared<SimpleDepo>(m_time, (*m_pos)(), (*m_ene)());
     return true;
 }
