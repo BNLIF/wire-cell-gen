@@ -196,15 +196,12 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     }
 
     m_chanstat_tn = get(cfg, "chanstat", m_chanstat_tn);
-    m_chanstat = Factory::find_tn<IChannelStatus>(m_chanstat_tn);
-    if (!m_chanstat) {
-        THROW(KeyError() << errmsg{"failed to get IChannelStatus: " + m_chanstat_tn});
+    if (m_chanstat_tn != "") {	// allow for an empty channel status, no deviation from norm
+	m_chanstat = Factory::find_tn<IChannelStatus>(m_chanstat_tn);
+	if (!m_chanstat) {
+	    THROW(KeyError() << errmsg{"failed to get IChannelStatus: " + m_chanstat_tn});
+	}
     }
-
-
-    // use like eg:
-    // double gain = m_chanstat->preamp_gain(chid);
-    // double shaping = m_chanstat->preamp_shaping(chid);
 
     m_spectra_file = get(cfg, "spectra_file", m_spectra_file);
     if (m_spectra_file.empty()) {
@@ -383,9 +380,11 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
     // get channel gain
     //float ch_gain = 14 * units::mV/units::fC, ch_shaping = 2.0 * units::us; 
     
-    double ch_gain = m_chanstat->preamp_gain(chid);
-    double ch_shaping = m_chanstat->preamp_shaping(chid);
-
+    double ch_gain = db_gain, ch_shaping = db_shaping;
+    if (m_chanstat) {		// allow for deviation from nominal
+	ch_gain = m_chanstat->preamp_gain(chid);
+	ch_shaping = m_chanstat->preamp_shaping(chid);
+    }
     double constant = lenamp->second.back();
     int nbin = lenamp->second.size()-1;
 
