@@ -34,6 +34,7 @@ WireCell::Configuration Gen::Fourdee::default_configuration() const
     put(cfg, "Ductor", "Ductor");        
     put(cfg, "Dissonance", "SilentNoise");
     put(cfg, "Digitizer", "Digitizer");  
+    put(cfg, "Filter", "");  
     put(cfg, "FrameSink", "DumpFrames"); 
 
     return cfg;
@@ -80,9 +81,25 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
         cerr << "\tDigitizer: " << tn << endl;
     }
 
+    tn = get<string>(cfg, "Filter","");
+    if (tn.empty()) {           // filter is optional
+        m_filter = nullptr;
+        cerr << "\tFilter: none\n";
+    }
+    else {
+        m_filter = Factory::find_tn<IFrameFilter>(tn);
+        cerr << "\tFilter: " << tn << endl;
+    }
+
     tn = get<string>(cfg, "FrameSink","");
-    cerr << "\tFrameSink: " << tn << endl;
-    m_output = Factory::find_tn<IFrameSink>(tn);
+    if (tn.empty()) {           // sink is optional
+        m_output = nullptr;
+        cerr << "\tSink: none\n";
+    }
+    else {
+        m_output = Factory::find_tn<IFrameSink>(tn);
+        cerr << "\tSink: " << tn << endl;
+    }
 }
 
 
@@ -132,6 +149,7 @@ void Gen::Fourdee::execute()
     if (!m_ductor) cerr << "no ductor" << endl;
     if (!m_dissonance) cerr << "no dissonance" << endl;
     if (!m_digitizer) cerr << "no digitizer" << endl;
+    if (!m_filter) cerr << "no filter" << endl;
     if (!m_output) cerr << "no output" << endl;
 
     // here we make a manual pipeline.  In a "real" app this might be
@@ -199,17 +217,30 @@ void Gen::Fourdee::execute()
                         cerr << "Stopping on " << type(*m_digitizer) << endl;
                         goto bail;
                     }
+                    em("digitized");
                 }
                 else {
                     adcframe = voltframe;
                 }
-                em("digitized");
-                cerr << "Gen::Fourdee: frame with " << adcframe->traces()->size() << " traces\n";
-                if (!(*m_output)(adcframe)) {
-                    cerr << "Stopping on " << type(*m_output) << endl;
-                    goto bail;
+
+                if (m_filter) {
+                    IFrameFilter::output_pointer filtframe;
+                    if (!(*m_filter)(adcframe, filtframe)) {
+                        cerr << "Stopping on " << type(*m_filter) << endl;
+                        goto bail;
+                    }
+                    adcframe = filtframe;
+                    em("filtered");
                 }
-                em("output");
+
+                if (m_output) {
+                    if (!(*m_output)(adcframe)) {
+                        cerr << "Stopping on " << type(*m_output) << endl;
+                        goto bail;
+                    }
+                    em("output");
+                }
+                cerr << "Gen::Fourdee: frame with " << adcframe->traces()->size() << " traces\n";
             }
         }
     }

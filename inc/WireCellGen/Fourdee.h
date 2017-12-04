@@ -48,6 +48,7 @@ namespace WireCell {
             WireCell::IDuctor::pointer m_ductor;
             WireCell::IFrameSource::pointer m_dissonance;
             WireCell::IFrameFilter::pointer m_digitizer;
+            WireCell::IFrameFilter::pointer m_filter;
             WireCell::IFrameSink::pointer m_output;
         };
     }
