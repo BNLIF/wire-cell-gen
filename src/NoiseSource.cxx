@@ -15,6 +15,7 @@ using namespace WireCell;
 
 Gen::NoiseSource::NoiseSource(const std::string& model, const std::string& anode, const std::string& rng)
     : m_time(0.0*units::ns)
+    , m_stop(1.0*units::ms)
     , m_readout(5.0*units::ms)
     , m_tick(0.5*units::us)
     , m_frame_count(0)
@@ -33,6 +34,7 @@ WireCell::Configuration Gen::NoiseSource::default_configuration() const
 {
     Configuration cfg;
     cfg["start_time"] = m_time;
+    cfg["stop_time"] = m_stop;
     cfg["readout_time"] = m_readout;
     cfg["sample_period"] = m_tick;
     cfg["first_frame_number"] = m_frame_count;
@@ -71,6 +73,7 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 
     m_readout = get<double>(cfg, "readout_time", m_readout);
     m_time = get<double>(cfg, "start_time", m_time);
+    m_stop = get<double>(cfg, "stop_time", m_stop);
     m_tick = get<double>(cfg, "sample_period", m_tick);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
 }
@@ -117,6 +120,10 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 {
+    if (m_time >= m_stop) {
+        frame = nullptr;
+        return true;
+    }
     ITrace::vector traces;
     const int tbin = 0;
     int nsamples = 0;

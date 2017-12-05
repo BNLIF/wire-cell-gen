@@ -42,7 +42,7 @@ namespace WireCell {
             IRandom::pointer m_rng;
             IAnodePlane::pointer m_anode;
             IChannelSpectrum::pointer m_model;
-            double m_time, m_readout, m_tick;
+            double m_time, m_stop, m_readout, m_tick;
             int m_frame_count;
             std::string m_anode_tn, m_model_tn,  m_rng_tn;
             
