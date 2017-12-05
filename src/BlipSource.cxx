@@ -113,10 +113,12 @@ struct UniformBox : public Gen::BlipSource::PointMaker {
     UniformBox(IRandom::pointer rng, const Ray& extent) : rng(rng), extent(extent) {}
     ~UniformBox() {}
     Point operator()() {
-	return Point(
+	auto p = Point(
 	    rng->uniform(extent.first.x(), extent.second.x()),
 	    rng->uniform(extent.first.y(), extent.second.y()),
 	    rng->uniform(extent.first.z(), extent.second.z()));
+        //std::cerr << "UniformBox: pt=" << p << std::endl;
+        return p;
     }
 };
 
@@ -151,6 +153,7 @@ void Gen::BlipSource::configure(const WireCell::Configuration& cfg)
     auto pos = cfg["position"];
     if (pos["type"].asString() == "box") {
 	Ray box = WireCell::convert<Ray>(pos["extent"]);
+        std::cerr << "Box: \n\t" << box.first << "\n\t" << box.second << std::endl;
 	m_pos = new UniformBox(m_rng, box);
     }
     else {

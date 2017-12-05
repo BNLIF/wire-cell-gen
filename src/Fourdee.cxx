@@ -103,40 +103,73 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 }
 
 
+void dump(const IFrame::pointer frame)
+{
+    if (!frame) {
+        cerr << "frame: empty!\n";
+        return;
+    }
+
+    auto traces = frame->traces();
+    const int ntraces = traces->size();
+
+    std::vector<int> tbins, tlens;
+    for (auto trace : *traces) {
+        const int tbin = trace->tbin();
+        tbins.push_back(tbin);
+        tlens.push_back(tbin+trace->charge().size());
+    }
+
+    int tmin = *(std::minmax_element(tbins.begin(), tbins.end()).first);
+    int tmax = *(std::minmax_element(tlens.begin(), tlens.end()).second);
+
+    cerr << "frame: #" << frame->ident()
+         << " @" << frame->time()/units::ms
+         << " with " << ntraces << " traces, tbins in: "
+         << "[" << tmin << "," << tmax << "]"
+         << endl;
+}
+
 template<typename DEPOS>
 void dump(DEPOS& depos)
 {
-    double tmin = -999, tmax = -999, xmin = -999, xmax = -999;
+    std::vector<double> t,x,y,z;
     double qtot = 0.0;
     double qorig = 0.0;
-    int ndepos = 0;
+
     for (auto depo : depos) {
         if (!depo) {
             cerr << "Gen::Fourdee: null depo" << endl;
-            continue;
+            break;
         }
-        ++ndepos;
-        double t = depo->time();
-        double x = depo->pos().x();
+        auto prior = depo->prior();
+        if (!prior) {
+            cerr << "Gen::Fourdee: null prior depo" << endl;
+        }
+        else {
+            qorig += prior->charge();
+        }
+        t.push_back(depo->time());
+        x.push_back(depo->pos().x());
+        y.push_back(depo->pos().y());
+        z.push_back(depo->pos().z());
         qtot += depo->charge();
-        qorig += depo->prior()->charge();
-        if (tmin < 0) {
-            tmin = tmax = t;
-            xmin = xmax = x;
-            continue;
-        }
-        if (t < tmin) { tmin = t; }
-        if (t > tmax) { tmax = t; }
-        if (x < xmin) { xmin = x; }
-        if (x > xmax) { xmax = x; }
     }
 
-    cerr << "Gen::FourDee: drifted " << ndepos
-         << ", x in [" << xmin/units::mm << ","<<xmax/units::mm<<"]mm, "
-         << "t in [" << tmin/units::us << "," << tmax/units::us << "]us, "
-         << " Qtot=" << qtot/units::eplus << ", <Qtot>=" << qtot/ndepos/units::eplus << " "
-         << " Qorig=" << qorig/units::eplus
-         << ", <Qorig>=" << qorig/ndepos/units::eplus << " electrons" << endl;
+    auto tmm = std::minmax_element(t.begin(), t.end());
+    auto xmm = std::minmax_element(x.begin(), x.end());
+    auto ymm = std::minmax_element(y.begin(), y.end());
+    auto zmm = std::minmax_element(z.begin(), z.end());
+    const int ndepos = depos.size();
+
+    std::cerr << "Gen::FourDee: drifted " << ndepos << ", extent:\n"
+              << "\tt in [ " << (*tmm.first)/units::us << "," << (*tmm.second)/units::us << "]us,\n"
+              << "\tx in [" << (*xmm.first)/units::mm << ","<<(*xmm.second)/units::mm<<"]mm,\n"
+              << "\ty in [" << (*ymm.first)/units::mm << ","<<(*ymm.second)/units::mm<<"]mm,\n"
+              << "\tz in [" << (*zmm.first)/units::mm << ","<<(*zmm.second)/units::mm<<"]mm,\n"
+              << "\tQtot=" << qtot/units::eplus << ", <Qtot>=" << qtot/ndepos/units::eplus << " "
+              << " Qorig=" << qorig/units::eplus
+              << ", <Qorig>=" << qorig/ndepos/units::eplus << " electrons" << std::endl;
 
         
 }
@@ -184,7 +217,7 @@ void Gen::Fourdee::execute()
         }
         ndrifted += drifted.size();
         cerr << "Gen::FourDee: seen " << ndrifted << " drifted\n";
-        //dump(drifted);
+        dump(drifted);
         
         for (auto drifted_depo : drifted) {
             IDuctor::output_queue frames;
@@ -199,6 +232,8 @@ void Gen::Fourdee::execute()
 
             for (IFrameFilter::input_pointer voltframe : frames) {
                 em("got frame");
+                cerr << "voltframe: ";
+                dump(voltframe);
 
                 if (m_dissonance) {
                     cerr << "Gen::FourDee: including noise\n";
@@ -207,8 +242,15 @@ void Gen::Fourdee::execute()
                         cerr << "Stopping on " << type(*m_dissonance) << endl;
                         goto bail;
                     }
-                    voltframe = Gen::sum(IFrame::vector{voltframe,noise}, voltframe->ident());
-                    em("got noise");
+                    if (noise) {
+                        cerr << "noiseframe: ";
+                        dump(noise);
+                        voltframe = Gen::sum(IFrame::vector{voltframe,noise}, voltframe->ident());
+                        em("got noise");
+                    }
+                    else {
+                        cerr << "Noise source is empty\n";
+                    }
                 }
 
                 IFrameFilter::output_pointer adcframe;
@@ -218,6 +260,8 @@ void Gen::Fourdee::execute()
                         goto bail;
                     }
                     em("digitized");
+                    cerr << "digiframe: ";
+                    dump(adcframe);
                 }
                 else {
                     adcframe = voltframe;
