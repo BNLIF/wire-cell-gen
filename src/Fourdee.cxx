@@ -125,7 +125,7 @@ void dump(const IFrame::pointer frame)
 
     cerr << "frame: #" << frame->ident()
          << " @" << frame->time()/units::ms
-         << " with " << ntraces << " traces, tbins in: "
+         << "ms with " << ntraces << " traces, tbins in: "
          << "[" << tmin << "," << tmax << "]"
          << endl;
 }
@@ -191,7 +191,7 @@ void Gen::Fourdee::execute()
     int ndepos = 0;
     int ndrifted = 0;
     ExecMon em;
-    cerr << "Gen::Fourdee: staring\n";
+    cerr << "Gen::Fourdee: starting\n";
     while (true) {
         ++count;
 
