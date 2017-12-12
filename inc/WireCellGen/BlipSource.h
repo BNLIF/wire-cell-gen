@@ -43,7 +43,7 @@ namespace WireCell {
 	    double m_time, m_stop;
 	    ScalarMaker *m_ene, *m_tim;
 	    PointMaker *m_pos;
-
+            int m_blip_count;
 	};
     }
 }

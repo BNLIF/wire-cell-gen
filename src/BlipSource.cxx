@@ -16,6 +16,7 @@ Gen::BlipSource::BlipSource()
     , m_ene(nullptr)
     , m_tim(nullptr)
     , m_pos(nullptr)
+    , m_blip_count(0)
 {
 }
 
@@ -171,6 +172,8 @@ bool Gen::BlipSource::operator()(IDepo::pointer& depo)
         depo = nullptr;
         return true;
     }
-    depo = std::make_shared<SimpleDepo>(m_time, (*m_pos)(), (*m_ene)());
+    ++m_blip_count;
+    depo = std::make_shared<SimpleDepo>(m_time, (*m_pos)(), (*m_ene)(),
+                                        nullptr, 0, 0, m_blip_count);
     return true;
 }

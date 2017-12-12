@@ -5,6 +5,7 @@
 #include "WireCellIface/IConfigurable.h"
 
 #include "WireCellIface/IDepoSource.h"
+#include "WireCellIface/IDepoFilter.h"
 #include "WireCellIface/IDrifter.h"
 #include "WireCellIface/IDuctor.h"
 #include "WireCellIface/IFrameSource.h"
@@ -44,6 +45,7 @@ namespace WireCell {
         private:
 
             WireCell::IDepoSource::pointer m_depos;
+            WireCell::IDepoFilter::pointer m_depofilter;
             WireCell::IDrifter::pointer m_drifter;
             WireCell::IDuctor::pointer m_ductor;
             WireCell::IFrameSource::pointer m_dissonance;

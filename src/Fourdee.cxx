@@ -30,6 +30,7 @@ WireCell::Configuration Gen::Fourdee::default_configuration() const
 
     // the 4 d's and proof the developer can not count:
     put(cfg, "DepoSource", "TrackDepos");
+    put(cfg, "DepoFilter", "");
     put(cfg, "Drifter", "Drifter");      
     put(cfg, "Ductor", "Ductor");        
     put(cfg, "Dissonance", "SilentNoise");
@@ -51,6 +52,10 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
     tn = get<string>(cfg, "DepoSource");
     cerr << "\tDepoSource: " << tn << endl;
     m_depos = Factory::find_tn<IDepoSource>(tn);
+
+    tn = get<string>(cfg, "DepoFilter");
+    cerr << "\tDepoFilter: " << tn << endl;
+    m_depofilter = Factory::find_tn<IDepoFilter>(tn);
 
     tn = get<string>(cfg, "Drifter");
     cerr << "\tDrifter: " << tn << endl;
@@ -215,6 +220,17 @@ void Gen::Fourdee::execute()
         if (drifted.empty()) {
             continue;
         }
+        if (m_depofilter) {
+            IDrifter::output_queue fdrifted;
+            for (auto drifted_depo : drifted) {
+                IDepo::pointer fdepo;
+                if ((*m_depofilter)(drifted_depo, fdepo)) {
+                    fdrifted.push_back(fdepo);
+                }
+            }
+            drifted = fdrifted;
+        }
+
         ndrifted += drifted.size();
         cerr << "Gen::FourDee: seen " << ndrifted << " drifted\n";
         dump(drifted);

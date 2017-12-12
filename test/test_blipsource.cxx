@@ -9,6 +9,7 @@
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TH1D.h"
+#include "TH2F.h"
 
 #include <iostream>
 
@@ -73,8 +74,10 @@ int main(int argc, char* argv[])
 	    //std::cout << cfg << std::endl;
 	    bs_cfg->configure(cfg);
 	    ene["edges"] = nele;
-	    std::cout << "Configuration for Ar39 blips:\n" << ene << std::endl;
 
+            // pos config is (2m)^2 box centered on origin
+
+	    std::cout << "Configuration for Ar39 blips:\n" << ene << std::endl;
 	}
     }
 
@@ -89,6 +92,12 @@ int main(int argc, char* argv[])
     gStyle->SetOptStat(111111);
     gStyle->SetOptFit(111111);
     TCanvas canvas("canvas","canvas", 1000, 800);
+
+    auto hxy = new TH2F("hxy", "Decay location (Y vs X)",
+                        200, -1.0, 1.0, 200, -1.0, 1.0);
+    auto hxz = new TH2F("hxz", "Decay location (Z vs X)",
+                        200, -1.0, 1.0, 200, -1.0, 1.0);
+
     auto ht = new TH1D("ht", "Ar39 decay time", 1000, 0, 100);
     ht->GetXaxis()->SetTitle("time between decays [us]");
     auto he = new TH1D("he", "Ar39 decay spectrum", nebins, 0, 1); // fixme: this needs to change to electrons!
@@ -110,6 +119,10 @@ int main(int argc, char* argv[])
 	    std::cerr << "BlipSource failed!\n";
 	    return 1;
 	}
+        if (!depo) {
+            std::cerr << "BlipSource: EOS\n";
+            break;
+        }
 	const double charge = depo->charge();
 	if (charge < 0) {
 	    std::cerr << "Got negative charge\n";
@@ -119,6 +132,11 @@ int main(int argc, char* argv[])
 	const double time = depo->time();
 	ht->Fill((time - last_time)/units::us);
 	last_time = time;
+
+        auto& pos = depo->pos();
+        hxy->Fill(pos.x()/units::m, pos.y()/units::m, charge);
+        hxz->Fill(pos.x()/units::m, pos.z()/units::m, charge);
+
     }
     he->Scale(1.0/(he->Integral() / nebins));
 
@@ -138,6 +156,12 @@ int main(int argc, char* argv[])
     canvas.Print(fname.c_str(), "pdf");
 
     hde->Draw();
+    canvas.Print(fname.c_str(), "pdf");
+
+    hxy->Draw("colz");
+    canvas.Print(fname.c_str(), "pdf");
+
+    hxz->Draw("colz");
     canvas.Print(fname.c_str(), "pdf");
 
     canvas.Print((fname+"]").c_str(), "pdf");
