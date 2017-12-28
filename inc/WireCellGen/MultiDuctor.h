@@ -27,10 +27,24 @@ namespace WireCell {
 
             // local
 
+            // Accept new frames into the buffer
+            void merge(const output_queue& newframes);
+
+            // Maybe extract output frames from the buffer.  If the
+            // depo is past the next scheduled readout or if a nullptr
+            // depo (EOS) then sub-ductors are flushed with EOS and
+            // the outframes queue is filled with one or more frames.
+            // If extraction occurs not by EOS then any carryover is
+            // kept.
+            bool maybe_extract(const input_pointer& depo, output_queue& outframes);
+
         private:
 
             std::string m_anode_tn;
             IAnodePlane::pointer m_anode;
+            double m_start_time;
+            double m_readout_time;
+            int m_frame_count;
 
             struct SubDuctor {
                 std::string name;
@@ -43,6 +57,12 @@ namespace WireCell {
             typedef std::vector<SubDuctor> ductorchain_t;
             std::vector<ductorchain_t> m_chains;            
             
+            /// As sub ductors are called they will each return frames
+            /// which are not in general synchronized with the others.
+            /// Their frames must be buffered here and released as a
+            /// merged frame in order for MultiDuctor to behave just
+            /// like a monolithic ductor.
+            output_queue m_frame_buffer;
 
         };
     }

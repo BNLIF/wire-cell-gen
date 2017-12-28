@@ -111,12 +111,26 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 void dump(const IFrame::pointer frame)
 {
     if (!frame) {
-        cerr << "frame: empty!\n";
+        cerr << "Fourdee: dump: empty frame\n";
         return;
+    }
+
+    for (auto tag: frame->frame_tags()) {
+        const auto& tlist = frame->tagged_traces(tag);
+        cerr << "Fourdee: frame tag: " << tag << " with " << tlist.size() << " traces\n";
+    }
+    for (auto tag: frame->trace_tags()) {
+        const auto& tlist = frame->tagged_traces(tag);
+        cerr << "Fourdee: trace tag: " << tag << " with " << tlist.size() << " traces\n";
     }
 
     auto traces = frame->traces();
     const int ntraces = traces->size();
+
+    if (ntraces <= 0) {
+        cerr << "Fourdee: dump: no traces\n";
+        return;
+    }
 
     std::vector<int> tbins, tlens;
     for (auto trace : *traces) {

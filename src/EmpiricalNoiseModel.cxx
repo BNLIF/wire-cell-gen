@@ -194,6 +194,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     if (!m_anode) {
         THROW(KeyError() << errmsg{"failed to get IAnodePlane: " + m_anode_tn});
     }
+    std::cerr << "EmpiricalNoiseModel: using anode " << m_anode_tn << std::endl;
 
     m_chanstat_tn = get(cfg, "chanstat", m_chanstat_tn);
     if (m_chanstat_tn != "") {	// allow for an empty channel status, no deviation from norm
@@ -202,6 +203,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
 	    THROW(KeyError() << errmsg{"failed to get IChannelStatus: " + m_chanstat_tn});
 	}
     }
+    std::cerr << "EmpiricalNoiseModel: using chanstat " << m_chanstat_tn << std::endl;
 
     m_spectra_file = get(cfg, "spectra_file", m_spectra_file);
     if (m_spectra_file.empty()) {
@@ -365,7 +367,8 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
     // saved content
     auto wpid = m_anode->resolve(chid);
     const int iplane = wpid.index();
-    auto& amp_cache = m_amp_cache[iplane];
+    //std::cerr << "ENM: iplane " << iplane << ": " << wpid << std::endl;
+    auto& amp_cache = m_amp_cache.at(iplane);
     auto lenamp = amp_cache.find(ilen);
     if (lenamp == amp_cache.end()) {
       auto amp = interpolate(iplane, ilen*m_wlres); // interpolate ... 
