@@ -54,7 +54,6 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
     m_depos = Factory::find_tn<IDepoSource>(tn);
 
     tn = get<string>(cfg, "DepoFilter");
-    cerr << "\tDepoFilter: " << tn << endl;
     if (tn.empty()) {
         m_depofilter = nullptr;
         cerr << "\tDepoFilter: none\n";
