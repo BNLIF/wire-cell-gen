@@ -90,6 +90,12 @@ double Gen::Digitizer::digitize(double voltage)
 
 bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adcframe)
 {
+    if (!vframe) {              // EOS
+        cerr << "Gen::Digitizer: EOS\n";
+        adcframe = nullptr;
+        return true;
+    }
+
     auto vtraces = vframe->traces();
     const int ntraces = vtraces->size();
     ITrace::vector adctraces(ntraces);

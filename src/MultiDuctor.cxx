@@ -86,7 +86,7 @@ struct Wirebounds {
                 int iwire = pimpos[iplane]->region_binning().bin(pitch); // fixme: warning: round off error?
                 inregion = inregion && (imin <= iwire && iwire <= imax);
                 if (!inregion) {
-                    std::cerr << "Wirebounds: wire: "<<iwire<<" of plane " << iplane << " not in [" << imin << "," << imax << "]\n";
+                    // std::cerr << "Wirebounds: wire: "<<iwire<<" of plane " << iplane << " not in [" << imin << "," << imax << "]\n";
                     break;      // not in this view's region, no reason to keep checking.
                 }
             }
@@ -185,7 +185,7 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
             bool ok = (*sd.ductor)(nullptr, newframes); // flush with EOS
             if (!ok) { return false; }
             sd.ductor->reset();
-            merge(newframes);
+            merge(newframes);   // updates frame buffer
         }
     }
 
@@ -196,6 +196,7 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
         // we read out, and yet we have nothing
         ITrace::vector traces;
         auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+        outframes.push_back(frame);
         m_start_time += m_readout_time;
         ++m_frame_count;
         return true;
@@ -230,6 +231,7 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
         // we read out, and yet we have nothing
         ITrace::vector traces;
         auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+        outframes.push_back(frame);
         m_start_time += m_readout_time;
         ++m_frame_count;
         return true;
@@ -254,6 +256,7 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
         }
     }
     auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+    outframes.push_back(frame);
     m_start_time += m_readout_time;
     ++m_frame_count;
     return true;
@@ -274,7 +277,10 @@ bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outfr
 {
     // end of stream processing
     if (!depo) {              
-        return maybe_extract(depo, outframes);
+        std::cerr << "Gen::MultiDuctor: end of stream processing\n";
+        bool ok = maybe_extract(depo, outframes);
+        outframes.push_back(nullptr); // eos marker
+        return ok;
     }
 
 

@@ -38,20 +38,22 @@ namespace WireCell {
             virtual ~Fourdee();
 
             virtual void execute();
+            virtual void execute_old();
+            virtual void execute_new();
 
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
         private:
 
-            WireCell::IDepoSource::pointer m_depos;
-            WireCell::IDepoFilter::pointer m_depofilter;
-            WireCell::IDrifter::pointer m_drifter;
-            WireCell::IDuctor::pointer m_ductor;
-            WireCell::IFrameSource::pointer m_dissonance;
-            WireCell::IFrameFilter::pointer m_digitizer;
-            WireCell::IFrameFilter::pointer m_filter;
-            WireCell::IFrameSink::pointer m_output;
+            WireCell::IDepoSource::pointer m_depos; // required
+            WireCell::IDepoFilter::pointer m_depofilter; // optional
+            WireCell::IDrifter::pointer m_drifter;       // optional, but likely
+            WireCell::IDuctor::pointer m_ductor;         // effectively required
+            WireCell::IFrameSource::pointer m_dissonance; // optional
+            WireCell::IFrameFilter::pointer m_digitizer;  // optional
+            WireCell::IFrameFilter::pointer m_filter;     // optional
+            WireCell::IFrameSink::pointer m_output;       // optional
         };
     }
 }

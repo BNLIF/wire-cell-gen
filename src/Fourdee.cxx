@@ -4,6 +4,8 @@
 #include "WireCellUtil/ConfigManager.h"
 #include "WireCellUtil/ExecMon.h"
 
+#include "WireCellGen/GenPipeline.h"
+
 WIRECELL_FACTORY(FourDee, WireCell::Gen::Fourdee, WireCell::IApplication, WireCell::IConfigurable);
 
 using namespace std;
@@ -158,6 +160,11 @@ void dump(const IFrame::pointer frame)
 template<typename DEPOS>
 void dump(DEPOS& depos)
 {
+    if (depos.empty() or (depos.size() == 1 and !depos[0])) {
+        std::cerr << "Fourdee::dump: empty depos set\n";
+        return;
+    }
+
     std::vector<double> t,x,y,z;
     double qtot = 0.0;
     double qorig = 0.0;
@@ -200,15 +207,164 @@ void dump(DEPOS& depos)
 }
 
 
+// Implementation warning: this violates node and proc generality in
+// order to coerce a join into a linear pipeline.
+class NoiseAdderProc : public FilterProc {
+public:
+    NoiseAdderProc(IFrameSource::pointer nn) : noise_node(nn) {}
+    virtual ~NoiseAdderProc() {}
+
+    virtual Pipe& input_pipe() {
+        return iq; 
+    }
+    virtual Pipe& output_pipe() {
+        return oq; 
+    }
+
+    virtual bool operator()() {
+        if (iq.empty()) { return false; }
+
+        const IFrame::pointer iframe = boost::any_cast<const IFrame::pointer>(iq.front());
+        iq.pop();
+
+        if (!iframe) {          // eos
+            std::cerr << "NoiseAdderProc eos\n";
+            boost::any out = iframe;
+            oq.push(out);
+            return true;
+        }
+
+        IFrame::pointer nframe;
+        bool ok = (*noise_node)(nframe);
+        if (!ok) return false;
+        nframe = Gen::sum(IFrame::vector{iframe,nframe}, iframe->ident());
+        boost::any anyout = nframe;
+        oq.push(anyout);
+        return true;        
+    }
+
+private:
+    Pipe iq, oq;
+    IFrameSource::pointer noise_node;
+
+};
+
+
 void Gen::Fourdee::execute()
 {
-    if (!m_depos) cerr << "no depos" << endl;
-    if (!m_drifter) cerr << "no drifter" << endl;
-    if (!m_ductor) cerr << "no ductor" << endl;
-    if (!m_dissonance) cerr << "no dissonance" << endl;
-    if (!m_digitizer) cerr << "no digitizer" << endl;
-    if (!m_filter) cerr << "no filter" << endl;
-    if (!m_output) cerr << "no output" << endl;
+    execute_new();
+}
+
+void Gen::Fourdee::execute_new()
+{
+    if (!m_depos) {
+        cerr << "Fourdee: no depos, can't do much" << endl;
+        return;
+    }
+
+    if (!m_ductor and (m_digitizer or m_dissonance or m_digitizer or m_filter or m_output) ) {
+        std::cerr <<"Fourdee: a Ductor is required for subsequent pipeline stages\n";
+        return;
+    }
+
+    Pipeline pipeline;
+    auto source = new SourceNodeProc(m_depos);
+    Proc* last_proc = source;
+
+    if (m_drifter) {            // depo in, depo out
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_drifter) << endl;
+        auto proc = new QueuedNodeProc(m_drifter);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+    if (m_depofilter) {         // depo in, depo out
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_depofilter) << endl;
+        auto proc = new FunctionNodeProc(m_depofilter);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+
+    if (m_ductor) {             // depo in, zero or more frames out
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_ductor) << endl;
+        auto proc = new QueuedNodeProc(m_ductor);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+
+    if (m_dissonance) {         // frame in, frame out
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_dissonance) << endl;
+        auto proc = new NoiseAdderProc(m_dissonance);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+
+    if (m_digitizer) {          // frame in, frame out
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_digitizer) << endl;
+        auto proc = new FunctionNodeProc(m_digitizer);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+
+    if (m_filter) {          // frame in, frame out
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_filter) << endl;
+        auto proc = new FunctionNodeProc(m_filter);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+
+    if (m_output) {             // frame in, full stop.
+        cerr << "Pipeline adding #"<<pipeline.size()<<": " << type(*m_output) << endl;
+        auto proc = new SinkNodeProc(m_output);
+        last_proc = join(pipeline, last_proc, proc);
+    }
+    else {
+        cerr << "Pipeline adding #"<<pipeline.size()<<": sink\n";
+        auto sink = new DropSinkProc;
+        last_proc = join(pipeline, last_proc, sink);
+    }
+
+    // truly last proc needs to be added by hand.
+    pipeline.push_back(last_proc);
+
+
+
+    // A "drain end first" strategy gives attention to draining
+    // queues the more toward the the end of the pipeline they are.
+    // This keeps the overall pipeline empty and leads to "pulse" type
+    // data movement.  It's stupid for multiprocessing but in a single
+    // thread will keep memory usage low.
+    size_t pipelen = pipeline.size();
+    while (true) {
+        bool did_something = false;
+        for (size_t ind = pipelen-1; ind > 0; --ind) { // source has no input
+            SinkProc* proc = dynamic_cast<SinkProc*>(pipeline[ind]);
+            if (proc->input_pipe().empty()) {
+                continue;
+            }
+            bool ok = (*proc)();
+            if (!ok) {
+                std::cerr << "Pipeline failed\n";
+                return;
+            }
+            std::cerr << "Executed process " << ind << std::endl;
+            did_something = true;
+            break;
+        }
+        if (!did_something) {
+            bool ok = (*pipeline[0])();
+            if (!ok) {
+                std::cerr << "Source empty\n";
+                return;
+            }
+            std::cerr << "Executed source\n";
+        }
+        // otherwise, go through pipeline again
+    }
+
+}
+void Gen::Fourdee::execute_old()
+{
+    if (!m_depos) cerr << "Fourdee: no depos" << endl;
+    if (!m_drifter) cerr << "Fourdee: no drifter" << endl;
+    if (!m_ductor) cerr << "Fourdee: no ductor" << endl;
+    if (!m_dissonance) cerr << "Fourdee: no dissonance" << endl;
+    if (!m_digitizer) cerr << "Fourdee: no digitizer" << endl;
+    if (!m_filter) cerr << "Fourdee: no filter" << endl;
+    if (!m_output) cerr << "Fourdee: no sink" << endl;
 
     // here we make a manual pipeline.  In a "real" app this might be
     // a DFP executed by TBB.
@@ -225,7 +381,7 @@ void Gen::Fourdee::execute()
             cerr << "DepoSource is empty\n";
         }
         if (!depo) {
-            cerr << "Got null depo from source at "<<count<< endl;
+            cerr << "Got null depo from source at loop iteration " << count << endl;
         }
         else {
             ++ndepos;

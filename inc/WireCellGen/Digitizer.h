@@ -45,7 +45,7 @@ namespace WireCell {
             int m_resolution;
             double m_gain;
             std::vector<double> m_fullscale, m_baselines;
-
+            bool m_eos;
             
         };
 
