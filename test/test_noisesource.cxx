@@ -73,6 +73,7 @@ int main(int argc, char* argv[])
         cfg["anode"] = "AnodePlane";
         cfg["model"] = "EmpiricalNoiseModel";
         cfg["rng"] = "Random";
+        cfg["readout_time"] = units::ms;
         noisesrccfg->configure(cfg);
     }
 
