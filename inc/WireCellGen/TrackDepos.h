@@ -44,6 +44,7 @@ namespace WireCell {
             WireCell::IDepo::vector m_depos;
             bool m_eos;
             std::vector<track_t> m_tracks; // collect for posterity
+            int m_count;
         };
 
     }

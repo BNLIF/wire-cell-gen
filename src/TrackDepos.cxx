@@ -19,6 +19,7 @@ Gen::TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
     , m_eos(false)
+    , m_count(0)
 {
 }
 
@@ -100,10 +101,12 @@ bool Gen::TrackDepos::operator()(output_pointer& out)
 
     if (m_depos.empty()) {
 	m_eos = true;
+        std::cerr << "TrackDepos: EOS after sending " << m_count << " depos\n";
 	out = nullptr;
 	return true;
     }
 
+    ++m_count;
     out = m_depos.back();
     m_depos.pop_back();
     //cerr << "Gen::TrackDepos: " << m_depos.size() << " left, sending: " << dump(out) << endl;

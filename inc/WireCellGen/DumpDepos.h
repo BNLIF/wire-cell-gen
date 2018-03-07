@@ -7,7 +7,11 @@ namespace WireCell {
 
     class DumpDepos : public IDepoSink {
     public:
+        DumpDepos();
+        virtual ~DumpDepos();
 	virtual bool operator()(const IDepo::pointer& depo);
+    private:
+        int m_nin;
     };
 
 }

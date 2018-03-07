@@ -23,6 +23,7 @@ namespace WireCell {
 
         private:
             std::tuple<bool, bool> m_eos;
+            int m_nin0, m_nin1, m_nout;
         };
     }
 }
