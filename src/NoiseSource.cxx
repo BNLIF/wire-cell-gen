@@ -22,6 +22,7 @@ Gen::NoiseSource::NoiseSource(const std::string& model, const std::string& anode
     , m_anode_tn(anode)
     , m_model_tn(model)
     , m_rng_tn(rng)
+    , m_eos(false)
 {
 }
 
@@ -120,8 +121,13 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 {
+    if (m_eos) {
+        return false;
+    }
+
     if (m_time >= m_stop) {
         frame = nullptr;
+        m_eos = true;
         return true;
     }
     ITrace::vector traces;

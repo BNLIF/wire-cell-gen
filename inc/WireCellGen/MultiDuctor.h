@@ -45,6 +45,7 @@ namespace WireCell {
             double m_start_time;
             double m_readout_time;
             int m_frame_count;
+            bool m_eos;
 
             struct SubDuctor {
                 std::string name;

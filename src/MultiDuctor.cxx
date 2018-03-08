@@ -21,6 +21,7 @@ Gen::MultiDuctor::MultiDuctor(const std::string anode)
     , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
     , m_frame_count(0)
+    , m_eos(false)
 {
 }
 Gen::MultiDuctor::~MultiDuctor()
@@ -275,12 +276,17 @@ void Gen::MultiDuctor::merge(const output_queue& newframes)
 
 bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outframes)
 {
+    if (m_eos) {
+        return false;
+    }
+
     // end of stream processing
     if (!depo) {              
         std::cerr << "Gen::MultiDuctor: end of stream processing\n";
         bool ok = maybe_extract(depo, outframes);
         outframes.push_back(nullptr); // eos marker
-        return ok;
+        m_eos = true;
+        return ok;            // fixme: this should throw is no okay
     }
 
 
@@ -313,7 +319,7 @@ bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outfr
     if (outframes.size()) {
         std::cerr << "Gen::MultiDuctor: returning " << outframes.size() << " frames\n";
     }
-    return all_okay;
+    return all_okay;            // fixme: this should throw is no okay
 }
 
 

@@ -17,6 +17,7 @@ Gen::BlipSource::BlipSource()
     , m_tim(nullptr)
     , m_pos(nullptr)
     , m_blip_count(0)
+    , m_eos(false)
 {
 }
 
@@ -165,11 +166,16 @@ void Gen::BlipSource::configure(const WireCell::Configuration& cfg)
 
 bool Gen::BlipSource::operator()(IDepo::pointer& depo)
 {
+    if (m_eos) {
+        return false;
+    }
+
     m_time += (*m_tim)();
     if (m_time > m_stop) {
 	std::cerr <<"BlipSource: reached stop time: "
                   << m_time/units::ms << " > " << m_stop/units::ms << std::endl;
         depo = nullptr;
+        m_eos = true;
         return true;
     }
     ++m_blip_count;

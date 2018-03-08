@@ -152,7 +152,7 @@ bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	return false;
     }
 
-    if (!depo) {		// EOS flush
+    if (!depo) {		// no more inputs expected, EOS flush
         //cerr << "Gen::Drifter: flushing " << m_input.size() << "\n";
 	while (!m_input.empty()) {	
 	    IDepo::pointer top = *m_input.begin();

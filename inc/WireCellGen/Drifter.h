@@ -63,7 +63,7 @@ namespace WireCell {
             // Input buffer sorted by proper time
             DepoTauSortedSet m_input;
 
-            // mark reaching end of stream 
+            // record when we have sent out EOS.
             bool m_eos;
 
             // Set anode plane component title:name.

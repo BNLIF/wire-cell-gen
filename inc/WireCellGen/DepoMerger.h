@@ -22,8 +22,9 @@ namespace WireCell {
             virtual WireCell::Configuration default_configuration() const;
 
         private:
-            std::tuple<bool, bool> m_eos;
+            //std::tuple<bool, bool> m_eos;
             int m_nin0, m_nin1, m_nout;
+            bool m_eos;
         };
     }
 }

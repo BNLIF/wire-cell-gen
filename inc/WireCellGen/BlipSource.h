@@ -44,6 +44,7 @@ namespace WireCell {
 	    ScalarMaker *m_ene, *m_tim;
 	    PointMaker *m_pos;
             int m_blip_count;
+            bool m_eos;
 	};
     }
 }

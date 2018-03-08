@@ -155,10 +155,9 @@ bool Gen::Ductor::operator()(const input_pointer& depo, output_queue& frames)
         m_depos.push_back(depo);
     }
     else {
+        frames.push_back(nullptr);
         m_eos = true;
     }
-
-
 
     return true;
 }

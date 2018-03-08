@@ -42,7 +42,7 @@ namespace WireCell {
             double m_stepsize;
             double m_clight;
             WireCell::IDepo::vector m_depos;
-            bool m_eos;
+            bool m_eos;                    // mark if we hit output EOS
             std::vector<track_t> m_tracks; // collect for posterity
             int m_count;
         };
