@@ -1,7 +1,12 @@
 #include "WireCellGen/FrameSummer.h"
 #include "WireCellGen/FrameUtil.h"
+#include "WireCellUtil/NamedFactory.h"
+
+WIRECELL_FACTORY(FrameSummer, WireCell::Gen::FrameSummer,
+                 WireCell::IFrameJoiner, WireCell::IConfigurable)
 
 using namespace WireCell;
+
 
 Configuration Gen::FrameSummer::default_configuration() const
 {

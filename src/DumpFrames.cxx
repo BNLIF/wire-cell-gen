@@ -21,6 +21,10 @@ Gen::DumpFrames::~DumpFrames()
 
 bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
 {
+    if (!frame) {
+        cerr << "DumpFrames sees EOS\n";
+        return true;
+    }
     auto traces = frame->traces();
     const int ntraces = traces->size();
     
