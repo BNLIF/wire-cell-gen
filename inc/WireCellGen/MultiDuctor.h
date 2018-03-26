@@ -1,3 +1,12 @@
+/** MultiDuctor - apply one of many possible ductors based on outcome of rules applied to input depos.
+
+    A list of independent "chains" are given.  Each chain is applied
+    to an input depo.  A chain is a sequence of rules.  Each rule is
+    applied in turn to a depo until one matches.  On a match, the
+    ductor associated with the rule is given the depo and subsequent
+    iteration of the chain is abandoned.
+ */
+
 #ifndef WIRECELLGEN_MULTIDUCTOR
 #define WIRECELLGEN_MULTIDUCTOR
 

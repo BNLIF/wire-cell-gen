@@ -3,6 +3,7 @@
 #include "WireCellIface/IWireSelectors.h"
 #include "WireCellIface/SimpleFrame.h"
 #include "WireCellIface/SimpleTrace.h"
+#include "WireCellIface/FrameTools.h"
 
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/NamedFactory.h"
@@ -96,45 +97,84 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
         return true;
     }
 
-    auto vtraces = vframe->traces();
-    const int ntraces = vtraces->size();
-    ITrace::vector adctraces(ntraces);
 
-    for (int itrace=0; itrace<ntraces; ++itrace) {
-        auto& vtrace = vtraces->at(itrace);
-        const int channel = vtrace->channel();
-        WirePlaneId wpid = m_anode->resolve(channel);
+    // fixme: maybe make this honor a tag 
+    auto vtraces = FrameTools::untagged_traces(vframe);
+
+    // Get extent in channel and tbin
+    auto channels = FrameTools::channels(vtraces);
+    std::sort(channels.begin(), channels.end());
+    auto chbeg = channels.begin();
+    auto chend = std::unique(chbeg, channels.end());
+    auto tbinmm = FrameTools::tbin_range(vtraces);
+    
+    const size_t ncols = tbinmm.second-tbinmm.first;
+    const size_t nrows = std::distance(chbeg, chend);
+
+    // make a dense array working space.  a row is one trace.  a
+    // column is one tick.
+    Array::array_xxf arr = Array::array_xxf::Zero(nrows, ncols);
+    FrameTools::fill(arr, vtraces, channels.begin(), chend, tbinmm.first);
+
+    ITrace::vector adctraces(nrows);
+
+    for (size_t irow=0; irow < nrows; ++irow) {
+        int ch = channels[irow];
+        WirePlaneId wpid = m_anode->resolve(ch);
         if (!wpid.valid()) {
-            cerr << "Got invalid WPID for channel " << channel << ": " << wpid << endl;
+            cerr << "Got invalid WPID for channel " << ch << ": " << wpid << endl;
         }
+        const float baseline = m_baselines[wpid.index()];
 
-        // fixme: WCT needs a better way to handle anode database
-        // lookups like this.  Eg, is index() the right level of
-        // abstraction?  Could there be different baselines in the
-        // same wire plane?
-        const double baseline = m_baselines[wpid.index()];
-        auto& vwave = vtrace->charge();
-        const int nsamps = vwave.size();
-        ITrace::ChargeSequence adcwave(nsamps);
-        for (int isamp=0; isamp<nsamps; ++isamp) {
-            const double voltage = m_gain*vwave[isamp] + baseline;
+        ITrace::ChargeSequence adcwave(ncols);
+        for (size_t icol=0; icol < ncols; ++icol) {
+            double voltage = m_gain*arr(irow, icol) + baseline;
             const float adcf = digitize(voltage);
-            adcwave[isamp] = adcf;
+            adcwave[icol] = adcf;
         }
-        if (false) {             // debug
-            auto vmm = std::minmax_element(vwave.begin(), vwave.end());
-            auto adcmm = std::minmax_element(adcwave.begin(), adcwave.end());
-            cerr << "Gen::Digitizer: "
-                 << "wpid.index=" << wpid.index() << ", "
-                 << "wpid.ident=" << wpid.ident() << ", "
-                 << "vmm=[" << (*vmm.first)/units::uV << "," << (*vmm.second)/units::uV << "] uV, "
-                 << "adcmm=[" << (*adcmm.first) << "," << (*adcmm.second) << "], "
-                 << endl;
-        }
-
-        adctraces[itrace] = make_shared<SimpleTrace>(channel, vtrace->tbin(), adcwave);
+        adctraces[irow] = make_shared<SimpleTrace>(ch, tbinmm.first, adcwave);
     }
     adcframe = make_shared<SimpleFrame>(vframe->ident(), vframe->time(), adctraces,
                                         vframe->tick(), vframe->masks());
+
+    // const int ntraces = vtraces->size();
+    // ITrace::vector adctraces(ntraces);
+
+    // for (int itrace=0; itrace<ntraces; ++itrace) {
+    //     auto& vtrace = vtraces->at(itrace);
+    //     const int channel = vtrace->channel();
+    //     WirePlaneId wpid = m_anode->resolve(channel);
+    //     if (!wpid.valid()) {
+    //         cerr << "Got invalid WPID for channel " << channel << ": " << wpid << endl;
+    //     }
+
+    //     // fixme: WCT needs a better way to handle anode database
+    //     // lookups like this.  Eg, is index() the right level of
+    //     // abstraction?  Could there be different baselines in the
+    //     // same wire plane?
+    //     const double baseline = m_baselines[wpid.index()];
+    //     auto& vwave = vtrace->charge();
+    //     const int nsamps = vwave.size();
+    //     ITrace::ChargeSequence adcwave(nsamps);
+    //     for (int isamp=0; isamp<nsamps; ++isamp) {
+    //         const double voltage = m_gain*vwave[isamp] + baseline;
+    //         const float adcf = digitize(voltage);
+    //         adcwave[isamp] = adcf;
+    //     }
+    //     if (false) {             // debug
+    //         auto vmm = std::minmax_element(vwave.begin(), vwave.end());
+    //         auto adcmm = std::minmax_element(adcwave.begin(), adcwave.end());
+    //         cerr << "Gen::Digitizer: "
+    //              << "wpid.index=" << wpid.index() << ", "
+    //              << "wpid.ident=" << wpid.ident() << ", "
+    //              << "vmm=[" << (*vmm.first)/units::uV << "," << (*vmm.second)/units::uV << "] uV, "
+    //              << "adcmm=[" << (*adcmm.first) << "," << (*adcmm.second) << "], "
+    //              << endl;
+    //     }
+
+    //     adctraces[itrace] = make_shared<SimpleTrace>(channel, vtrace->tbin(), adcwave);
+    // }
+    // adcframe = make_shared<SimpleFrame>(vframe->ident(), vframe->time(), adctraces,
+    //                                     vframe->tick(), vframe->masks());
     return true;
 }

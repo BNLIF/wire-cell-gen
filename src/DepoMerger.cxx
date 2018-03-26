@@ -35,8 +35,8 @@ bool Gen::DepoMerger::operator()(input_queues_type& inqs,
 
     auto& outq = get<0>(outqs);
 
-    std::cerr << "DepoMerger queue sizes on input: in:["<< inq0.size()<<","<<inq1.size()<<"], "
-              << "out:["<<outq.size()<<"]\n";
+    //std::cerr << "DepoMerger queue sizes on input: in:["<< inq0.size()<<","<<inq1.size()<<"], "
+    //          << "out:["<<outq.size()<<"]\n";
 
     IDepo::pointer d0 = inq0.front();
     IDepo::pointer d1 = inq1.front();
@@ -49,14 +49,14 @@ bool Gen::DepoMerger::operator()(input_queues_type& inqs,
             ++m_nin0;
             outq.push_back(d0);
             inq0.pop_front();
-            std::cerr << "DepoMerger: stream 0 output: t0="<<t0<<", t1="<<t1<<"\n"; 
+            //std::cerr << "DepoMerger: stream 0 output: t0="<<t0<<", t1="<<t1<<"\n"; 
         }
         if (t1 <= t0) {
             ++m_nout;
             ++m_nin1;
             outq.push_back(d1);
             inq1.pop_front();
-            std::cerr << "DepoMerger: stream 1 output: t0="<<t0<<", t1="<<t1<<"\n"; 
+            //std::cerr << "DepoMerger: stream 1 output: t0="<<t0<<", t1="<<t1<<"\n"; 
         }
         return true;
     }   
@@ -66,7 +66,7 @@ bool Gen::DepoMerger::operator()(input_queues_type& inqs,
         ++m_nin0;
         outq.push_back(d0);
         inq0.pop_front();
-        std::cerr << "DepoMerger: stream 0 only output: nout="<<m_nout<<"\n"; 
+        //std::cerr << "DepoMerger: stream 0 only output: nout="<<m_nout<<"\n"; 
         return true;
     }
 
@@ -75,7 +75,7 @@ bool Gen::DepoMerger::operator()(input_queues_type& inqs,
         ++m_nin1;
         outq.push_back(d1);
         inq1.pop_front();
-        std::cerr << "DepoMerger: stream 1 only output: nout="<<m_nout<<"\n"; 
+        //std::cerr << "DepoMerger: stream 1 only output: nout="<<m_nout<<"\n"; 
         return true;
     }
 

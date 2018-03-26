@@ -9,7 +9,7 @@ int main()
 {
     Gen::AnodePlane ap;
     auto cfg = ap.default_configuration();
-    cfg["wires"] = "microboone-celltree-wires-v2.json.bz2";
+    cfg["wires"] = "microboone-celltree-wires-v2.1.json.bz2";
     cfg["fields"] = "ub-10-half.json.bz2";
     ap.configure(cfg);
 

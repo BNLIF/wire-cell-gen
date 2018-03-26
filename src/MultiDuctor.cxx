@@ -245,6 +245,9 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     /// will cause the final output frame to extend past requested
     /// duration.  There needs to be a loop over to_extract added.
 
+    /// Big fat lazy programmer FIXME v2: there can be multiple traces
+    /// on the same channel which may overlap in time.
+
     ITrace::vector traces;
     for (auto frame: to_extract) {
         const double tref = frame->time();
@@ -309,6 +312,9 @@ bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outfr
             bool ok = (*sd.ductor)(depo, newframes);
             merge(newframes);
             all_okay = all_okay && ok;
+
+            // got a match so abandon chain
+            break;
         }
     }
     if (depo && !count) {
