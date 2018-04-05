@@ -22,6 +22,7 @@ Gen::Digitizer::Digitizer(const std::string& anode,
     , m_gain(gain)
     , m_fullscale(fullscale)
     , m_baselines(baselines)
+    , m_frame_tag("")
 {
 }
 
@@ -47,6 +48,8 @@ WireCell::Configuration Gen::Digitizer::default_configuration() const
         bl[ind] = m_baselines[ind];
     }
     cfg["baselines"] = bl;
+
+    cfg["frame_tag"] = m_frame_tag;
     return cfg;
 }
 
@@ -64,8 +67,10 @@ void Gen::Digitizer::configure(const Configuration& cfg)
     m_gain = get(cfg, "gain", m_gain);
     m_fullscale = get(cfg, "fullscale", m_fullscale);
     m_baselines = get(cfg, "baselines", m_baselines);
+    m_frame_tag = get(cfg, "frame_tag", m_frame_tag);
 
     cerr << "Gen::Digitizer: "
+         << "tag=\""<<m_frame_tag << "\", "
          << "resolution="<<m_resolution<<" bits, "
          << "maxvalue=" << (1<<m_resolution) << " counts, "
          << "gain=" << m_gain << ", "
@@ -134,8 +139,12 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
         }
         adctraces[irow] = make_shared<SimpleTrace>(ch, tbinmm.first, adcwave);
     }
-    adcframe = make_shared<SimpleFrame>(vframe->ident(), vframe->time(), adctraces,
-                                        vframe->tick(), vframe->masks());
+    auto sframe = make_shared<SimpleFrame>(vframe->ident(), vframe->time(), adctraces,
+                                           vframe->tick(), vframe->masks());
+    if (!m_frame_tag.empty()) {
+        sframe->tag_frame(m_frame_tag);
+    }
+    adcframe = sframe;
 
     // const int ntraces = vtraces->size();
     // ITrace::vector adctraces(ntraces);
