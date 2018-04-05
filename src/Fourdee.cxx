@@ -340,7 +340,7 @@ void Gen::Fourdee::execute_new()
                 std::cerr << "Pipeline failed\n";
                 return;
             }
-            std::cerr << "Executed process " << ind << std::endl;
+            //std::cerr << "Executed process " << ind << std::endl;
             did_something = true;
             break;
         }
@@ -350,7 +350,7 @@ void Gen::Fourdee::execute_new()
                 std::cerr << "Source empty\n";
                 return;
             }
-            std::cerr << "Executed source\n";
+            //std::cerr << "Executed source\n";
         }
         // otherwise, go through pipeline again
     }
