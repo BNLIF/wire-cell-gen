@@ -21,7 +21,6 @@ Gen::MultiDuctor::MultiDuctor(const std::string anode)
     , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
     , m_frame_count(0)
-    , m_eos(false)
 {
 }
 Gen::MultiDuctor::~MultiDuctor()
@@ -161,17 +160,18 @@ void Gen::MultiDuctor::configure(const WireCell::Configuration& cfg)
     } // loop to store chains of ductors
 }
 
-void Gen::MultiDuctor::reset()
-{
-    // forward message
-    for (auto& chain : m_chains) {
-        for (auto& sd : chain) {
-            sd.ductor->reset();
-        }
-    }
-}
+// void Gen::MultiDuctor::reset()
+// {
+//     // forward message
+//     for (auto& chain : m_chains) {
+//         for (auto& sd : chain) {
+//             sd.ductor->reset();
+//         }
+//     }
+// }
 
 
+// Outframes should not have a terminating nullptr even if depo is nullptr
 bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& outframes)
 {
     double target_time = m_start_time + m_readout_time;
@@ -183,9 +183,7 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     for (auto& chain : m_chains) {
         for (auto& sd : chain) {
             output_queue newframes;
-            bool ok = (*sd.ductor)(nullptr, newframes); // flush with EOS
-            if (!ok) { return false; }
-            sd.ductor->reset();
+            (*sd.ductor)(nullptr, newframes); // flush with EOS marker
             merge(newframes);   // updates frame buffer
         }
     }
@@ -193,11 +191,19 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     double tick = 0.5*units::us; // note, could be differ from what
                                  // sub-ductors use when they actually
                                  // have waveforms to give us.
+
+    // we must read out, and yet we have nothing
+    //
+    // fixme: the default behavior of this is to make sequential
+    // blocks of m_readout_time even if there be no data.  Need to
+    // also handle a more isolated running where the readout window is
+    // data driven up until EOS is found.
     if (!m_frame_buffer.size()) {
-        // we read out, and yet we have nothing
+
         ITrace::vector traces;
         auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
         outframes.push_back(frame);
+
         m_start_time += m_readout_time;
         ++m_frame_count;
         return true;
@@ -269,7 +275,7 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
 void Gen::MultiDuctor::merge(const output_queue& newframes)
 {
     for (auto frame : newframes) {
-        if (!frame) { continue; }
+        if (!frame) { continue; } // skip internal EOS
         auto traces = frame->traces();
         if (!traces) { continue; }
         if (traces->empty()) { continue; }
@@ -279,17 +285,12 @@ void Gen::MultiDuctor::merge(const output_queue& newframes)
 
 bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outframes)
 {
-    if (m_eos) {
-        return false;
-    }
-
     // end of stream processing
     if (!depo) {              
         std::cerr << "Gen::MultiDuctor: end of stream processing\n";
-        bool ok = maybe_extract(depo, outframes);
-        outframes.push_back(nullptr); // eos marker
-        m_eos = true;
-        return ok;            // fixme: this should throw is no okay
+        maybe_extract(depo, outframes);
+        outframes.push_back(nullptr); // pass on EOS marker
+        return true;
     }
 
 
@@ -317,15 +318,16 @@ bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outfr
             break;
         }
     }
-    if (depo && !count) {
-        std::cerr << "Gen::MultiDuctor: no appropriate Ductor for depo at: " << depo->pos() << std::endl;
+    if (count == 0) {
+        std::cerr << "Gen::MultiDuctor: no appropriate Ductor for depo at: "
+                  << depo->pos() << std::endl;
     }
 
-    all_okay = all_okay && maybe_extract(depo, outframes);
+    maybe_extract(depo, outframes);
     if (outframes.size()) {
         std::cerr << "Gen::MultiDuctor: returning " << outframes.size() << " frames\n";
     }
-    return all_okay;            // fixme: this should throw is no okay
+    return true;
 }
 
 

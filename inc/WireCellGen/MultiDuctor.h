@@ -26,8 +26,8 @@ namespace WireCell {
             MultiDuctor(const std::string anode = "AnodePlane");
             virtual ~MultiDuctor();
 
+            //virtual void reset();
             // IDuctor
-            virtual void reset();
             virtual bool operator()(const input_pointer& depo, output_queue& frames);
 
             // IConfigurable

@@ -121,7 +121,7 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
 
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 {
-    if (m_eos) {
+    if (m_eos) {                // This source does not restart.
         return false;
     }
 

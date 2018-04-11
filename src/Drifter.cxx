@@ -28,7 +28,6 @@ Gen::Drifter::Drifter(const std::string& anode_tn, const std::string& rng_tn)
     , m_location(-1)            // cache
     , m_speed(-1)               // cache
     , m_input()
-    , m_eos(false)
 {
 }
 
@@ -99,7 +98,6 @@ double Gen::Drifter::proper_time(IDepo::pointer depo)
 void Gen::Drifter::reset()
 {
     m_input.clear();
-    m_eos = false;
 }
 
 
@@ -148,9 +146,6 @@ bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
         cerr << "Gen::Drifter: illegal drift speed\n";
         return false;
     }
-    if (m_eos) {
-	return false;
-    }
 
     if (!depo) {		// no more inputs expected, EOS flush
         //cerr << "Gen::Drifter: flushing " << m_input.size() << "\n";
@@ -161,7 +156,6 @@ bool Gen::Drifter::operator()(const input_pointer& depo, output_queue& outq)
 	}
 	outq.push_back(nullptr);
 
-	m_eos = true;
 	return true;
     }
 

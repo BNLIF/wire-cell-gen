@@ -22,7 +22,7 @@ namespace WireCell {
             
             Ductor();
 
-            virtual void reset();
+            //virtual void reset();
             virtual bool operator()(const input_pointer& depo, output_queue& frames);
 
             virtual void configure(const WireCell::Configuration& config);
@@ -45,10 +45,8 @@ namespace WireCell {
             bool m_fluctuate;
 
             int m_frame_count;
-            bool m_eos;
 
             void process(output_queue& frames);
-
 
         };
     }
