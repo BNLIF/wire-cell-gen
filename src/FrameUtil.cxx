@@ -12,7 +12,6 @@ using namespace WireCell;
 typedef std::pair<int, const std::vector<float>* > tbin_charge_t;
 typedef std::map<int, std::vector<tbin_charge_t> > channel_index_t;
 
-
 IFrame::pointer Gen::sum(std::vector<IFrame::pointer> frames, int ident)
 {
     // Extract starting times and ticks of all frames

@@ -23,6 +23,7 @@ Gen::Ductor::Ductor()
     , m_drift_speed(1.0*units::mm/units::us)
     , m_nsigma(3.0)
     , m_fluctuate(true)
+    , m_continuous(true)
     , m_frame_count(0)
 {
 }
@@ -42,6 +43,14 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
 
     /// The time span for each readout.
     put(cfg, "readout_time", m_readout_time);
+
+    /// If false then determine start time of each readout based on the
+    /// input depos.  This option is useful when running WCT sim on a
+    /// source of depos which have already been "chunked" in time.  If
+    /// true then this Ductor will continuously simulate all time in
+    /// "readout_time" frames leading to empty frames in the case of
+    /// some readout time with no depos.
+    put(cfg, "continuous", true);
 
     /// The nominal speed of drifting electrons
     put(cfg, "drift_speed", m_drift_speed);
@@ -66,6 +75,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     }
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
+    m_continuous = get<bool>(cfg, "continuous", m_continuous);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
     m_rng = nullptr;
     if (m_fluctuate) {
@@ -127,22 +137,36 @@ void Gen::Ductor::process(output_queue& frames)
     auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
     frames.push_back(frame);
 
+    // fixme: what about frame overflow here?  If the depos extend
+    // beyond the readout where does their info go?  2nd order,
+    // diffusion and finite field response can cause depos near the
+    // end of the readout to have some portion of their waveforms
+    // lost?
     m_depos.clear();
+
     m_start_time += m_readout_time;
     ++m_frame_count;
 }
 
-
-// void Gen::Ductor::reset()
-// {
-//     m_depos.clear();
-//     m_eos = false;
-// }
+// Return true if ready to start processing and capture start time if
+// in continuous mode.
+bool Gen::Ductor::start_processing(const input_pointer& depo)
+{
+    if (!depo) {
+        return true;
+    }
+    if (!m_continuous) {
+        if (depo && m_depos.empty()) {
+            m_start_time = depo->time();
+            return false;
+        }
+    }
+    return depo->time() > m_start_time + m_readout_time;
+}
 
 bool Gen::Ductor::operator()(const input_pointer& depo, output_queue& frames)
 {
-    double target_time = m_start_time + m_readout_time;
-    if (!depo || depo->time() > target_time) {
+    if (start_processing(depo)) {
         process(frames);
     }
 

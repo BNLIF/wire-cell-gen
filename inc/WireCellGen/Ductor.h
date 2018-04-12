@@ -43,10 +43,12 @@ namespace WireCell {
             double m_drift_speed;
             double m_nsigma;
             bool m_fluctuate;
+            bool m_continuous;
 
             int m_frame_count;
 
             void process(output_queue& frames);
+            bool start_processing(const input_pointer& depo);
 
         };
     }

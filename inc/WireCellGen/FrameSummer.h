@@ -21,6 +21,9 @@ namespace WireCell {
             // IConfigurable
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
+        private:
+            double m_toffset;
+            bool m_align;
 
         };
     }

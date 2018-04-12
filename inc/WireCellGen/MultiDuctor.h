@@ -34,18 +34,6 @@ namespace WireCell {
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
-            // local
-
-            // Accept new frames into the buffer
-            void merge(const output_queue& newframes);
-
-            // Maybe extract output frames from the buffer.  If the
-            // depo is past the next scheduled readout or if a nullptr
-            // depo (EOS) then sub-ductors are flushed with EOS and
-            // the outframes queue is filled with one or more frames.
-            // If extraction occurs not by EOS then any carryover is
-            // kept.
-            bool maybe_extract(const input_pointer& depo, output_queue& outframes);
 
         private:
 
@@ -54,6 +42,7 @@ namespace WireCell {
             double m_start_time;
             double m_readout_time;
             int m_frame_count;
+            bool m_continuous;
             bool m_eos;
 
             struct SubDuctor {
@@ -74,6 +63,22 @@ namespace WireCell {
             /// like a monolithic ductor.
             output_queue m_frame_buffer;
 
+            // local
+
+            // Accept new frames into the buffer
+            void merge(const output_queue& newframes);
+
+            // Maybe extract output frames from the buffer.  If the
+            // depo is past the next scheduled readout or if a nullptr
+            // depo (EOS) then sub-ductors are flushed with EOS and
+            // the outframes queue is filled with one or more frames.
+            // If extraction occurs not by EOS then any carryover is
+            // kept.
+            void maybe_extract(const input_pointer& depo, output_queue& outframes);
+
+            // Return true if depo indicates it is time to start
+            // processing.  Will set start time if in continuous mode.
+            bool start_processing(const input_pointer& depo);
         };
     }
 }

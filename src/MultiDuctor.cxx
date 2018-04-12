@@ -21,6 +21,8 @@ Gen::MultiDuctor::MultiDuctor(const std::string anode)
     , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
     , m_frame_count(0)
+    , m_continuous(false)
+    , m_eos(true)
 {
 }
 Gen::MultiDuctor::~MultiDuctor()
@@ -47,6 +49,14 @@ WireCell::Configuration Gen::MultiDuctor::default_configuration() const
 
     /// The time span for each readout.
     cfg["readout_time"] = m_readout_time;
+
+    /// If false then determine start time of each readout based on the
+    /// input depos.  This option is useful when running WCT sim on a
+    /// source of depos which have already been "chunked" in time.  If
+    /// true then this Ductor will continuously simulate all time in
+    /// "readout_time" frames leading to empty frames in the case of
+    /// some readout time with no depos.
+    cfg["continuous"] = m_continuous;
 
     /// Allow for a custom starting frame number
     cfg["first_frame_number"] = m_frame_count;
@@ -113,6 +123,7 @@ void Gen::MultiDuctor::configure(const WireCell::Configuration& cfg)
     m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
     m_start_time = get<double>(cfg, "start_time", m_start_time);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
+    m_continuous = get(cfg, "continuous", m_continuous);
 
     m_anode_tn = get(cfg, "anode", m_anode_tn);
     m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
@@ -171,12 +182,30 @@ void Gen::MultiDuctor::configure(const WireCell::Configuration& cfg)
 // }
 
 
-// Outframes should not have a terminating nullptr even if depo is nullptr
-bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& outframes)
+// Return true if ready to start processing and capture start time if
+// in continuous mode.
+bool Gen::MultiDuctor::start_processing(const input_pointer& depo)
 {
-    double target_time = m_start_time + m_readout_time;
-    if (depo && depo->time() < target_time) {
-        return true;            // not yet
+    if (!depo) {
+        m_eos = true;
+        return true;
+    }
+    if (!m_continuous) {
+        if (depo && m_eos) {
+            m_eos = false;
+            m_start_time = depo->time();
+            return false;
+        }
+    }
+    return depo->time() > m_start_time + m_readout_time;
+}
+
+
+// Outframes should not get a terminating nullptr even if depo is nullptr
+void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& outframes)
+{
+    if (!start_processing(depo)) { // may set m_start_time
+        return;
     }
 
     // Must flush all sub-ductors to assure synchronization.
@@ -200,13 +229,16 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     // data driven up until EOS is found.
     if (!m_frame_buffer.size()) {
 
+        std::cerr << "MultiDuctor: returning empty frame with "<<m_frame_count
+                  << " at " << m_start_time << "\n";
+
         ITrace::vector traces;
         auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
         outframes.push_back(frame);
 
         m_start_time += m_readout_time;
         ++m_frame_count;
-        return true;
+        return;
     }
 
 
@@ -214,8 +246,9 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     // multiple sub-ductors, each of different time and channel extent
     // and potentially out of order.
 
-    output_queue to_keep, to_extract;
 
+    const double target_time = m_start_time + m_readout_time;
+    output_queue to_keep, to_extract;
     for (auto frame: m_frame_buffer) {
         tick = frame->tick();
         int cmp = FrameTools::frmtcmp(frame, target_time);
@@ -229,19 +262,27 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
         }                
 
         auto ff = FrameTools::split(frame, m_start_time);
-        to_extract.push_back(ff.first);
-        to_keep.push_back(ff.second);
+        if (ff.first) {
+            to_extract.push_back(ff.first);
+        }
+        if (ff.second) {
+            to_keep.push_back(ff.second);
+        }
     }
     m_frame_buffer = to_keep;
     
     if (!to_extract.size()) {
         // we read out, and yet we have nothing
+
+        std::cerr << "MultiDuctor: returning empty frame after sub frame sorting with "
+                  << m_frame_count<<" at " << m_start_time << "\n";
+
         ITrace::vector traces;
         auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
         outframes.push_back(frame);
         m_start_time += m_readout_time;
         ++m_frame_count;
-        return true;
+        return;
     }
     
 
@@ -269,7 +310,6 @@ bool Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     outframes.push_back(frame);
     m_start_time += m_readout_time;
     ++m_frame_count;
-    return true;
 }
 
 void Gen::MultiDuctor::merge(const output_queue& newframes)
