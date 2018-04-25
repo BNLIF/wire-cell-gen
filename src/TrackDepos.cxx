@@ -18,7 +18,6 @@ using namespace WireCell;
 Gen::TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
-    , m_eos(false)
     , m_count(0)
 {
 }
@@ -29,14 +28,17 @@ Gen::TrackDepos::~TrackDepos()
 
 Configuration Gen::TrackDepos::default_configuration() const
 {
-    std::string json = R"(
-{
-"step_size":0.1,
-"clight":1.0,
-"tracks":[]
-}
-)";
-    return Persist::loads(json);
+    Configuration cfg;
+    cfg["step_size"] = 1.0*units::mm;
+    cfg["clight"] = 1.0;        // fraction of speed of light the track goes
+    cfg["tracks"] = Json::arrayValue;
+    cfg["group_time"] = -1;          // if positive then chunk the
+                                     // stream of output depos into
+                                     // groups delineated by EOS
+                                     // markers and such that each
+                                     // group spans a time period no
+                                     // more than group_time.
+    return cfg;
 }
 
 void Gen::TrackDepos::configure(const Configuration& cfg)
@@ -50,6 +52,26 @@ void Gen::TrackDepos::configure(const Configuration& cfg)
 	Ray ray = get<Ray>(track, "ray");
 	add_track(time, ray, charge);
     }
+    double gt = get<double>(cfg, "group_time", -1);
+    if (m_depos.empty() or gt <= 0.0) {
+        m_depos.push_back(nullptr);
+        return;
+    }
+    std::deque<WireCell::IDepo::pointer> grouped;
+    double now = m_depos.front()->time();
+    double end = now + gt;
+    for (auto depo : m_depos) {
+        if (depo->time() < end) {
+            grouped.push_back(depo);
+            continue;
+        }
+        grouped.push_back(nullptr);
+        now = depo->time();
+        end = now + gt;
+        grouped.push_back(depo);
+    }
+    grouped.push_back(nullptr);
+    m_depos = grouped;
 }
 
 static std::string dump(IDepo::pointer d)
@@ -85,8 +107,9 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
 	step += m_stepsize;
 	++count;
     }
-    // reverse sort by time so we can pop_back in operator()
-    std::sort(m_depos.begin(), m_depos.end(), descending_time);
+
+    // earliest first
+    std::sort(m_depos.begin(), m_depos.end(), ascending_time);
     cerr << "Gen::TrackDepos: " << m_depos.size() << " depos over " << length/units::mm << "mm\n";
     // cerr << "\treverse first:" << dump(m_depos[0]) << endl;
     // cerr << "\t reverse last:" << dump(m_depos[m_depos.size()-1]) << endl;
@@ -95,21 +118,23 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
 
 bool Gen::TrackDepos::operator()(output_pointer& out)
 {
-    if (m_eos) {
-	return false;
-    }
-
     if (m_depos.empty()) {
-	m_eos = true;
-        std::cerr << "TrackDepos: EOS after sending " << m_count << " depos\n";
-	out = nullptr;
-	return true;
+        return false;
+    }
+    out = m_depos.front();
+    m_depos.pop_front();
+
+    if (!out) {                 // chirp
+        std::cerr << "TrackDepos: sends EOS at call " << m_count << "\n";
     }
 
     ++m_count;
-    out = m_depos.back();
-    m_depos.pop_back();
-    //cerr << "Gen::TrackDepos: " << m_depos.size() << " left, sending: " << dump(out) << endl;
     return true;
 }
 
+
+
+WireCell::IDepo::vector Gen::TrackDepos::depos()
+{
+    return WireCell::IDepo::vector(m_depos.begin(), m_depos.end());
+}

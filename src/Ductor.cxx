@@ -158,6 +158,8 @@ bool Gen::Ductor::start_processing(const input_pointer& depo)
     if (!m_continuous) {
         if (depo && m_depos.empty()) {
             m_start_time = depo->time();
+            cerr << "Ductor: discontinuous mode, set start time: "
+                 << m_start_time/units::ms << "ms\n";
             return false;
         }
     }

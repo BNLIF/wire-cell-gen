@@ -27,6 +27,7 @@ using namespace WireCell;
 using namespace std;
 
 Gen::TrackDepos make_tracks() {
+    // warning, this bipases some logic in TrackDepos::configure().
     Gen::TrackDepos td;
     td.add_track(10, Ray(Point(10,0,0), Point(100,10,10)));
     td.add_track(120, Ray(Point( 1,0,0), Point( 2,-100,0)));
@@ -42,8 +43,13 @@ IDepo::shared_vector get_depos()
     IDepo::vector* ret = new IDepo::vector;
     while (true) {
 	IDepo::pointer depo;
-	Assert(td(depo));
-	if (!depo) {
+        bool ok = td(depo);
+
+        // Note, TrackDepos returns !ok when its empty.  If it's
+        // properly configured (unlike this test) it will return ok
+        // and set the depo to nullptr to indicate EOS before
+        // returning !ok.  Here, we just bail in either case.
+	if (!ok or !depo) {
 	    break;
 	}
 	ret->push_back(depo);

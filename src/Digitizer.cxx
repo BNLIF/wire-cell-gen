@@ -105,6 +105,10 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
 
     // fixme: maybe make this honor a tag 
     auto vtraces = FrameTools::untagged_traces(vframe);
+    if (vtraces.empty()) {
+        cerr << "Gen::Digitizer: no traces in input frame " << vframe->ident() << "\n";
+        return false;
+    }
 
     // Get extent in channel and tbin
     auto channels = FrameTools::channels(vtraces);

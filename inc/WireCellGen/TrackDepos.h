@@ -6,6 +6,7 @@
 #include "WireCellUtil/Units.h"
 
 #include <tuple>
+#include <deque>
 
 namespace WireCell {
 
@@ -33,7 +34,7 @@ namespace WireCell {
             /// ISourceNode
             virtual bool operator()(IDepo::pointer& out);
 
-            WireCell::IDepo::vector& depos() { return m_depos; }
+            WireCell::IDepo::vector depos();
 
             typedef std::tuple<double, Ray, double> track_t;
             std::vector<track_t> tracks() const { return m_tracks; }
@@ -41,8 +42,7 @@ namespace WireCell {
         private:
             double m_stepsize;
             double m_clight;
-            WireCell::IDepo::vector m_depos;
-            bool m_eos;                    // mark if we hit output EOS
+            std::deque<WireCell::IDepo::pointer> m_depos;
             std::vector<track_t> m_tracks; // collect for posterity
             int m_count;
         };

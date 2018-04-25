@@ -30,6 +30,8 @@ local utils = [cmdline, random];
 // The data structure is organized and named to have synergy with
 // configuration objects for the simulation nodes defined later.
 local base_params = {
+    local par = self,
+
     lar : {
         DL :  7.2 * wc.cm2/wc.s,
         DT : 12.0 * wc.cm2/wc.s,
@@ -47,9 +49,9 @@ local base_params = {
         // Default here is that the extent is centered on the origin
         // of the wire coordinate system.
         center: [0,0,0],
-        drift_time: self.extent[0]/self.lar.drift_speed,
-        drift_volume: v.vmult(self.extent),
-        drift_mass: self.lar.density * self.drift_volume,
+        drift_time: self.extent[0]/par.lar.drift_speed,
+        drift_volume: self.extent[0]*self.extent[1]*self.extent[2],
+        drift_mass: par.lar.density * self.drift_volume,
     },
     daq : {
         readout_time: 5*wc.ms,
@@ -76,6 +78,13 @@ local base_params = {
         fluctuate: true,
         digitize: true,
         noise: false,
+
+        // continuous makes the WCT sim act like the streaming
+        // detector+daq.  This means producing readout even if there
+        // may be no depos.  If true then readout is based on chunking
+        // up depos in time and there may be periods of time that do
+        // not have any readouts.
+        continuous: false,
     },
     files : {                   // each detector MUST fill these in.
         wires: null,
@@ -182,13 +191,15 @@ local cen_ur = v.vshift(params.detector.center,
 // Some time away from 0 where depositions begin
 local t_start = 100*wc.ms;
 
-// time at which a depo at the CPA will arive to x=0 right at the end of a readout.
-local t_end = t_start + params.daq.readout_time - params.detector.extent[0]/params.lar.drift_speed;
+// Time at which a depo at the CPA will arive to x=0 right at the end of a readout.
+// Subtract off just a little epsilon so that something at t_end will be included in the depo group.
+local t_end = t_start + params.daq.readout_time - params.detector.extent[0]/params.lar.drift_speed - 0.01*wc.ms;
 
 local depos = {
     type: "TrackDepos",
     data: {
         step_size: 1.0 * wc.millimeter,
+        group_time: if params.sim.continuous then -1 else params.daq.readout_time,
         tracks: funcs.ecks(t=t_start).ret
             +   funcs.ecks(c=v.topoint(cen_ll), t=t_start).ret
             +   funcs.ecks(c=v.topoint(cen_lr), t=t_start).ret
@@ -197,7 +208,8 @@ local depos = {
             +   funcs.ecks(c=v.topoint(cen_ul), t=t_end).ret
             +   funcs.ecks(c=v.topoint(cen_ur), t=t_end).ret
             +   funcs.ecks(c=v.topoint([10*wc.cm,0,half_vext_equator[2]]),
-                           t= t_start - 10*wc.cm/params.lar.drift_speed).ret
+                           t= t_start).ret
+            +   funcs.ecks(t=t_start+100*wc.ms).ret
     }
 };
 
@@ -216,13 +228,10 @@ local drifter = {
     }
 };
 
-// One ductor for each universe, all identical except for name and the
-// coresponding anode.
 local ductor = {
     type : 'Ductor',
     name : 'nominal',
     data : params.daq + params.lar + params.sim {
-        continuous: false,
         nsigma : 3,
 	anode: wc.tn(anode),
     }
@@ -285,7 +294,14 @@ local graph_edges = [
 // app object.  
 local app = {
     type: "Pgrapher",
-    data: { edges: graph_edges, }
+    data: {
+        edges: graph_edges,
+        debug: {
+            tstart: t_start,
+            tend: t_end,
+            params: params,
+        }
+    }
 };
 
 // Finally, we return the actual configuration sequence:
