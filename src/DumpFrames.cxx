@@ -22,13 +22,13 @@ Gen::DumpFrames::~DumpFrames()
 bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
 {
     if (!frame) {
-        cerr << "DumpFrames sees EOS\n";
+        cerr << "Gen::DumpFrames sees EOS\n";
         return true;
     }
     auto traces = frame->traces();
     const int ntraces = traces->size();
     
-    cerr << "Frame: #" << frame->ident()
+    cerr << "Gen::Frame: #" << frame->ident()
          << " @" << frame->time()/units::ms
          << " with " << ntraces << " traces" << endl;
     

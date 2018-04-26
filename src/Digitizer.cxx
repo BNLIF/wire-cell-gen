@@ -59,7 +59,7 @@ void Gen::Digitizer::configure(const Configuration& cfg)
     m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
         cerr << "Gen::Digitizer: failed to get anode: \"" << m_anode_tn << "\"\n";
-        Assert(m_anode);
+        Assert(m_anode);        // fixme, should instead throw something
     }
     //Assert(m_anode->resolve(1104).valid());  // test for microboone setup
 
@@ -97,7 +97,7 @@ double Gen::Digitizer::digitize(double voltage)
 bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adcframe)
 {
     if (!vframe) {              // EOS
-        cerr << "Gen::Digitizer: EOS\n";
+        //cerr << "Gen::Digitizer: EOS\n";
         adcframe = nullptr;
         return true;
     }
@@ -150,44 +150,5 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
     }
     adcframe = sframe;
 
-    // const int ntraces = vtraces->size();
-    // ITrace::vector adctraces(ntraces);
-
-    // for (int itrace=0; itrace<ntraces; ++itrace) {
-    //     auto& vtrace = vtraces->at(itrace);
-    //     const int channel = vtrace->channel();
-    //     WirePlaneId wpid = m_anode->resolve(channel);
-    //     if (!wpid.valid()) {
-    //         cerr << "Got invalid WPID for channel " << channel << ": " << wpid << endl;
-    //     }
-
-    //     // fixme: WCT needs a better way to handle anode database
-    //     // lookups like this.  Eg, is index() the right level of
-    //     // abstraction?  Could there be different baselines in the
-    //     // same wire plane?
-    //     const double baseline = m_baselines[wpid.index()];
-    //     auto& vwave = vtrace->charge();
-    //     const int nsamps = vwave.size();
-    //     ITrace::ChargeSequence adcwave(nsamps);
-    //     for (int isamp=0; isamp<nsamps; ++isamp) {
-    //         const double voltage = m_gain*vwave[isamp] + baseline;
-    //         const float adcf = digitize(voltage);
-    //         adcwave[isamp] = adcf;
-    //     }
-    //     if (false) {             // debug
-    //         auto vmm = std::minmax_element(vwave.begin(), vwave.end());
-    //         auto adcmm = std::minmax_element(adcwave.begin(), adcwave.end());
-    //         cerr << "Gen::Digitizer: "
-    //              << "wpid.index=" << wpid.index() << ", "
-    //              << "wpid.ident=" << wpid.ident() << ", "
-    //              << "vmm=[" << (*vmm.first)/units::uV << "," << (*vmm.second)/units::uV << "] uV, "
-    //              << "adcmm=[" << (*adcmm.first) << "," << (*adcmm.second) << "], "
-    //              << endl;
-    //     }
-
-    //     adctraces[itrace] = make_shared<SimpleTrace>(channel, vtrace->tbin(), adcwave);
-    // }
-    // adcframe = make_shared<SimpleFrame>(vframe->ident(), vframe->time(), adctraces,
-    //                                     vframe->tick(), vframe->masks());
     return true;
 }

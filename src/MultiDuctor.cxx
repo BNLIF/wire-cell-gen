@@ -73,7 +73,7 @@ struct Wirebounds {
     bool operator()(IDepo::pointer depo) {
 
         if (!depo) {
-            std::cerr << "Wirebounds: no depo\n";
+            std::cerr << "Gen::MultiDuctor::Wirebounds: error: no depo given\n";
             return false;
         }
             
@@ -201,6 +201,17 @@ bool Gen::MultiDuctor::start_processing(const input_pointer& depo)
 }
 
 
+void Gen::MultiDuctor::dump_frame(const IFrame::pointer frame, std::string msg)
+{
+    auto traces = frame->traces();
+    auto mm = FrameTools::tbin_range(*traces);
+    std::cerr << msg
+              << " fid:" << frame->ident()
+              << " #ch:" << traces->size()
+              << " t:" << std::setprecision(12) << m_start_time/units::us<<"us "
+              << " tbins:["<<mm.first<<","<<mm.second<<"]\n";
+}
+
 // Outframes should not get a terminating nullptr even if depo is nullptr
 void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& outframes)
 {
@@ -250,8 +261,23 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     const double target_time = m_start_time + m_readout_time;
     output_queue to_keep, to_extract;
     for (auto frame: m_frame_buffer) {
+        if (!frame) {
+            std::cerr << "Gen::MultiDuctor: skipping null frame in frame buffer\n";
+            continue;
+        }
+        if (!frame->traces()) {
+            std::cerr << "Gen::MultiDuctor: skipping empty frame in frame buffer\n";
+            continue;
+        }   
+
         tick = frame->tick();
         int cmp = FrameTools::frmtcmp(frame, target_time);
+        // std::cerr << "Gen::MultiDuctor: checking to keep: "
+        //           << std::setprecision(12)
+        //           << "t_target=" << target_time/units::us << "us, "
+        //           << "cmp returns " << cmp << ", frame is:\n";
+        // dump_frame(frame, "\t");
+
         if (cmp < 0) {
             to_extract.push_back(frame);
             continue;
@@ -261,13 +287,24 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
             continue;
         }                
 
-        auto ff = FrameTools::split(frame, m_start_time);
+        // If cmp==0 above then both halves of the pair should hold a frame.
+        auto ff = FrameTools::split(frame, target_time);
         if (ff.first) {
             to_extract.push_back(ff.first);
+            //dump_frame(ff.first, "Gen::MultiDuctor: to extract");
         }
+        else {
+            std::cerr << "Gen::MultiDuctor: error: early split is null\n";
+        }
+
         if (ff.second) {
             to_keep.push_back(ff.second);
+            //dump_frame(ff.second, "Gen::MultiDuctor: to keep");
         }
+        else {
+            std::cerr << "Gen::MultiDuctor: error: late split is null\n";
+        }
+
     }
     m_frame_buffer = to_keep;
     
@@ -302,11 +339,18 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
         for (auto trace : (*frame->traces())) {
             const int tbin = trace->tbin() + extra_tbins;
             const int chid = trace->channel();
+            // std::cerr <<traces.size()
+            //           <<" tstart="<<m_start_time/units::us<<"us"
+            //           <<" tref="<<tref/units::us << "us"
+            //           <<" tbin="<<tbin
+            //           <<" extra bins="<< extra_tbins<<" chid="<<chid<<"\n";
             auto mtrace = std::make_shared<SimpleTrace>(chid, tbin, trace->charge());
             traces.push_back(mtrace);
         }
     }
     auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+    dump_frame(frame, "Gen::MultiDuctor: output frame");
+
     outframes.push_back(frame);
     m_start_time += m_readout_time;
     ++m_frame_count;
@@ -319,6 +363,8 @@ void Gen::MultiDuctor::merge(const output_queue& newframes)
         auto traces = frame->traces();
         if (!traces) { continue; }
         if (traces->empty()) { continue; }
+
+        //dump_frame(frame, "Gen::MultiDuctor: merging frame");
         m_frame_buffer.push_back(frame);
     }
 }
@@ -327,9 +373,16 @@ bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outfr
 {
     // end of stream processing
     if (!depo) {              
-        std::cerr << "Gen::MultiDuctor: end of stream processing\n";
+        //std::cerr << "Gen::MultiDuctor: end of stream processing\n";
         maybe_extract(depo, outframes);
         outframes.push_back(nullptr); // pass on EOS marker
+        if (!m_frame_buffer.empty()) {
+            std::cerr << "Gen::MultiDuctor: purging " << m_frame_buffer.size() << " frames at EOS\n";
+            for (auto frame : m_frame_buffer) {
+                dump_frame(frame, "\t");
+            }
+            m_frame_buffer.clear();
+        }
         return true;
     }
 
@@ -359,7 +412,7 @@ bool Gen::MultiDuctor::operator()(const input_pointer& depo, output_queue& outfr
         }
     }
     if (count == 0) {
-        std::cerr << "Gen::MultiDuctor: no appropriate Ductor for depo at: "
+        std::cerr << "Gen::MultiDuctor: warning: no appropriate Ductor for depo at: "
                   << depo->pos() << std::endl;
     }
 

@@ -79,6 +79,9 @@ namespace WireCell {
             // Return true if depo indicates it is time to start
             // processing.  Will set start time if in continuous mode.
             bool start_processing(const input_pointer& depo);
+
+            void dump_frame(const IFrame::pointer frame, std::string msg="Gen::MultiDuctor:");
+
         };
     }
 }

@@ -70,8 +70,8 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
-        cerr << "Gen::Ductor: failed to get anode: \"" << m_anode_tn << "\"\n";
-        return;
+        cerr << "Ductor["<<(void*)this <<"]: failed to get anode: \"" << m_anode_tn << "\"\n";
+        return;                 // fixme: should throw something!
     }
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
@@ -142,6 +142,11 @@ void Gen::Ductor::process(output_queue& frames)
     // diffusion and finite field response can cause depos near the
     // end of the readout to have some portion of their waveforms
     // lost?
+    // cerr << "Ductor: finish frame " << m_frame_count
+    //      << " covering readout window:"
+    //      << " ["<<m_start_time/units::us<<","<<(m_start_time+m_readout_time)/units::us<<"]us"
+    //      << " with " << m_depos.size() << " depos left\n";
+
     m_depos.clear();
 
     m_start_time += m_readout_time;
@@ -153,17 +158,29 @@ void Gen::Ductor::process(output_queue& frames)
 bool Gen::Ductor::start_processing(const input_pointer& depo)
 {
     if (!depo) {
+        //cerr << "Ductor["<<(void*)this <<"]: got EOS\n";
         return true;
     }
+    // cerr << "Ductor["<<(void*)this <<"]: check depo at t=" << depo->time()/units::us << "us "
+    //      << "against readout window: "
+    //      << "["<<m_start_time/units::us<<","<<(m_start_time+m_readout_time)/units::us<<"]us "
+    //      << "at t="<<depo->time()/units::us <<"us\n";
+
     if (!m_continuous) {
-        if (depo && m_depos.empty()) {
+        if (m_depos.empty()) {
             m_start_time = depo->time();
-            cerr << "Ductor: discontinuous mode, set start time: "
-                 << m_start_time/units::ms << "ms\n";
+            // cerr << "Ductor["<<(void*)this <<"]: discontinuous mode, set start time: "
+            //      << m_start_time/units::us << "us\n";
             return false;
         }
     }
-    return depo->time() > m_start_time + m_readout_time;
+    bool ok = depo->time() > m_start_time + m_readout_time;
+    // if (ok) {
+    //     cerr << "Ductor["<<(void*)this <<"]: this depo just passed readout window: "
+    //          << "["<<m_start_time/units::us<<","<<(m_start_time+m_readout_time)/units::us<<"]us "
+    //          << "at t="<<depo->time()/units::us <<"us\n";
+    // }
+    return ok;
 }
 
 bool Gen::Ductor::operator()(const input_pointer& depo, output_queue& frames)
