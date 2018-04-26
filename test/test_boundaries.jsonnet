@@ -5,7 +5,6 @@
 // either in WIRECELL_PATH when this file is consumed by wire-cell or
 // in a path given by "jsonnet -J <path> ..." if testing with that CLI.
 local wc = import "wirecell.jsonnet";
-local ar39 = import "ar39.jsonnet";
 local v = import "vector.jsonnet";
 
 local cmdline = {
@@ -30,7 +29,7 @@ local utils = [cmdline, random];
 // The data structure is organized and named to have synergy with
 // configuration objects for the simulation nodes defined later.
 local base_params = {
-    local par = self,
+    local par = self,           // make available to inner data structures
 
     lar : {
         DL :  7.2 * wc.cm2/wc.s,
@@ -296,11 +295,11 @@ local app = {
     type: "Pgrapher",
     data: {
         edges: graph_edges,
-        debug: {
-            tstart: t_start,
-            tend: t_end,
-            params: params,
-        }
+        // debug: {
+        //     tstart: t_start,
+        //     tend: t_end,
+        //     params: params,
+        // }
     }
 };
 
