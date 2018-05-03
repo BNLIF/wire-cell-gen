@@ -60,7 +60,7 @@ TH1F* plot_wave(TCanvas& canvas, const std::vector<float>& wave, std::string nam
 TH2F* plot_ratio(TCanvas& canvas, TH2F* f1, TH2F* f2)
 {
     TH2F* out = (TH2F*)f1->Clone("ratio");
-    out->SetTitle("Ratio");
+    out->SetTitle("Ratio - no time shift correction");
     out->Divide(f2);
     out->SetXTitle("ticks");
     out->SetYTitle("channels");
@@ -103,6 +103,7 @@ TH2F* plot_frame(TCanvas& canvas, IFrame::pointer frame, std::string name, doubl
     }
     hist->SetXTitle("ticks");
     hist->SetYTitle("channels");
+    hist->SetContour(50);
     hist->Draw("colz");
     if (mtick > 0) {
         hist->GetXaxis()->SetRangeUser(0, mtick);
@@ -122,11 +123,12 @@ int main(int argc, char* argv[])
     pm.add("WireCellGen");
     pm.add("WireCellSio");
 
+    int nsamples = 50;
     double gain, shaping, tick;
     {
         IConfigurable::pointer mccfg = Factory::lookup<IConfigurable>("Misconfigure");
         Configuration cfg = mccfg->default_configuration();
-        cfg["nsamples"] = 100;
+        cfg["nsamples"] = nsamples;
         cfg["truncate"] = true;
         // use defaults locally
         gain = cfg["from"]["gain"].asDouble();
@@ -140,8 +142,10 @@ int main(int argc, char* argv[])
 
     auto resp = ce.generate(Binning(200, 0, 200*tick));
     auto resp2 = ce.generate(Binning(400, 0, 400*tick));
+    auto resp3 = ce.generate(Binning(50, 0, 50*tick));
     auto resp_spec = Waveform::dft(resp);
     auto resp_spec2 = Waveform::dft(resp2);
+    auto resp_spec3 = Waveform::dft(resp3);
 
     ITrace::vector q_traces;
     ITrace::vector out_traces;
@@ -188,10 +192,12 @@ int main(int argc, char* argv[])
 
     canvas.Print("test-misconfigure.pdf[","pdf");
 
-    plot_wave(canvas,resp,"resp","Electronics response waveform");
-    plot_wave(canvas,resp2,"resp1","Electronics response waveform");
-    plot_wave(canvas, Waveform::real(resp_spec),"respect","Electronics response spectrum");
-    plot_wave(canvas, Waveform::real(resp_spec2),"respect2","Electronics response spectrum");
+    plot_wave(canvas,resp,"resp","Electronics response waveform - 200 bins");
+    plot_wave(canvas,resp2,"resp2","Electronics response waveform - 400 bins");
+    plot_wave(canvas,resp3,"resp3","Electronics response waveform - 50 bins");
+    plot_wave(canvas, Waveform::real(resp_spec),"respect","Electronics response spectrum - 200 bins");
+    plot_wave(canvas, Waveform::real(resp_spec2),"respect2","Electronics response spectrum - 400 bins");
+    plot_wave(canvas, Waveform::real(resp_spec3),"respect3","Electronics response spectrum - 50 bins");
 
     plot_frame(canvas, qorig, "ChargeZoomed", 50., 5.);
     plot_frame(canvas, orig, "ShapedZoomed", 50., 5.);

@@ -35,7 +35,7 @@ WireCell::Configuration Gen::Misconfigure::default_configuration() const
     cfg["to"]["shaping"] = 1.1*units::us;
 
     /// The number of samples of the response functions.
-    cfg["nsamples"] = 100;
+    cfg["nsamples"] = 50;
     /// The period of sampling the response functions
     cfg["tick"] = 0.5*units::us;
 
