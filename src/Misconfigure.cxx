@@ -1,6 +1,7 @@
 #include "WireCellGen/Misconfigure.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Response.h"
+#include "WireCellUtil/Waveform.h"
 #include "WireCellIface/SimpleFrame.h"
 #include "WireCellIface/SimpleTrace.h"
 
@@ -38,29 +39,29 @@ WireCell::Configuration Gen::Misconfigure::default_configuration() const
     /// The period of sampling the response functions
     cfg["tick"] = 0.5*units::us;
 
+    /// If to truncate the misconfigured waveforms.  The convolution
+    /// used to apply the misconfiguring will extend the a trace's
+    /// waveform by nsamples-1.  Truncating will clip that much off so
+    /// the waveform will remains the same length but some information
+    /// may be lost.  If not turncated, this longer waveform likely
+    /// needs to be handled in some way by the user.  
+    cfg["truncate"] = true;
+
     return cfg;
-}
-
-// a local helper that bundles together a bunch of little steps,
-// unpack params, makes cold elec response and returns it's FFT.
-static Waveform::compseq_t make_coldelec_spec(std::string dir, Configuration cfg)
-{
-    const double gain = cfg[dir]["gain"].asDouble();
-    const double shaping = cfg[dir]["shaping"].asDouble();
-    const double tick = cfg["tick"].asDouble();
-    const double nsamples = cfg["nsamples"].asInt();
-
-    const Binning bins(nsamples, 0, nsamples*tick);
-    Response::ColdElec coldelec(gain, shaping);
-    auto wave = coldelec.generate(bins);
-    return Waveform::dft(wave);    
 }
 
 void Gen::Misconfigure::configure(const WireCell::Configuration& cfg)
 {
-    auto fromspec = make_coldelec_spec("from", cfg);
-    m_filter = make_coldelec_spec("to", cfg);
-    Waveform::shrink(m_filter, fromspec);
+    int n = cfg["nsamples"].asInt();
+    double tick = cfg["tick"].asDouble();
+    Binning bins(n, 0, n*tick);
+
+    m_from = Response::ColdElec(cfg["from"]["gain"].asDouble(),
+                                cfg["from"]["shaping"].asDouble()).generate(bins);
+    m_to   = Response::ColdElec(cfg["to"]["gain"].asDouble(),
+                                cfg["to"]["shaping"].asDouble()).generate(bins);
+
+    m_truncate = cfg["truncate"].asBool();
 }
 
 bool Gen::Misconfigure::operator()(const input_pointer& in, output_pointer& out)
@@ -80,15 +81,10 @@ bool Gen::Misconfigure::operator()(const input_pointer& in, output_pointer& out)
     ITrace::vector out_traces(ntraces);
     for (size_t ind=0; ind<ntraces; ++ind) {
         auto trace = traces->at(ind);
-        auto& wave = trace->charge(); // avoid copy
-        auto spec = Waveform::dft(wave);
 
-        // apply filter
-        Waveform::scale(spec, m_filter);
-        // Should we zero the DC component here?
-
-        auto newwave = Waveform::idft(spec);
-        out_traces[ind] = std::make_shared<SimpleTrace>(trace->channel(), trace->tbin(), newwave);
+        auto wave = Waveform::replace_convolve(trace->charge(),
+                                               m_to, m_from, m_truncate);
+        out_traces[ind] = std::make_shared<SimpleTrace>(trace->channel(), trace->tbin(), wave);
     }
 
     out = std::make_shared<SimpleFrame>(in->ident(), in->time(), out_traces, in->tick());

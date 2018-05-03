@@ -5,10 +5,13 @@
  * function and applying a new one.  
  *
  * Note, traces are "misconfigured" independently even if multiple
- * traces exist on the same channel.  Output traces will be sized to
- * the larger of the input trace length and the length of the response
- * function ("nsamples" configuration parameter).  Caller must take
- * care to properly handle any overlaps in time.
+ * traces exist on the same channel.  
+ *
+ * By default the output traces will be sized larger than input by
+ * nsamples-1.  If the "truncated" option is true then the output
+ * trace will be truncated to match the input size.  this may cut off
+ * signal for traces smaller than the time where the electronics
+ * response functions are finite.
  *
  * This component does not honor frame/trace tags.  No tags will be
  * considered on input and none are placed on output.
@@ -40,11 +43,8 @@ namespace WireCell {
             virtual void configure(const WireCell::Configuration& cfg);
 
         private:
-            // The ratio of the FFTs of the misconfigured and nominal
-            // electronics response functions.
-            Waveform::compseq_t m_filter;
-
-
+            Waveform::realseq_t  m_from, m_to;
+            bool m_truncate;
         };
     }
 }
