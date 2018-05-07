@@ -53,7 +53,7 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
 
     tn = get<string>(cfg, "DepoSource");
     cerr << "\tDepoSource: " << tn << endl;
-    m_depos = Factory::find_tn<IDepoSource>(tn);
+    m_depos = Factory::find_maybe_tn<IDepoSource>(tn);
 
     tn = get<string>(cfg, "DepoFilter");
     if (tn.empty()) {
@@ -62,16 +62,16 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
     }
     else {
         cerr << "\tDepoFilter: " << tn << endl;
-        m_depofilter = Factory::find_tn<IDepoFilter>(tn);
+        m_depofilter = Factory::find_maybe_tn<IDepoFilter>(tn);
     }
 
     tn = get<string>(cfg, "Drifter");
     cerr << "\tDrifter: " << tn << endl;
-    m_drifter = Factory::find_tn<IDrifter>(tn);
+    m_drifter = Factory::find_maybe_tn<IDrifter>(tn);
 
     tn = get<string>(cfg, "Ductor");
     cerr << "\tDuctor: " << tn << endl;
-    m_ductor = Factory::find_tn<IDuctor>(tn);
+    m_ductor = Factory::find_maybe_tn<IDuctor>(tn);
 
         
     tn = get<string>(cfg, "Dissonance","");
@@ -80,7 +80,7 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
         cerr << "\tDissonance: none\n";
     }
     else {
-        m_dissonance = Factory::find_tn<IFrameSource>(tn);
+        m_dissonance = Factory::find_maybe_tn<IFrameSource>(tn);
         cerr << "\tDissonance: " << tn << endl;
     }
 
@@ -90,7 +90,7 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
         cerr << "\tDigitizer: none\n";
     }
     else {
-        m_digitizer = Factory::find_tn<IFrameFilter>(tn);
+        m_digitizer = Factory::find_maybe_tn<IFrameFilter>(tn);
         cerr << "\tDigitizer: " << tn << endl;
     }
 
@@ -100,7 +100,7 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
         cerr << "\tFilter: none\n";
     }
     else {
-        m_filter = Factory::find_tn<IFrameFilter>(tn);
+        m_filter = Factory::find_maybe_tn<IFrameFilter>(tn);
         cerr << "\tFilter: " << tn << endl;
     }
 
@@ -110,7 +110,7 @@ void Gen::Fourdee::configure(const Configuration& thecfg)
         cerr << "\tSink: none\n";
     }
     else {
-        m_output = Factory::find_tn<IFrameSink>(tn);
+        m_output = Factory::find_maybe_tn<IFrameSink>(tn);
         cerr << "\tSink: " << tn << endl;
     }
 }
