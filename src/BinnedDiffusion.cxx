@@ -62,6 +62,10 @@ bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double si
     // make GD and add to all covered impacts
     int bin_beg = std::max(ibins.bin(center_pitch - sigma_pitch*m_nsigma), 0);
     int bin_end = std::min(ibins.bin(center_pitch + sigma_pitch*m_nsigma)+1, ibins.nbins());
+    // debug
+    //int bin_center = ibins.bin(center_pitch);
+    //cerr << "DEBUG center_pitch: "<<center_pitch/units::cm<<endl; 
+    //cerr << "DEBUG bin_center: "<<bin_center<<endl;
 
     auto gd = std::make_shared<GaussianDiffusion>(depo, time_desc, pitch_desc);
     for (int bin = bin_beg; bin < bin_end; ++bin) {

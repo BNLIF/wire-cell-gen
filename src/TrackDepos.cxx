@@ -93,10 +93,10 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
 
     double charge_per_depo = units::eplus; // charge of one positron
     if (charge > 0) {
-	charge_per_depo = charge / (length / m_stepsize);
+	charge_per_depo = -charge / (length / m_stepsize);
     }
     else if (charge < 0) {
-	charge_per_depo = -charge;
+	charge_per_depo = charge;
     }
 
     while (step < length) {

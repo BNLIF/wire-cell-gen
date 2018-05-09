@@ -163,6 +163,14 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                     auto& s_wire = store.wires[s_plane.wires[iwire]];
                     const int chanid = s_wire.channel;
                     m_channels.push_back(chanid);
+                    
+                    //debug
+                    /* if(iplane==2 && iwire==0) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
+                    /* if(iplane==2 && iwire==3455) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
+                    /* if(iplane==1 && iwire==0) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
+                    /* if(iplane==1 && iwire==2399) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
+                    /* if(iplane==0 && iwire==0) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
+                    /* if(iplane==0 && iwire==2399) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
 
                     Ray ray(s_wire.tail, s_wire.head);
                     auto iwireptr = make_shared<SimpleWire>(wire_plane_id, s_wire.ident,
@@ -192,6 +200,10 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 // pushed to a point longitudinally where the field
                 // response starts.
                 Ray bb_ray = bb.bounds();
+                    //debug
+                    /* if(iplane==2) cerr<<" DEBUG bb_ray.first: "<<bb_ray.first[2]<<" second: "<<bb_ray.second[2]<<endl; */ 
+                    /* if(iplane==1) cerr<<" DEBUG bb_ray.first: "<<bb_ray.first[2]<<" second: "<<bb_ray.second[2]<<endl; */ 
+                    /* if(iplane==0) cerr<<" DEBUG bb_ray.first: "<<bb_ray.first[2]<<" second: "<<bb_ray.second[2]<<endl; */ 
                 Vector field_origin = 0.5*(bb_ray.first + bb_ray.second);
                 const double to_response_plane = m_fr.origin - pr->location;
                 field_origin[0] += to_response_plane;
@@ -204,7 +216,13 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 Pimpos* pimpos = new Pimpos(nwires, -halfwireextent, halfwireextent,
                                             wire_dir, pitch_dir,
                                             field_origin, nregion_bins);
-                
+                // debug
+                /* cerr << "DEBUG iplane: "<<iplane<<endl; */
+                /* cerr << "DEBUG nwires: "<<nwires<<endl; */
+                /* cerr << "DEBUG halfwireextent: "<<halfwireextent<<endl; */
+                /* cerr << "DEBUG wire_dir: "<<wire_dir[0]<<" "<<wire_dir[1]<<" "<<wire_dir[2]<<endl; */
+                /* cerr << "DEBUG field_origin: "<<field_origin[0]<<" "<<field_origin[1]<<" "<<field_origin[2]<<endl; */
+
                 PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, s_plane.ident, tbins,
                                                                    gain, shaping, postgain, rc_constant);
 
