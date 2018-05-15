@@ -11,6 +11,7 @@ ZSEndedTrace::ZSEndedTrace(int chid, int nbins)
 
 void ZSEndedTrace::operator()(int bin, float charge)
 {
+    bin = min(bin, m_nbins-1);
     m_chqmap[bin] += charge;
     m_charge.clear();	// invalidate;
 }
