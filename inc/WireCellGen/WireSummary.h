@@ -39,7 +39,7 @@ namespace WireCell {
 	virtual IWire::vector by_channel(int channel) const;
 
     private:
-	class WireSummaryCache;
+	struct WireSummaryCache;
 	WireSummaryCache* m_cache;
 
     };
