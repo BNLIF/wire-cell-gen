@@ -197,9 +197,10 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
         // but n_i, n_j has covariance -n_tot * p_i * p_j
         // normalize later to approximate this multinomial distribution (how precise?)
         // how precise? better than poisson and 10000 total charge corresponds to a <1% level error.
-                float nelectrons = fluctuate->binomial((int)m_deposition->charge(), oldval/m_deposition->charge());
-		fluc_sum += nelectrons;
-		ret(ip,it) = nelectrons;
+                float nelectrons = fluctuate->binomial((int)(-1.0*m_deposition->charge()), oldval/m_deposition->charge());
+                //the charge should be netagive -- ionization electrons
+		fluc_sum += -nelectrons;
+		ret(ip,it) = -nelectrons;
 	    }
 	}
         if (fluc_sum == 0) {
