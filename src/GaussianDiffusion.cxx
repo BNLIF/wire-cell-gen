@@ -203,7 +203,7 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 		ret(ip,it) = -nelectrons;
 	    }
 	}
-        if (fluc_sum == 0) {
+        if (fluc_sum == 0 && unfluc_sum!=0) {
             cerr << "No net charge after fluctuation. Total unfluctuated = "
                  << unfluc_sum
                  << " Qdepo = " << m_deposition->charge()
