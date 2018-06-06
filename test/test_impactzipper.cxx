@@ -72,9 +72,7 @@ int main(const int argc, char *argv[])
     const Vector vwire (0,  cos(angle), -sin(angle));
     const Vector wpitch(0, 0, 1);
     const Vector wwire (0, 1, 0);
-    Response::Schema::lie(fr.planes[0], upitch, uwire);
-    Response::Schema::lie(fr.planes[1], vpitch, vwire);
-    Response::Schema::lie(fr.planes[2], wpitch, wwire);
+
     // FIXME: need to apply electronics response!
 
 

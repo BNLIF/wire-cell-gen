@@ -1,16 +1,32 @@
 #include "WireCellGen/AnodePlane.h"
+#include "WireCellGen/AnodeFace.h"
+#include "WireCellGen/WirePlane.h"
+#include "WireCellUtil/Units.h"
 
 #include <iostream>
 
 using namespace WireCell;
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
     Gen::AnodePlane ap;
     auto cfg = ap.default_configuration();
-    cfg["wires"] = "microboone-celltree-wires-v2.1.json.bz2";
-    cfg["fields"] = "ub-10-half.json.bz2";
+    
+    if (argc > 1) {
+        cfg["wires"] = argv[1];
+    }
+    else {
+        cfg["wires"] = "microboone-celltree-wires-v2.1.json.bz2";
+    }
+    cerr << "Wires file: " << cfg["wires"] << endl;
+    if (argc > 2) {
+        cfg["fields"] = argv[2];
+    }
+    else {
+        cfg["fields"] = "ub-10-half.json.bz2";
+    }
+    cerr << "Fields file: " << cfg["fields"] << endl;
     ap.configure(cfg);
 
     int last_ident = -999;
@@ -22,6 +38,23 @@ int main()
         cerr << chid << " " << wpid << endl;
         last_ident = wpid.ident();
     }
+    cerr << "That last one should look bogus.\n";
+
+    for (auto face : ap.faces()) {
+        cerr << "face: " << face->ident() << "\n";
+        for (auto plane : face->planes()) {
+            cerr << "\tplane: " << plane->ident() << "\n";
+            
+            auto pimpos = plane->pimpos();
+            cerr << "\torigin: " << pimpos->origin()/units::mm << "mm\n";
+            for (int axis : {0,1,2}) {
+                cerr << "\taxis " << axis << ": " << pimpos->axis(axis)/units::mm << "mm\n";
+            }
+        }
+    }
+
+
+    
     return 0;
         
 }

@@ -118,7 +118,6 @@ int main(int argc, char *argv[])
     }
     // end
 
-    // 2D garfield wires are all parallel so we "lie" them into 3D
     // Angle is positive and same for U and V.
     const double angle = 60*units::degree;
 
@@ -212,7 +211,6 @@ int main(int argc, char *argv[])
     for (int iplane=0; iplane<3; ++iplane) {
 
         auto& pr = fr.planes[iplane];
-        Response::Schema::lie(pr, uvw_pitch[iplane], uvw_wire[iplane]);
         const double wire_pitch = pr.pitch;
         const double impact_pitch = pr.paths[1].pitchpos - pr.paths[0].pitchpos;
         const int nregion_bins = round(wire_pitch/impact_pitch);

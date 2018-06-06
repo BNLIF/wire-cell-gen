@@ -92,7 +92,8 @@ struct Wirebounds {
                 int imin = jrange["min"].asInt();
                 int imax = jrange["max"].asInt();
 
-                double pitch = pimpos[iplane]->distance(depo->pos());
+                //double drift = pimpos[iplane]->distance(depo->pos(), 0);
+                double pitch = pimpos[iplane]->distance(depo->pos(), 2);
                 int iwire = pimpos[iplane]->region_binning().bin(pitch); // fixme: warning: round off error?
                 inregion = inregion && (imin <= iwire && iwire <= imax);
                 if (!inregion) {
