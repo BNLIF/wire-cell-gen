@@ -117,7 +117,6 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         THROW(ValueError() << errmsg{"no wire anodes defined in " + wfname});
     }
 
-    const Vector Xaxis(1.0,0,0);
     m_channels.clear();
 
     for (size_t ianode=0; ianode<store.anodes.size(); ++ianode) {
@@ -192,9 +191,15 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 } // wire
 
                 const Vector wire_dir = total_wire.norm();
+
+                // Define the normal direction for the face in the
+                // global coordinate system.  The "front" face
+                // (ident=0) is the taken to "point" in the positive X
+                // direction, the "back" face in the negative X
+                // direction.
+                const Vector Xaxis(s_face.ident == 0 ? 1.0 : -1,0,0);
                 const Vector pitch_dir = Xaxis.cross(wire_dir);
                 auto pr = m_fr.plane(s_plane.ident);
-                Response::Schema::lie(*pr, pitch_dir, wire_dir);
 
                 // Calculate transverse center of wire plane and
                 // pushed to a point longitudinally where the field
