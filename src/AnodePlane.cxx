@@ -112,136 +112,101 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         THROW(ValueError() << errmsg{"\"wires\" parameter must specify a wire geometry file name"});
     }
 
-    WireSchema::Store store = WireSchema::load(wfname.c_str());
-    if (store.anodes.empty()) {
-        THROW(ValueError() << errmsg{"no wire anodes defined in " + wfname});
-    }
-
     m_channels.clear();
+    const Vector Xaxis(1,0,0);
 
-    for (size_t ianode=0; ianode<store.anodes.size(); ++ianode) {
-        const int other_ident = store.anodes[ianode].ident;
-        if (other_ident != m_ident) {
-            cerr << "Gen::AnodePlane: my ident is " << m_ident
-                 << " not " << other_ident << " (" << ianode << "/" << store.anodes.size() << ")\n";
-            continue;
-        }
+    WireSchema::Store ws_store = WireSchema::load(wfname.c_str());
 
-        auto& s_anode = store.anodes[ianode];
-    
-        const int nfaces = s_anode.faces.size();
-        m_faces.resize(nfaces);
-        //cerr << "Gen::AnodePlane: found my ident " << other_ident << " with " << nfaces << " faces\n";
+    const WireSchema::Anode& ws_anode = ws_store.anode(m_ident);
 
-        for (int iface=0; iface<nfaces; ++iface) {
-            auto& s_face = store.faces[s_anode.faces[iface]];
-            const int nplanes = s_face.planes.size();
+    std::vector<WireSchema::Face> ws_faces = ws_store.faces(ws_anode);
+    const size_t nfaces = ws_faces.size();
 
+    m_faces.resize(nfaces);
+    for (size_t iface=0; iface<nfaces; ++iface) { // note, WireSchema requires front/back face ordering in an anode
+        const auto& ws_face = ws_faces[iface];
+        std::vector<WireSchema::Plane> ws_planes = ws_store.planes(ws_face);
+        const size_t nplanes = ws_planes.size();
 
-            IWirePlane::vector planes(nplanes);
-            for (int iplane=0; iplane<nplanes; ++iplane) {
-                auto& s_plane = store.planes[s_face.planes[iplane]];
+        IWirePlane::vector planes(nplanes);
+        for (size_t iplane=0; iplane<nplanes; ++iplane) { // note, WireSchema requires U/V/W plane ordering in a face.
+            const auto& ws_plane = ws_planes[iplane];
 
-                // fixme: the WireSchema data is SUPPOSED to encode
-                // the ident as packed data but first version stores
-                // just an index.  So we play ball for now.
+            // WirePlaneId wire_plane_id(s_plane.ident); // dubious
+            WirePlaneId wire_plane_id(iplane2layer[iplane], iface, m_ident);
 
-                // WirePlaneId wire_plane_id(s_plane.ident); // dubious
-                WirePlaneId wire_plane_id(iplane2layer[s_plane.ident], iface, ianode);
-                //cerr << wire_plane_id << endl;
-                if (wire_plane_id.index() < 0) {
-                    THROW(ValueError() << errmsg{format("bad wire plane id: %d", wire_plane_id.ident())});
-                }
+            if (wire_plane_id.index() < 0) {
+                THROW(ValueError() << errmsg{format("bad wire plane id: %d", wire_plane_id.ident())});
+            }
 
-                Vector total_wire;
-                const int nwires = s_plane.wires.size();
-                IWire::vector wires(nwires);
-                BoundingBox bb;
+            auto wire_pitch_dirs = ws_store.wire_pitch(ws_plane);
+            auto ecks_dir = wire_pitch_dirs.first.cross(wire_pitch_dirs.second);
 
-                for (int iwire=0; iwire<nwires; ++iwire) {
-                    auto& s_wire = store.wires[s_plane.wires[iwire]];
-                    const int chanid = s_wire.channel;
-                    m_channels.push_back(chanid);
+            BoundingBox bb = ws_store.bounding_box(ws_plane);
+            m_channels = ws_store.channels(ws_plane);
+
+            std::vector<WireSchema::Wire> ws_wires = ws_store.wires(ws_plane);
+            const size_t nwires = ws_wires.size();
+            IWire::vector wires(nwires);
+
+            for (size_t iwire=0; iwire<nwires; ++iwire) { // note, WireSchema requires wire-in-plane ordering
+                const auto& ws_wire = ws_wires[iwire];
+                const int chanid = m_channels[iwire];
                     
-                    //debug
-                    /* if(iplane==2 && iwire==0) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
-                    /* if(iplane==2 && iwire==3455) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
-                    /* if(iplane==1 && iwire==0) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
-                    /* if(iplane==1 && iwire==2399) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
-                    /* if(iplane==0 && iwire==0) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
-                    /* if(iplane==0 && iwire==2399) cerr<<" DEBUG tail: "<<s_wire.tail[2]<<" head: "<<s_wire.head[2]<<endl; */ 
+                Ray ray(ws_wire.tail, ws_wire.head);
+                auto iwireptr = make_shared<SimpleWire>(wire_plane_id, ws_wire.ident,
+                                                        iwire, chanid, ray,
+                                                        ws_wire.segment);
+                wires[iwire] = iwireptr;
+                m_c2wires[chanid].push_back(iwireptr);
+                m_c2wpid[chanid] = wire_plane_id.ident();
+            } // wire
 
-                    Ray ray(s_wire.tail, s_wire.head);
-                    auto iwireptr = make_shared<SimpleWire>(wire_plane_id, s_wire.ident,
-                                                            iwire, chanid,
-                                                            ray, s_wire.segment);
-                    wires[iwire] = iwireptr;
-                    m_c2wires[chanid].push_back(iwireptr);
 
-                    total_wire += ray_vector(ray);
-                    bb(ray);
-                    m_c2wpid[chanid] = wire_plane_id.ident();
-                    // if (iwire == 0) {
-                    //     cerr << "nwires=" << nwires << " ch=" << s_wire.channel
-                    //      << ", wpid=" << wire_plane_id
-                    //      << " index=" << wire_plane_id.index()
-                    //      << " ident=" << wire_plane_id.ident()
-                    //      << endl;
-                    // }
-                } // wire
+            auto pr = m_fr.plane(ws_plane.ident);
 
-                const Vector wire_dir = total_wire.norm();
+            // Calculate transverse center of wire plane and pushed to
+            // a point longitudinally where the field response starts.
+            // Note, this requires EXQUISITE coincidence between the
+            // location of wire planes in the wire data file and the
+            // field response file.  There's currently absolutely
+            // nothing that assures this!  If the resulting X origin
+            // for the resuling Pimpos objects for the three plane
+            // don't match, then the coincidence was violated!
 
-                // Define the normal direction for the face in the
-                // global coordinate system.  The "front" face
-                // (ident=0) is the taken to "point" in the positive X
-                // direction, the "back" face in the negative X
-                // direction.
-                const Vector Xaxis(s_face.ident == 0 ? 1.0 : -1,0,0);
-                const Vector pitch_dir = Xaxis.cross(wire_dir);
-                auto pr = m_fr.plane(s_plane.ident);
+            Ray bb_ray = bb.bounds();
+            Vector field_origin = 0.5*(bb_ray.first + bb_ray.second);
+            const double to_response_plane = m_fr.origin - pr->location;
+            // cerr << "face:" << iface << " plane:" << iplane
+            //      << " fr.origin:" << m_fr.origin/units::cm << "cm pr.location:" << pr->location/units::cm << "cm"
+            //      << " delta:"<<to_response_plane/units::cm<<"cm center:" << field_origin/units::cm << "cm\n";
+            field_origin += to_response_plane * ecks_dir;
 
-                // Calculate transverse center of wire plane and
-                // pushed to a point longitudinally where the field
-                // response starts.
-                Ray bb_ray = bb.bounds();
-                    //debug
-                    /* if(iplane==2) cerr<<" DEBUG bb_ray.first: "<<bb_ray.first[2]<<" second: "<<bb_ray.second[2]<<endl; */ 
-                    /* if(iplane==1) cerr<<" DEBUG bb_ray.first: "<<bb_ray.first[2]<<" second: "<<bb_ray.second[2]<<endl; */ 
-                    /* if(iplane==0) cerr<<" DEBUG bb_ray.first: "<<bb_ray.first[2]<<" second: "<<bb_ray.second[2]<<endl; */ 
-                Vector field_origin = 0.5*(bb_ray.first + bb_ray.second);
-                const double to_response_plane = m_fr.origin - pr->location;
-                field_origin[0] += to_response_plane;
+            const double wire_pitch = pr->pitch;
+            const double impact_pitch = pr->paths[1].pitchpos - pr->paths[0].pitchpos;
+            const int nregion_bins = round(wire_pitch/impact_pitch);
 
-                const double wire_pitch = pr->pitch;
-                const double impact_pitch = pr->paths[1].pitchpos - pr->paths[0].pitchpos;
-                const int nregion_bins = round(wire_pitch/impact_pitch);
-                const double halfwireextent = wire_pitch * (nwires/2);
+            // Absolute locations in the pitch dimension of the
+            // first/last wires measured relative to the
+            // centered origin.
+            const double edgewirepitch = wire_pitch * 0.5 * (nwires - 1);
 
-                Pimpos* pimpos = new Pimpos(nwires, -halfwireextent, halfwireextent,
-                                            wire_dir, pitch_dir,
-                                            field_origin, nregion_bins);
-                // debug
-                /* cerr << "DEBUG iplane: "<<iplane<<endl; */
-                /* cerr << "DEBUG nwires: "<<nwires<<endl; */
-                /* cerr << "DEBUG halfwireextent: "<<halfwireextent<<endl; */
-                /* cerr << "DEBUG wire_dir: "<<wire_dir[0]<<" "<<wire_dir[1]<<" "<<wire_dir[2]<<endl; */
-                /* cerr << "DEBUG field_origin: "<<field_origin[0]<<" "<<field_origin[1]<<" "<<field_origin[2]<<endl; */
+            Pimpos* pimpos = new Pimpos(nwires, -edgewirepitch, edgewirepitch,
+                                        wire_pitch_dirs.first, wire_pitch_dirs.second,
+                                        field_origin, nregion_bins);
 
-                PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, s_plane.ident, tbins,
-                                                                   gain, shaping, postgain, rc_constant);
+            PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, ws_plane.ident, tbins,
+                                                               gain, shaping, postgain, rc_constant);
 
-                planes[iplane] = make_shared<WirePlane>(s_plane.ident, wires, pimpos, pir);
+            planes[iplane] = make_shared<WirePlane>(ws_plane.ident, wires, pimpos, pir);
 
-            } // plane
+        } // plane
 
-            m_faces[iface] = make_shared<AnodeFace>(s_face.ident, planes);
+        m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes);
 
-        } // face
+    } // face
 
-        break; // this class only handles single-anode plane detectors
-
-    }          // anode
+    // remove any duplicate channels
     std::sort(m_channels.begin(), m_channels.end());
     auto chend = std::unique(m_channels.begin(), m_channels.end());
     m_channels.resize( std::distance(m_channels.begin(), chend) );

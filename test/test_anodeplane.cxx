@@ -2,7 +2,7 @@
 #include "WireCellGen/AnodeFace.h"
 #include "WireCellGen/WirePlane.h"
 #include "WireCellUtil/Units.h"
-
+#include "WireCellUtil/Exceptions.h"
 #include <iostream>
 
 using namespace WireCell;
@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
 
     for (auto face : ap.faces()) {
         cerr << "face: " << face->ident() << "\n";
+        std::vector<float> originx;
         for (auto plane : face->planes()) {
             cerr << "\tplane: " << plane->ident() << "\n";
             
@@ -50,6 +51,14 @@ int main(int argc, char* argv[])
             for (int axis : {0,1,2}) {
                 cerr << "\taxis " << axis << ": " << pimpos->axis(axis)/units::mm << "mm\n";
             }
+            originx.push_back(pimpos->origin()[0]);
+        }
+
+     
+        float diff = std::abs(originx.front() - originx.back());
+        if (diff > 0.1*units::mm) {
+            cerr << "ERROR, field response and wire location data do not match: diff = " << diff/units::mm << "mm\n";
+            THROW(ValueError() << errmsg{"field response and wire location data do not match"});
         }
     }
 

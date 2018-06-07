@@ -1,7 +1,5 @@
 #include "WireCellGen/WirePlane.h"
 
-#include "WireCellUtil/WireSchema.h"
-
 using namespace WireCell;
 
 Gen::WirePlane::WirePlane(int ident, IWire::vector wires, Pimpos* pimpos, PlaneImpactResponse* pir)
