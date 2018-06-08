@@ -215,11 +215,7 @@ int main(int argc, char *argv[])
         const double impact_pitch = pr.paths[1].pitchpos - pr.paths[0].pitchpos;
         const int nregion_bins = round(wire_pitch/impact_pitch);
         const int nwires = convert<int>(cfg["nwires"][iplane]);
-        // rounding effect in nwires/2, be careful about the even/odd nwires
-        // default is for odd wires
-        //const double halfwireextent = wire_pitch * (nwires/2);
-        // Even wires, still have some problem. To be fixed.
-        const double halfwireextent = wire_pitch *( (nwires/2)-0.5 );
+        const double halfwireextent = wire_pitch * 0.5 * (nwires - 1);
 
         const double ndiffision_sigma = convert<double>(cfg["nsigma"]);
 

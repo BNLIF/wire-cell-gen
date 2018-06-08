@@ -84,7 +84,7 @@ int main(const int argc, char *argv[])
     const int nwires = 2001;
     const double wire_pitch = 3*units::mm;
     const int nregion_bins = 10; // fixme: this should come from the Response::Schema.
-    const double halfwireextent = wire_pitch * (nwires/2);
+    const double halfwireextent = wire_pitch * 0.5 * (nwires - 1);
     cerr << "Max wire at pitch=" << halfwireextent << endl;
 
     std::vector<Pimpos> uvw_pimpos{

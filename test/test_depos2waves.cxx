@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
         const double impact_pitch = pr.paths[1].pitchpos - pr.paths[0].pitchpos;
         const int nregion_bins = round(wire_pitch/impact_pitch);
         const int nwires = convert<int>(cfg["nwires"][iplane]);
-        const double halfwireextent = wire_pitch * (nwires/2);
+        const double halfwireextent = wire_pitch * 0.5 * (nwires - 1);
         const double ndiffision_sigma = convert<double>(cfg["nsigma"]);
 
         Pimpos pimpos(nwires, -halfwireextent, halfwireextent,

@@ -54,8 +54,8 @@ const double drift_speed = 1.6*units::mm/units::us;
 
 const int nwires = 2001;
 const double wire_pitch = 3*units::mm;
-const double min_wire_pitch = -(nwires/2)*wire_pitch;
-const double max_wire_pitch = +(nwires/2)*wire_pitch;
+const double min_wire_pitch = -0.5*(nwires-1)*wire_pitch;
+const double max_wire_pitch = +0.5*(nwires-1)*wire_pitch;
 
 Pimpos pimpos(nwires, min_wire_pitch, max_wire_pitch);
 Binning tbins(nticks, t0, t0 + readout_time);
