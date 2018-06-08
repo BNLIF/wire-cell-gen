@@ -185,6 +185,8 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
     // normalize to total charge
     ret *= m_deposition->charge() / raw_sum;
 
+    const double charge_sign = m_deposition->charge() < 0 ? -1 : 1;
+
     double fluc_sum = 0;
     if (fluctuate) {
         double unfluc_sum = 0;
@@ -193,14 +195,14 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 	    for (size_t it = 0; it < ntss; ++it) {
 		const float oldval = ret(ip,it);
                 unfluc_sum += oldval;
-        // should be a multinomial distribution, n_i follows binomial distribution
-        // but n_i, n_j has covariance -n_tot * p_i * p_j
-        // normalize later to approximate this multinomial distribution (how precise?)
-        // how precise? better than poisson and 10000 total charge corresponds to a <1% level error.
-                float nelectrons = fluctuate->binomial((int)(-1.0*m_deposition->charge()), oldval/m_deposition->charge());
+                // should be a multinomial distribution, n_i follows binomial distribution
+                // but n_i, n_j has covariance -n_tot * p_i * p_j
+                // normalize later to approximate this multinomial distribution (how precise?)
+                // how precise? better than poisson and 10000 total charge corresponds to a <1% level error.
+                float number = fluctuate->binomial((int)(std::abs(m_deposition->charge())), oldval/m_deposition->charge());
                 //the charge should be netagive -- ionization electrons
-		fluc_sum += -nelectrons;
-		ret(ip,it) = -nelectrons;
+		fluc_sum += charge_sign*number;
+		ret(ip,it) = charge_sign*number;
 	    }
 	}
         if (fluc_sum == 0 && unfluc_sum!=0) {

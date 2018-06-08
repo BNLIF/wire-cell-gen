@@ -86,7 +86,7 @@ void test_gd(IRandom::pointer fluctuate)
     const Binning pbins(np, p_min, p_max);
 
     /// Make a single deposition
-    const double qdepo = 1000.0;
+    const double qdepo = -1000.0;
     const Point pdepo(10*units::cm, 0.0, p_center);
     auto depo = std::make_shared<SimpleDepo>(t_center, pdepo, qdepo);
 
@@ -96,6 +96,7 @@ void test_gd(IRandom::pointer fluctuate)
     Gen::GaussianDiffusion gd(depo, tdesc, pdesc);
 
     /// Rastering to an array is delayed
+    cerr << "Set sampling: tbins="<<tbins<<", pbins="<<pbins<<", nsigma="<<nsigma<<", fluctuate:"<<fluctuate<<endl;
     gd.set_sampling(tbins, pbins, nsigma, fluctuate);
 
     /// patch only covers +/- nsigma
