@@ -19,27 +19,22 @@
 #include <cstdlib>
 #include <string>
 
+#include "anode_loader.h"       // do not use this
+
 using namespace std;
 using namespace WireCell;
 
 int main(int argc, char* argv[])
 {
-    PluginManager& pm = PluginManager::instance();
-    pm.add("WireCellGen");
+    std::string detector = "uboone";
+    if (argc > 1) {
+        detector = argv[1];
+    }
+    auto anode_tns = anode_loader(detector);
 
     string filenames[3] = {
         "microboone-noise-spectra-v2.json.bz2",
-        "ub-10-wnormed.json.bz2",
-        "microboone-celltree-wires-v2.json.bz2",
     };
-
-    for (int ind=0; ind<3; ++ind) {
-        const int argi = ind+1;
-        if (argc <= argi) {
-            break;
-        }
-        filenames[ind] = argv[argi];
-    }
 
     
     ExecMon em;
@@ -48,33 +43,32 @@ int main(int argc, char* argv[])
     // wire-cell (or hosting application) and driven by user
     // configuration files.  Here we have to expose some tedium.
     {
-        auto rng = Factory::lookup<IRandom>("Random");
-        auto rngcfg = Factory::lookup<IConfigurable>("Random");
-        rngcfg->configure(rngcfg->default_configuration());
+        auto icfg = Factory::lookup<IConfigurable>("Random");
+        icfg->configure(icfg->default_configuration());
     }
     {
-        auto anodecfg = Factory::lookup<IConfigurable>("AnodePlane");
-        auto cfg = anodecfg->default_configuration();
-        cfg["fields"] = filenames[1];
-        cfg["wires"] = filenames[2];
-        anodecfg->configure(cfg);
+        auto icfg = Factory::lookup<IConfigurable>("StaticChannelStatus");
+        auto cfg = icfg->default_configuration();
+        cfg["anode"] = anode_tns[0];
+        icfg->configure(cfg);
     }
     {
-        auto noisemodelcfg = Factory::lookup<IConfigurable>("EmpiricalNoiseModel");
-        auto cfg = noisemodelcfg->default_configuration();
+        auto icfg = Factory::lookup<IConfigurable>("EmpiricalNoiseModel");
+        auto cfg = icfg->default_configuration();
         cfg["spectra_file"] = filenames[0];
 	// cfg["period"] = 1.0*units::us;
 	// cfg["nsamples"] = 5000;
-        noisemodelcfg->configure(cfg);
+        cfg["anode"] = anode_tns[0];
+        icfg->configure(cfg);
     }
     {
-        auto noisesrccfg = Factory::lookup<IConfigurable>("NoiseSource");
-        auto cfg = noisesrccfg->default_configuration();
-        cfg["anode"] = "AnodePlane";
+        auto icfg = Factory::lookup<IConfigurable>("NoiseSource");
+        auto cfg = icfg->default_configuration();
+        cfg["anode"] = anode_tns[0];
         cfg["model"] = "EmpiricalNoiseModel";
         cfg["rng"] = "Random";
         cfg["readout_time"] = units::ms;
-        noisesrccfg->configure(cfg);
+        icfg->configure(cfg);
     }
 
     em("configuration done");

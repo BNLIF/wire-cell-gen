@@ -1,4 +1,4 @@
-#include "WireCellGen/Drifter.h"
+#include "WireCellIface/IDrifter.h"
 #include "WireCellGen/TrackDepos.h"
 
 #include "WireCellUtil/Testing.h"
@@ -7,6 +7,7 @@
 #include "WireCellUtil/RangeFeed.h"
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/String.h"
 #include "WireCellIface/IRandom.h"
 #include "WireCellIface/IConfigurable.h"
 
@@ -22,6 +23,8 @@
 
 #include <iostream>
 #include <sstream>
+
+#include "anode_loader.h"
 
 using namespace WireCell;
 using namespace std;
@@ -133,27 +136,23 @@ IDepo::vector test_drifted()
 
 int main(int argc, char* argv[])
 {
-    // Here we must explicitly handle some things that the wire-cell
-    // or other main application handles.
-    PluginManager& pm = PluginManager::instance();
-    pm.add("WireCellGen");
+    std::string detector = "uboone";
+    if (argc > 1) {
+        detector = argv[1];
+    }
+    auto anode_tns = anode_loader(detector);
+
+
     {
-        auto rngcfg = Factory::lookup<IConfigurable>("Random");
-        auto cfg = rngcfg->default_configuration();
-        rngcfg->configure(cfg);
+        auto icfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = icfg->default_configuration();
+        icfg->configure(cfg);
     }
     {
-        auto anodecfg = Factory::lookup<IConfigurable>("AnodePlane");
-        auto cfg = anodecfg->default_configuration();
-        cfg["wires"] = "microboone-celltree-wires-v2.json.bz2";
-        cfg["fields"] = "ub-10-wnormed.json.bz2";
-        anodecfg->configure(cfg);
-    }
-    {
-        auto dcfg = Factory::lookup<IConfigurable>("Drifter");
-        auto cfg = dcfg->default_configuration();
-        cfg["anode"] = "AnodePlane";
-        dcfg->configure(cfg);
+        auto icfg = Factory::lookup<IConfigurable>("Drifter");
+        auto cfg = icfg->default_configuration();
+        cfg["anode"] = anode_tns[0];
+        icfg->configure(cfg);
     }
 
 
@@ -170,10 +169,6 @@ int main(int argc, char* argv[])
     
     Ray bb = make_bbox();
 
-    TApplication* theApp = 0;
-    if (argc > 1) {
-	theApp = new TApplication ("test_drifter",0,0);
-    }
 
     TCanvas c("c","c",800,800);
 
@@ -231,12 +226,8 @@ int main(int argc, char* argv[])
 	pm->Draw();
     }
 
-    if (theApp) {
-	theApp->Run();
-    }
-    else {			// batch
-	c.Print("test_drifter.pdf");
-    }
+    c.Print(String::format("%s.pdf", argv[0]).c_str());
+
 
     return 0;
 }

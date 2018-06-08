@@ -1,14 +1,14 @@
-#include "WireCellGen/AnodePlane.h"
-#include "WireCellGen/AnodeFace.h"
-#include "WireCellGen/WirePlane.h"
-#include "WireCellUtil/Units.h"
-#include "WireCellUtil/Exceptions.h"
-#include <iostream>
+#include "WireCellUtil/Pimpos.h"
 
 #include "TCanvas.h"
 #include "TArrow.h"
 #include "TH1F.h"
 #include "TLine.h"
+
+#include <iostream>
+
+
+#include "anode_loader.h" // ignore everything in this file
 
 using namespace WireCell;
 using namespace std;
@@ -81,36 +81,14 @@ void draw_pimpos(TCanvas& canvas, const std::string& detector, std::vector<const
 
 int main(int argc, char* argv[])
 {
-    Gen::AnodePlane ap;
-    auto cfg = ap.default_configuration();
-    
     std::string detector = "uboone";
     if (argc > 1) {
         detector = argv[1];
     }
-    if (detector == "uboone") {
-        cfg["wires"] = "microboone-celltree-wires-v2.1.json.bz2";
-        cfg["fields"] = "ub-10-half.json.bz2";
-    }
-    else if (detector == "apa") {
-        cfg["wires"] = "apa-wires.json.bz2";
-        cfg["fields"] = "garfield-1d-3planes-21wires-6impacts-dune-v1.json.bz2";
-    }
-    else if (detector == "protodune-larsoft") {
-        cfg["wires"] = "protodune-wires-larsoft-v1.json.bz2";
-        cfg["fields"] = "garfield-1d-3planes-21wires-6impacts-dune-v1.json.bz2";
-    }
-    else {
-        cerr << "Unknown detector: " << detector << endl;
-        cerr << "Try one of: uboone, apa, protodune-larsoft\n";
-        return 1;
-    }
-
-    cerr << "Fields file: " << cfg["fields"] << endl;
-    cerr << "Wires file : " << cfg["wires"] << endl;
-    ap.configure(cfg);
+    auto anode_tns = anode_loader(detector);
 
 
+    // output PDF
     std::string pdffile = argv[0];
     pdffile += "-" + detector + ".pdf";
     cerr << "Drawing to " << pdffile << endl;
@@ -118,14 +96,19 @@ int main(int argc, char* argv[])
     TCanvas canvas("c","c",500,500);
 
     canvas.Print((pdffile+"[").c_str(), "pdf");
+
+    for (const auto& anode_tn : anode_tns) {
+        cerr << "Getting: " << anode_tn << "\n";
+        auto iap = Factory::find_tn<IAnodePlane>(anode_tn);
     
-    for (auto face : ap.faces()) {
-        std::vector<const Pimpos*> pimposes;
-        for (auto plane : face->planes()) {
-            pimposes.push_back(plane->pimpos());
+        for (auto face : iap->faces()) {
+            std::vector<const Pimpos*> pimposes;
+            for (auto plane : face->planes()) {
+                pimposes.push_back(plane->pimpos());
+            }
+            draw_pimpos(canvas, detector, pimposes);
+            canvas.Print(pdffile.c_str(), "pdf");
         }
-        draw_pimpos(canvas, detector, pimposes);
-        canvas.Print(pdffile.c_str(), "pdf");
     }
 
     canvas.Print((pdffile+"]").c_str(), "pdf");

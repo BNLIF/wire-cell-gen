@@ -1,5 +1,5 @@
 #include "WireCellGen/BinnedDiffusion.h"
-#include "WireCellGen/AnodePlane.h"
+#include "WireCellIface/IAnodePlane.h"
 #include "WireCellGen/ImpactZipper.h"
 #include "WireCellIface/SimpleDepo.h"
 #include "WireCellIface/SimpleTrace.h"
@@ -70,12 +70,12 @@ Response::HfFilter hf_time(timeSigma,timePower,timeFlag);
 auto timeTruth = hf_time.generate(timeBins);
 
 void test_track(double charge, double track_time, const Ray& track_ray,
-		double stepsize, IRandom::pointer fluctuate, Gen::AnodePlane ap){
+		double stepsize, IRandom::pointer fluctuate, IAnodePlane::pointer iap){
 
   // --- truth type ---
   int type = 2; // 0=bare; 1=unit; 2=fractional
   
-  for(auto face : ap.faces()){
+  for(auto face : iap->faces()){
     for(auto plane : face->planes()){
       const Pimpos* pimp = plane->pimpos();
       const PlaneImpactResponse* pir = plane->pir();
@@ -185,39 +185,38 @@ void test_track(double charge, double track_time, const Ray& track_ray,
 } // end test_track
 
 
+#include "anode_loader.h"       // do not use
+
 int main(int argc, char* argv[]){
 
-  // ### configuration ###
+    // ### configuration ###
+    auto anode_tns = anode_loader("uboone");
+    {
+        auto icfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = icfg->default_configuration();
+        icfg->configure(cfg);
+    }
 
-  PluginManager& pm = PluginManager::instance();
-  pm.add("WireCellGen");
-  {
-    auto rngcfg = Factory::lookup<IConfigurable>("Random");
-    auto cfg = rngcfg->default_configuration();
-    rngcfg->configure(cfg);
-  }
-  auto rng = Factory::lookup<IRandom>("Random");
-  const char* me = argv[0];
-  TFile* rootfile = TFile::Open(Form("%s.root",me),"RECREATE");
+    auto rng = Factory::lookup<IRandom>("Random");
+    const char* me = argv[0];
+    const std::string outfile = Form("%s.root", me);
+    cerr << "Writing file: " << outfile << endl;
+    TFile* rootfile = TFile::Open(outfile.c_str(),"RECREATE");
 
-  Gen::AnodePlane ap;
-  auto config = ap.default_configuration();
-  config["wires"] = "microboone-celltree-wires-v2.json.bz2";
-  config["fields"] = "ub-10-half.json.bz2";
-  ap.configure(config);
+    auto iap = Factory::find_tn<IAnodePlane>(anode_tns[0]);
 
-  // ### simulate track ###
+    // ### simulate track ###
 
-  //Ray track_ray(Point(101*units::mm,0,1000*units::mm),
-  //		Point(102*units::mm,0,1000*units::mm));
-  Ray track_ray(Point(101*units::mm,0,1000*units::mm),
-  		Point(201*units::mm,0,1000*units::mm));
-  const double track_time = 1*units::ms;
-  const double stepsize = 1*units::mm;
-  const double charge = 1e5*units::eplus;
+    //Ray track_ray(Point(101*units::mm,0,1000*units::mm),
+    //		Point(102*units::mm,0,1000*units::mm));
+    Ray track_ray(Point(101*units::mm,0,1000*units::mm),
+                  Point(201*units::mm,0,1000*units::mm));
+    const double track_time = 1*units::ms;
+    const double stepsize = 1*units::mm;
+    const double charge = 1e5*units::eplus;
 
-  test_track(charge, track_time, track_ray, stepsize, rng, ap);
+    test_track(charge, track_time, track_ray, stepsize, rng, iap);
   
-  rootfile->Close();
-  return 0;
+    rootfile->Close();
+    return 0;
 }

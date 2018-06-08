@@ -6,6 +6,8 @@
 #include "WireCellUtil/BoundingBox.h"
 #include "WireCellUtil/Exceptions.h"
 
+#include "WireCellIface/IFieldResponse.h"
+#include "WireCellIface/IWireSchema.h"
 #include "WireCellIface/SimpleWire.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/String.h"
@@ -39,15 +41,16 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
 {
     Configuration cfg;
 
-    /// Path to (possibly compressed) JSON file holding wire geometry
-    /// which follows wirecell.util.wire.schema.  
-    put(cfg, "wires", "");
-
     /// This number is used to take from the wire file the anode
     put(cfg, "ident", 0);
 
-    /// Path to (possibly compressed) JSON file holding field responses
-    put(cfg, "fields", "");
+    /// Name of a IWireSchema component.
+    // note: this used to be a "wires" parameter directly specifying a filename.
+    put(cfg, "wire_schema", "");
+
+    /// Name fo a IFieldResponse component.
+    // note: this used to be a "fields" parameter directly specifying a filename.
+    put(cfg, "field_response", "");
 
     /// Electronics gain
     put(cfg, "gain", default_gain);
@@ -96,26 +99,35 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     m_faces.clear();
     m_ident = get<int>(cfg, "ident", 0);
 
-    const string frfname = get<string>(cfg, "fields");
-    if (frfname.empty()) {
-        cerr << "Gen::AnodePlane::configure() must have a field response file name\n";
-        THROW(ValueError() << errmsg{"\"fields\" parameter must specify a field response file name"});
+    // obsolete:
+    if (!cfg["fields"].isNull() or !cfg["wires"].isNull()) {
+        cerr << "\nWarning: your configuration is obsolete.\n"
+             << "Use \"field_response\" and \"wire_store\" to name components instead of directly giving file names\n"
+             << "This job will likely throw an exception next\n\n";
     }
 
-    m_fr = Response::Schema::load(frfname.c_str());
+    // get field responses
+    const string fr_name = get<string>(cfg, "field_response");
+    if (fr_name.empty()) {
+        cerr << "Gen::AnodePlane::configure() must have an IFieldResponse component specified\n";
+        THROW(ValueError() << errmsg{"\"field_response\" parameter must specify an IFieldResponse component"});
+    }
+    auto ifr = Factory::find_tn<IFieldResponse>(fr_name); // throws if not found
+    m_fr = ifr->field_response();
     if (m_fr.speed <= 0) {
         THROW(ValueError() << errmsg{format("illegal drift speed: %f mm/us", m_fr.speed/(units::mm/units::us))});
     }
 
-    const string wfname = get<string>(cfg, "wires");
-    if (wfname.empty()) {
-        THROW(ValueError() << errmsg{"\"wires\" parameter must specify a wire geometry file name"});
+    // get wire schema
+    const string ws_name = get<string>(cfg, "wire_schema");
+    if (ws_name.empty()) {
+        THROW(ValueError() << errmsg{"\"wire_schema\" parameter must specify an IWireSchema component"});
     }
+    auto iws = Factory::find_tn<IWireSchema>(ws_name); // throws if not found
+    const WireSchema::Store& ws_store = iws->wire_schema_store();
 
+    // keep track which channels we know about in this anode.
     m_channels.clear();
-    const Vector Xaxis(1,0,0);
-
-    WireSchema::Store ws_store = WireSchema::load(wfname.c_str());
 
     const WireSchema::Anode& ws_anode = ws_store.anode(m_ident);
 
@@ -143,7 +155,8 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             auto ecks_dir = wire_pitch_dirs.first.cross(wire_pitch_dirs.second);
 
             BoundingBox bb = ws_store.bounding_box(ws_plane);
-            m_channels = ws_store.channels(ws_plane);
+            std::vector<int> plane_chans = ws_store.channels(ws_plane);
+            m_channels.insert(m_channels.end(), plane_chans.begin(), plane_chans.end());
 
             std::vector<WireSchema::Wire> ws_wires = ws_store.wires(ws_plane);
             const size_t nwires = ws_wires.size();
@@ -151,7 +164,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
             for (size_t iwire=0; iwire<nwires; ++iwire) { // note, WireSchema requires wire-in-plane ordering
                 const auto& ws_wire = ws_wires[iwire];
-                const int chanid = m_channels[iwire];
+                const int chanid = plane_chans[iwire];
                     
                 Ray ray(ws_wire.tail, ws_wire.head);
                 auto iwireptr = make_shared<SimpleWire>(wire_plane_id, ws_wire.ident,
