@@ -212,14 +212,25 @@ local depos = {
     }
 };
 
-
+local wires = {
+    type: "WireSchemaFile",
+    data: { filename: params.files.wires }
+};
+local fields = {
+    type: "FieldResponse",
+    data: { filename: params.files.fields }
+};
 local anode = {
-    type : "AnodePlane",
+    type : "AnodePlane",        // 
     name : "nominal",
-    data : params.elec + params.daq + params.files {
+    data : params.elec + params.daq {
         ident : 0,
+        field_response: wc.tn(fields),
+        wire_schema: wc.tn(wires),
     }
 };
+local anodes = [wires, fields, anode];
+
 local drifter = {
     type : "Drifter",
     data : params.lar + params.sim  {
@@ -304,5 +315,5 @@ local app = {
 };
 
 // Finally, we return the actual configuration sequence:
-utils + [anode] + signal + readout + [app]
+utils + anodes + signal + readout + [app]
 
