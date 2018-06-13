@@ -205,6 +205,13 @@ bool Gen::MultiDuctor::start_processing(const input_pointer& depo)
 void Gen::MultiDuctor::dump_frame(const IFrame::pointer frame, std::string msg)
 {
     auto traces = frame->traces();
+    if (!traces or traces->empty()) {
+        std::cerr << msg
+                  << " fid:" << frame->ident()
+                  << " has no traces\n";
+        return;
+    }
+
     auto mm = FrameTools::tbin_range(*traces);
     std::cerr << msg
               << " fid:" << frame->ident()
