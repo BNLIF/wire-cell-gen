@@ -83,7 +83,7 @@ static std::string dump(IDepo::pointer d)
 
 void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
-    cerr << "Gen::TrackDepos::add_track(" << time << ", (" << ray.first << " -> " << ray.second << "), " << charge << ")\n";
+    cerr << "Gen::TrackDepos::add_track(" << time/units::us << "us, (" << ray.first/units::cm << " -> " << ray.second/units::cm << ")cm, " << charge << ")\n";
     m_tracks.push_back(track_t(time, ray, charge));
 
     const WireCell::Vector dir = WireCell::ray_unit(ray);

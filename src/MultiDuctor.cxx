@@ -64,7 +64,6 @@ WireCell::Configuration Gen::MultiDuctor::default_configuration() const
     return cfg;
 }
 
-
 struct Wirebounds {
     std::vector<const Pimpos*> pimpos;
     Json::Value jargs;
