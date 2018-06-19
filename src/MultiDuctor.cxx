@@ -161,13 +161,12 @@ void Gen::MultiDuctor::configure(const WireCell::Configuration& cfg)
             auto jargs = jrule["args"];
             if (rule == "wirebounds") {
                 dchain.push_back(SubDuctor(ductor_tn, Wirebounds(pimpos, jargs), ductor));
-                continue;
             }
             if (rule == "bool") {
                 dchain.push_back(SubDuctor(ductor_tn, ReturnBool(jargs), ductor));
             }
-            m_chains.push_back(dchain);
         }
+        m_chains.push_back(dchain);
     } // loop to store chains of ductors
 }
 
