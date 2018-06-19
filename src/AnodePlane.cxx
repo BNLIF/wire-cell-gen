@@ -36,7 +36,6 @@ const double default_postgain = 1.0;
 const double default_readout = 5.0*units::ms;
 const double default_tick = 0.5*units::us;
 
-
 WireCell::Configuration Gen::AnodePlane::default_configuration() const
 {
     Configuration cfg;
@@ -69,6 +68,12 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
 
     /// The sample period
     put(cfg, "tick", default_tick);
+
+    /// A point on the cathode plane(s).  If this is a two faced anode
+    /// then the second element is for the "back" face (the face which
+    /// has (wire) (x) (pitch) direction in the global -X direction.
+    /// If one face is not sensitive then a "null" value may be given.
+    cfg["cathode"] = Json::arrayValue;
 
     return cfg;
 }
@@ -140,6 +145,14 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         std::vector<WireSchema::Plane> ws_planes = ws_store.planes(ws_face);
         const size_t nplanes = ws_planes.size();
 
+        // Only include the cathode in the bounding box if given.
+        // Final sensvol will still include the span of the wires.
+        BoundingBox sensvol;
+        auto jcathode = cfg["cathode"][(int)iface];
+        if (! jcathode.isNull()) {
+            sensvol(convert<Point>(jcathode));
+        }
+
         IWirePlane::vector planes(nplanes);
         for (size_t iplane=0; iplane<nplanes; ++iplane) { // note, WireSchema requires U/V/W plane ordering in a face.
             const auto& ws_plane = ws_planes[iplane];
@@ -154,7 +167,6 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             auto wire_pitch_dirs = ws_store.wire_pitch(ws_plane);
             auto ecks_dir = wire_pitch_dirs.first.cross(wire_pitch_dirs.second);
 
-            BoundingBox bb = ws_store.bounding_box(ws_plane);
             std::vector<int> plane_chans = ws_store.channels(ws_plane);
             m_channels.insert(m_channels.end(), plane_chans.begin(), plane_chans.end());
 
@@ -187,12 +199,18 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             // for the resuling Pimpos objects for the three plane
             // don't match, then the coincidence was violated!
 
-            Ray bb_ray = bb.bounds();
+            const BoundingBox bb = ws_store.bounding_box(ws_plane);
+            const Ray bb_ray = bb.bounds();
+            if (!sensvol.empty()) { // only extend the sensitive volume if user gave a cathode point.
+                sensvol(bb_ray);
+            }
             Vector field_origin = 0.5*(bb_ray.first + bb_ray.second);
             const double to_response_plane = m_fr.origin - pr->location;
-            // cerr << "face:" << iface << " plane:" << iplane
+            // cerr << "AnodePlane:: face:" << iface << " plane:" << iplane
             //      << " fr.origin:" << m_fr.origin/units::cm << "cm pr.location:" << pr->location/units::cm << "cm"
             //      << " delta:"<<to_response_plane/units::cm<<"cm center:" << field_origin/units::cm << "cm\n";
+            // cerr << "\tX-axis: " << ecks_dir << endl;
+            // cerr << "\tBB:" << bb_ray.first << " --> " << bb_ray.second << endl;
             field_origin += to_response_plane * ecks_dir;
 
             const double wire_pitch = pr->pitch;
@@ -215,7 +233,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
         } // plane
 
-        m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes);
+        m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
 
     } // face
 

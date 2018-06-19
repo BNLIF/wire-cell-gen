@@ -10,7 +10,7 @@ namespace WireCell {
         class AnodeFace : public IAnodeFace {
         public:
             
-            AnodeFace(int ident, IWirePlane::vector planes);
+            AnodeFace(int ident, IWirePlane::vector planes, const BoundingBox& sensvol);
 
             /// Return the ident number of this face.
             virtual int ident() const { return m_ident; }
@@ -19,12 +19,15 @@ namespace WireCell {
             virtual int nplanes() const { return m_planes.size(); }
 
             /// Return the wire plane with the given ident or nullptr if unknown.
-            IWirePlane::pointer plane(int ident) const;
-            IWirePlane::vector planes() const { return m_planes; }
+            virtual IWirePlane::pointer plane(int ident) const;
+            virtual IWirePlane::vector planes() const { return m_planes; }
 
+
+            virtual BoundingBox sensitive() const { return m_bb; }
         private:
             int m_ident;
             IWirePlane::vector m_planes;
+            BoundingBox m_bb;
         };
     }
 }

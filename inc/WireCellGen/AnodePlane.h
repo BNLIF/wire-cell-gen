@@ -36,7 +36,6 @@ namespace WireCell {
             virtual IChannel::pointer channel(int ident) const;
             virtual IWire::vector wires(int channel) const;
 
-
         private:
 
             int m_ident;

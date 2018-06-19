@@ -96,6 +96,21 @@ void Gen::Ductor::process(output_queue& frames)
     double tick = -1;
 
     for (auto face : m_anode->faces()) {
+
+        // Select the depos which are in this face's sensitive volume
+        IDepo::vector face_depos;
+        auto bb = face->sensitive(); // no explicit sensitive region,
+        if (bb.empty()) {            // assume it's the universe
+            face_depos = m_depos;    // and accept all depos.
+        }
+        else {
+            for (auto depo : m_depos) {
+                if (bb.inside(depo->pos())) {
+                    face_depos.push_back(depo);
+                }
+            }
+        }
+
         for (auto plane : face->planes()) {
 
             const Pimpos* pimpos = plane->pimpos();
@@ -108,7 +123,7 @@ void Gen::Ductor::process(output_queue& frames)
             }
 
             Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_rng);
-            for (auto depo : m_depos) {
+            for (auto depo : face_depos) {
                 bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
             }
 
@@ -142,11 +157,6 @@ void Gen::Ductor::process(output_queue& frames)
     // diffusion and finite field response can cause depos near the
     // end of the readout to have some portion of their waveforms
     // lost?
-    // cerr << "Ductor: finish frame " << m_frame_count
-    //      << " covering readout window:"
-    //      << " ["<<m_start_time/units::us<<","<<(m_start_time+m_readout_time)/units::us<<"]us"
-    //      << " with " << m_depos.size() << " depos left\n";
-
     m_depos.clear();
 
     m_start_time += m_readout_time;
@@ -158,28 +168,19 @@ void Gen::Ductor::process(output_queue& frames)
 bool Gen::Ductor::start_processing(const input_pointer& depo)
 {
     if (!depo) {
-        //cerr << "Ductor["<<(void*)this <<"]: got EOS\n";
         return true;
     }
-    // cerr << "Ductor["<<(void*)this <<"]: check depo at t=" << depo->time()/units::us << "us "
-    //      << "against readout window: "
-    //      << "["<<m_start_time/units::us<<","<<(m_start_time+m_readout_time)/units::us<<"]us "
-    //      << "at t="<<depo->time()/units::us <<"us\n";
 
     if (!m_continuous) {
         if (m_depos.empty()) {
             m_start_time = depo->time();
-            // cerr << "Ductor["<<(void*)this <<"]: discontinuous mode, set start time: "
-            //      << m_start_time/units::us << "us\n";
             return false;
         }
     }
+
+    // Note: we use this depo time even if it may not actually be
+    // inside our sensitive volume.
     bool ok = depo->time() > m_start_time + m_readout_time;
-    // if (ok) {
-    //     cerr << "Ductor["<<(void*)this <<"]: this depo just passed readout window: "
-    //          << "["<<m_start_time/units::us<<","<<(m_start_time+m_readout_time)/units::us<<"]us "
-    //          << "at t="<<depo->time()/units::us <<"us\n";
-    // }
     return ok;
 }
 

@@ -6,9 +6,10 @@ using namespace WireCell::Gen;
 
 
 
-AnodeFace::AnodeFace(int ident, IWirePlane::vector planes)
+AnodeFace::AnodeFace(int ident, IWirePlane::vector planes, const BoundingBox& bb)
     : m_ident(ident)
     , m_planes(planes)
+    , m_bb(bb)
 {
 }
 

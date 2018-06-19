@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
             float diff = std::abs(originx.front() - originx.back());
             if (diff > 0.1*units::mm) {
                 cerr << "ERROR, field response and wire location data do not match: diff = " << diff/units::mm << "mm\n";
+                cerr << "front: " << originx.front()/units::mm << "mm, back=" << originx.back()/units::mm<<"mm out of " << originx.size() << endl;
                 THROW(ValueError() << errmsg{"field response and wire location data do not match"});
             }
         }
