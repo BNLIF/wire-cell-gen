@@ -33,8 +33,8 @@ WireCell::Configuration Gen::DepoFanout::default_configuration() const
 void Gen::DepoFanout::configure(const WireCell::Configuration& cfg)
 {
     int m = get<int>(cfg, "multiplicity", (int)m_multiplicity);
-    if (m<0) {
-        THROW(ValueError() << errmsg{"DepoFanout multiplicity must be nonnegative"});
+    if (m<=0) {
+        THROW(ValueError() << errmsg{"DepoFanout multiplicity must be positive"});
     }
     m_multiplicity = m;
 }
