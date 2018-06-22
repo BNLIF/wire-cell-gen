@@ -1,0 +1,58 @@
+#include "WireCellGen/DepoFanout.h"
+
+#include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/Exceptions.h"
+
+
+WIRECELL_FACTORY(DepoFanout, WireCell::Gen::DepoFanout,
+                 WireCell::IDepoFanout, WireCell::IConfigurable);
+
+
+using namespace WireCell;
+
+
+Gen::DepoFanout::DepoFanout(size_t multiplicity)
+    : m_multiplicity(multiplicity)
+{
+}
+
+Gen::DepoFanout::~DepoFanout()
+{
+}
+
+
+WireCell::Configuration Gen::DepoFanout::default_configuration() const
+{
+    Configuration cfg;
+    cfg["multiplicity"] = m_multiplicity;
+    return cfg;
+}
+
+void Gen::DepoFanout::configure(const WireCell::Configuration& cfg)
+{
+    int m = get<int>(cfg, "multiplicity", (int)m_multiplicity);
+    if (m<0) {
+        THROW(ValueError() << errmsg{"DepoFanout multiplicity must be nonnegative"});
+    }
+    m_multiplicity = m;
+}
+
+
+std::vector<std::string>  Gen::DepoFanout::output_types()
+{
+    std::vector<std::string> ret(m_multiplicity, std::string(typeid(output_type).name()));
+    return ret;
+}
+
+
+bool Gen::DepoFanout::operator()(const input_pointer& in, output_vector& outv)
+{
+    // Note: if "in" indicates EOS, just pass it on
+
+    outv.clear();
+    outv.resize(m_multiplicity);
+    for (size_t ind=0; ind<m_multiplicity; ++ind) {
+        outv[ind] = in;
+    }
+    return true;
+}
