@@ -9,31 +9,26 @@ WIRECELL_FACTORY(DumpDepos, WireCell::DumpDepos, WireCell::IDepoSink);
 using namespace WireCell;
 using namespace std;
 
-DumpDepos::DumpDepos() : m_nin(0), m_eos(false) {}
+DumpDepos::DumpDepos() : m_nin(0) {}
 
 DumpDepos::~DumpDepos() {}
 
 bool DumpDepos::operator()(const IDepo::pointer& depo)
 {
-    if (m_eos) {
-        // just handle EOS once
-        return false;
+    if (!depo) {
+        cerr << "DumpDepos see EOS after " << m_nin << " depos\n";
+        return true;
     }
 
     stringstream msg;		// reduce footprint for having stream split between different threads
-    msg << "Depo: (" << (void*)depo.get() << ")";
-    if (depo) {
-	msg << " t=" << depo->time()
-            << "\tq=" << depo->charge()
-            << "\tr=" << depo->pos()
-            << "\tn=" << m_nin
-            << "\n";
-        ++m_nin;
-    }
-    else {
-        m_eos = true;
-	msg << " EOS after " << m_nin << " depos\n";
-    }
+    msg << "Depo: (" << (void*)depo.get() << ")"
+        << " t=" << depo->time()
+        << "\tq=" << depo->charge()
+        << "\tr=" << depo->pos()
+        << "\tn=" << m_nin
+        << "\n";
+    ++m_nin;
+
     cerr << msg.str();
     return true;
 }

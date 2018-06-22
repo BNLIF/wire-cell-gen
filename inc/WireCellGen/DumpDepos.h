@@ -12,7 +12,7 @@ namespace WireCell {
 	virtual bool operator()(const IDepo::pointer& depo);
     private:
         int m_nin;
-        bool m_eos;
+
     };
 
 }

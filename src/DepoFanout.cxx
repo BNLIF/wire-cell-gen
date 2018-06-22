@@ -3,12 +3,14 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Exceptions.h"
 
+#include <iostream>
 
 WIRECELL_FACTORY(DepoFanout, WireCell::Gen::DepoFanout,
                  WireCell::IDepoFanout, WireCell::IConfigurable);
 
 
 using namespace WireCell;
+using namespace std;
 
 
 Gen::DepoFanout::DepoFanout(size_t multiplicity)
@@ -38,9 +40,10 @@ void Gen::DepoFanout::configure(const WireCell::Configuration& cfg)
 }
 
 
-std::vector<std::string>  Gen::DepoFanout::output_types()
+std::vector<std::string> Gen::DepoFanout::output_types()
 {
-    std::vector<std::string> ret(m_multiplicity, std::string(typeid(output_type).name()));
+    const std::string tname = std::string(typeid(output_type).name());
+    std::vector<std::string> ret(m_multiplicity, tname);
     return ret;
 }
 
@@ -49,7 +52,6 @@ bool Gen::DepoFanout::operator()(const input_pointer& in, output_vector& outv)
 {
     // Note: if "in" indicates EOS, just pass it on
 
-    outv.clear();
     outv.resize(m_multiplicity);
     for (size_t ind=0; ind<m_multiplicity; ++ind) {
         outv[ind] = in;
