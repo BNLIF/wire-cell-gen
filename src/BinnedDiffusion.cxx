@@ -16,6 +16,8 @@ Gen::BinnedDiffusion::BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins
     , m_fluctuate(fluctuate)
     , m_calcstrat(calcstrat)
     , m_window(0,0)
+    , m_outside_pitch(0)
+    , m_outside_time(0)
 {
 }
 
@@ -32,11 +34,12 @@ bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double si
 
         double eff_nsigma = sigma_time>0?m_nsigma:0;
         if (nmin_sigma > eff_nsigma || nmax_sigma < -eff_nsigma) {
-            std::cerr << "BinnedDiffusion: depo too far away in time sigma:"
-                      << " t_depo=" << center_time/units::ms << "ms not in:"
-                      << " t_bounds=[" << m_tbins.min()/units::ms << ","
-                      << m_tbins.max()/units::ms << "]ms"
-                      << " in Nsigma: [" << nmin_sigma << "," << nmax_sigma << "]\n";
+            // std::cerr << "BinnedDiffusion: depo too far away in time sigma:"
+            //           << " t_depo=" << center_time/units::ms << "ms not in:"
+            //           << " t_bounds=[" << m_tbins.min()/units::ms << ","
+            //           << m_tbins.max()/units::ms << "]ms"
+            //           << " in Nsigma: [" << nmin_sigma << "," << nmax_sigma << "]\n";
+            ++m_outside_time;
             return false;
         }
     }
@@ -50,11 +53,12 @@ bool Gen::BinnedDiffusion::add(IDepo::pointer depo, double sigma_time, double si
 
         double eff_nsigma = sigma_pitch>0?m_nsigma:0;
         if (nmin_sigma > eff_nsigma || nmax_sigma < -eff_nsigma) {
-            std::cerr << "BinnedDiffusion: depo too far away in pitch sigma: "
-                      << " p_depo=" << center_pitch/units::cm << "cm not in:"
-                      << " p_bounds=[" << ibins.min()/units::cm << ","
-                      << ibins.max()/units::cm << "]cm"
-                      << " in Nsigma:[" << nmin_sigma << "," << nmax_sigma << "]\n";
+            // std::cerr << "BinnedDiffusion: depo too far away in pitch sigma: "
+            //           << " p_depo=" << center_pitch/units::cm << "cm not in:"
+            //           << " p_bounds=[" << ibins.min()/units::cm << ","
+            //           << ibins.max()/units::cm << "]cm"
+            //           << " in Nsigma:[" << nmin_sigma << "," << nmax_sigma << "]\n";
+            ++m_outside_pitch;
             return false;
         }
     }

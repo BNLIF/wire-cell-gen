@@ -76,7 +76,12 @@ void Gen::VagabondX::configure(const WireCell::Configuration& cfg)
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
     m_speed = get<double>(cfg, "drift_speed", m_speed);
 
-    for (auto jone : cfg["xregions"]) {
+    auto jxregions = cfg["xregions"];
+    if (jxregions.empty()) {
+        cerr << "Gen::VagabondX: no xregions given so I can do nothing\n";
+        THROW(ValueError() << errmsg{"no xregions given"});
+    }
+    for (auto jone : jxregions) {
         m_xregions.push_back(Xregion(jone["anode"].asDouble(), jone["cathode"].asDouble()));
         cerr << "Gen::VagabondX: {anode:"<<m_xregions.back().anode/units::cm<<"cm, cathode:"<<m_xregions.back().cathode/units::cm<<"cm}\n";
     }

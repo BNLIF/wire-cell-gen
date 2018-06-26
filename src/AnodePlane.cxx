@@ -150,7 +150,9 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         BoundingBox sensvol;
         auto jcathode = cfg["cathode"][(int)iface];
         if (! jcathode.isNull()) {
-            sensvol(convert<Point>(jcathode));
+            auto catpt = convert<Point>(jcathode);
+            sensvol(catpt);
+            cerr << "AnodePlane: adding cathod point: " << catpt << endl;
         }
 
         IWirePlane::vector planes(nplanes);
@@ -232,7 +234,12 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             planes[iplane] = make_shared<WirePlane>(ws_plane.ident, wires, pimpos, pir);
 
         } // plane
-
+        {
+            auto ray = sensvol.bounds();
+            cerr << "AnodePlane: ident: "<< m_ident << " making face " << iface << " with ident:" << ws_face.ident
+                 << " sensitive: " << !sensvol.empty()
+                 << " with bb: "<< ray.first << " --> " << ray.second <<"\n";
+        }
         m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
 
     } // face

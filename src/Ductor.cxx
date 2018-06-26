@@ -99,16 +99,17 @@ void Gen::Ductor::process(output_queue& frames)
 
         // Select the depos which are in this face's sensitive volume
         IDepo::vector face_depos;
-        auto bb = face->sensitive(); // no explicit sensitive region,
-        if (bb.empty()) {            // assume it's the universe
-            face_depos = m_depos;    // and accept all depos.
-        }
-        else {
-            for (auto depo : m_depos) {
-                if (bb.inside(depo->pos())) {
-                    face_depos.push_back(depo);
-                }
+        auto bb = face->sensitive();
+        for (auto depo : m_depos) {
+            if (bb.inside(depo->pos())) {
+                face_depos.push_back(depo);
             }
+        }
+
+        {                       // debugging
+            auto ray = bb.bounds();
+            cerr << "Ductor: anode:"<<m_anode->ident()<<" face:" << face->ident() << ": processing " << face_depos.size() << " depos "
+                 << "with bb: "<< ray.first << " --> " << ray.second <<"\n";
         }
 
         for (auto plane : face->planes()) {

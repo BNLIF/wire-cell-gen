@@ -12,19 +12,64 @@ namespace WireCell {
 
     namespace Gen {
 
-        /** This drifter assumes nominal drift direction is in the +/-
-         * X direction.  It assumes infinite anode/cathode planes
-         * perpendicular to the X-axis and specified by their
-         * intercepts.  Any depos which do not lie between an anode
-         * and cathode plane are dropped.  
-         *
-         * Diffusion and absorption effects and optional fluctuations
-         * are applied.  Input depositions must be ordered in absolute
-         * time (not drift time) and output depositions are produced
-         * in ordered by their time at the anode plane.
+        /** This component drifts depos bounded by planes
+         * perpendicular to the X-axis.  The boundary planes are
+         * specified with the "xregions" list.  Each list is an object
+         * with "cathode" and "anode" attributes giving their X
+         * location.  Drifting ends when the (negative) deposition
+         * reaches the anode plane.
          * 
-         * Note that the input electrons are assumed to be already
-         * free from Fano and Recombination.
+         * Input depositions must be ordered in absolute time (their
+         * current time) and output depositions are produced ordered
+         * by their time at the anode plane.
+         * 
+         * Diffusion and absorption effects and also, optionally,
+         * fluctuations are applied.  Fano factor and Recombination
+         * are not applied in this component.
+         *
+         * Typically a drifter is used just prior to a ductor and in
+         * such cases the "anode" boundary plane should be coincident
+         * with the non-physical "response plane" which defines the
+         * starting point for the field response functions.  The
+         * location of the response plane *realtive* to the wire
+         * planes can be found using:
+         *
+         * $ wriecell-sigproc response-info garfield-1d-3planes-21wires-6impacts-dune-v1.json.bz2 
+         * origin:10.00 cm, period:0.10 us, tstart:0.00 us, speed:1.60 mm/us, axis:(1.00,0.00,0.00)
+         *    plane:0, location:9.4200mm, pitch:4.7100mm
+	 *    plane:1, location:4.7100mm, pitch:4.7100mm
+         *    plane:2, location:0.0000mm, pitch:4.7100mm
+         * 
+         * Here, "origin" gives the location of the response plane.
+         * The location of the wire planes according to wire geometry
+         * can be similarly dumped.
+         *
+         * $ wirecell-util wires-info protodune-wires-larsoft-v3.json.bz2 
+         * anode:0 face:0 X=[-3584.63,-3584.63]mm Y=[6066.70,6066.70]mm Z=[7.92,7.92]mm
+         *     0: x=-3584.63mm dx=9.5250mm
+         *     1: x=-3589.39mm dx=4.7620mm
+         *     2: x=-3594.16mm dx=0.0000mm
+         * ....
+         * anode:5 face:1 X=[3584.63,3584.63]mm Y=[6066.70,6066.70]mm Z=[6940.01,6940.01]mm
+         *     0: x=3584.63mm dx=-9.5250mm
+         *     1: x=3589.39mm dx=-4.7620mm
+         *     2: x=3594.16mm dx=0.0000mm
+         * 
+         * Note, as can see, these two sources of information may not
+         * be consistent w.r.t. the inter-plane separation distance
+         * (4.71mm and 4.76mm, respectively).  This mismatch will
+         * result in a relative shift in time between the planes for
+         * various waveform features (eg induction zero crossings and
+         * collection peak).
+         *
+         * For the example above, likely candidates for "anode" X
+         * locations are:
+         *
+         *    x = -3594.16mm + 10cm
+         * 
+         * and
+         *
+         *    x = +3594.16mm - 10cm
          */
         class VagabondX : public IDrifter, public IConfigurable {
         public:
