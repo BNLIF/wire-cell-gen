@@ -24,6 +24,10 @@ WireCell::Configuration Gen::FrameFanin::default_configuration() const
 {
     Configuration cfg;
     cfg["multiplicity"] = m_multiplicity;
+    // A non-null entry in this array is taken as a string and used to
+    // tag traces which arrive on the corresponding input port when
+    // they are placed  to the output frame.
+    cfg["tags"] = Json::arrayValue; 
     return cfg;
 }
 void Gen::FrameFanin::configure(const WireCell::Configuration& cfg)
@@ -33,6 +37,11 @@ void Gen::FrameFanin::configure(const WireCell::Configuration& cfg)
         THROW(ValueError() << errmsg{"FrameFanin multiplicity must be positive"});
     }
     m_multiplicity = m;
+    m_tags.resize(m);
+    auto jtags = cfg["tags"];
+    for (int ind=0; ind<m; ++ind) {
+        m_tags[ind] = convert<std::string>(jtags[ind], "");
+    }
 }
 
 
@@ -48,7 +57,7 @@ bool Gen::FrameFanin::operator()(const input_vector& invec, output_pointer& out)
 {
     out = nullptr;
     size_t neos = 0;
-    for (auto fr : invec) {
+    for (const auto& fr : invec) {
         if (!fr) {
             ++neos;
         }
@@ -60,26 +69,38 @@ bool Gen::FrameFanin::operator()(const input_vector& invec, output_pointer& out)
         std::cerr << "Gen::FrameFanin: " << neos << " input frames missing\n";
     }
 
+    if (invec.size() != m_multiplicity) {
+        std::cerr << "Gen::FrameFanin: got unexpected multiplicity, got:" << invec.size() << " want:" << m_multiplicity << std::endl;
+        THROW(ValueError() << errmsg{"unexpected multiplicity"});
+    }
 
-    // fixme: this component is too simple for general use.  It
-    // collects all traces from all input frames into the output.  It
-    // ignores tags and care if the same channel happens to be
-    // represented in multiple input frames.  It also copies meta data
-    // from first frame and doesn't care if other frames have
-    // different ident, start time or tick.  What it does so far is
-    // okay for using it to do multi-apa simulation, assuming a
-    // properly sync'ed DFP graph.
+
+    std::vector<IFrame::trace_list_t> by_port(m_multiplicity);
 
     ITrace::vector out_traces;
     IFrame::pointer one = nullptr;
-    for (auto fr : invec) {
-        if (!fr) { continue; }
+    for (size_t iport=0; iport < m_multiplicity; ++iport) {
+        const auto& fr = invec[iport];
         if (!one) { one = fr; }
         auto traces = fr->traces();
+
+        if (! m_tags[iport].empty() ) {
+            IFrame::trace_list_t tl(traces->size());
+            std::iota(tl.begin(), tl.end(), out_traces.size());
+            by_port[iport] = tl;
+        }
         out_traces.insert(out_traces.end(), traces->begin(), traces->end());
     }
     
     auto sf = new SimpleFrame(one->ident(), one->time(), out_traces, one->tick());
+    for (size_t iport=0; iport < m_multiplicity; ++iport) {
+        if (m_tags[iport].empty()) {
+            continue;
+        }
+        std::cerr << "Tagging " << by_port[iport].size() << " traces from port " << iport << " with " << m_tags[iport] << std::endl;
+        sf->tag_traces(m_tags[iport], by_port[iport]);
+    }
+
     out = IFrame::pointer(sf);
     return true;
 }

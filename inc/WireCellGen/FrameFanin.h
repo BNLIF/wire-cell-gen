@@ -4,6 +4,9 @@
 #include "WireCellIface/IFrameFanin.h"
 #include "WireCellIface/IConfigurable.h"
 
+#include <vector>
+#include <string>
+
 namespace WireCell {
     namespace Gen {
 
@@ -23,6 +26,7 @@ namespace WireCell {
 
         private:
             size_t m_multiplicity;
+            std::vector<std::string> m_tags;
         };
     }
 }
