@@ -85,6 +85,11 @@ std::vector<std::string> anode_loader(std::string detector)
             cfg["ident"] = ianode;
             cfg["wire_schema"] = ws_tn;
             cfg["field_response"] = fr_tn;
+            // bogus position, of course.
+            cfg["cathode"] = Json::arrayValue;
+            cfg["cathode"][0]["x"] = 2.5*units::m;
+            cfg["cathode"][0]["y"] = 0.0;
+            cfg["cathode"][0]["z"] = 0.0;
             cerr << cfg<<endl;
             icfg->configure(cfg);
         }
