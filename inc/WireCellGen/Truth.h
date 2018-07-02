@@ -34,6 +34,7 @@ namespace WireCell{
       double m_readout_time;
       double m_drift_speed;
       double m_nsigma;
+      double m_truth_gain;
       bool m_fluctuate;
 
 
