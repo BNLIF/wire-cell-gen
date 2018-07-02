@@ -98,6 +98,15 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
          << "tick=" << tick/units::us << " us "
          << endl;
 
+    // pre-check
+    {
+        auto jcathode = cfg["cathode"];
+        if (jcathode.isNull() or jcathode.size() == 0) {
+            cerr << "Gen::AnodePlane: must be configured with at least one cathode point\n";
+            THROW(ValueError() << errmsg{"Gen::AnodePlane: must be configured with at least one cathode point"});
+        }
+    }
+
     const double t0 = 0.0; // fixme: t0 not actually used, PIR interface needs reduction
     const Binning tbins(nticks, t0, t0+readout);
 
