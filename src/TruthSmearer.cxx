@@ -27,6 +27,7 @@ Gen::TruthSmearer::TruthSmearer()
     , m_rng_tn("Random")
     , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
+    , m_tick(0.5*units::us)
     , m_drift_speed(1.0*units::mm/units::us)
     , m_time_smear(1.4*units::us) // Fig.15 in arXiv:1802.08709 
     , m_wire_smear_ind(0.75) // Fig. 16 in arXiv: 1802.08709
@@ -55,6 +56,9 @@ WireCell::Configuration Gen::TruthSmearer::default_configuration() const
 
     /// The time span for each readout.
     put(cfg, "readout_time", m_readout_time);
+
+    /// The sample period
+    put(cfg, "tick", m_tick);
 
     /// If false then determine start time of each readout based on the
     /// input depos.  This option is useful when running WCT sim on a
@@ -116,6 +120,7 @@ void Gen::TruthSmearer::configure(const WireCell::Configuration& cfg)
     }
 
     m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
+    m_tick = get<double>(cfg, "tick", m_tick);
     m_start_time = get<double>(cfg, "start_time", m_start_time);
     m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
     m_time_smear = get<double>(cfg, "time_smear", m_time_smear);
@@ -156,9 +161,9 @@ void Gen::TruthSmearer::process(output_queue& frames)
         for (auto plane : face->planes()) {
 
             const Pimpos* pimpos = plane->pimpos();
-            const PlaneImpactResponse* pir = plane->pir();
 
-            Binning tbins(pir->tbins().nbins(), m_start_time, m_start_time+m_readout_time);
+            Binning tbins(m_readout_time/m_tick, m_start_time,
+                          m_start_time+m_readout_time);
 
             if (tick < 0) {     // fixme: assume same tick for all.
                 tick = tbins.binsize();
@@ -185,25 +190,23 @@ void Gen::TruthSmearer::process(output_queue& frames)
                 std::cerr<<"Truthsmearer: planeid "<< planeid << " cannot be identified!"<<std::endl;
             }
 
+            auto ib = pimpos->impact_binning();
+            auto rb = pimpos->region_binning();
 
-            //Gen::ImpactZipper zipper(*pir, bindiff);
-
-            const int nwires = pimpos->region_binning().nbins();
+            const double pitch = rb.binsize();
+            const double impact = ib.binsize();
+            const int nwires = rb.nbins();
             for (int iwire=0; iwire<nwires; ++iwire) {
-                //auto wave = zipper.waveform(iwire);
                 
                 ///  Similar to ImpactZipper::waveform 
                 ///  No convolution
                 ///  m_waveform from BinnedDiffusion::impact_data()
 
-                const auto pimpos = bindiff.pimpos();
-                const auto rb = pimpos.region_binning();
-                const auto ib = pimpos.impact_binning();
                 const double wire_pos = rb.center(iwire);
 
                 // impact positions within +/-1 wires
-                const int min_impact = ib.edge_index(wire_pos - 1.5*pir->pitch() + 0.1*pir->impact());
-                const int max_impact = ib.edge_index(wire_pos + 1.5*pir->pitch() - 0.1*pir->impact());
+                const int min_impact = ib.edge_index(wire_pos - 1.5*pitch + 0.1*impact);
+                const int max_impact = ib.edge_index(wire_pos + 1.5*pitch - 0.1*impact);
                 const int nsamples = bindiff.tbins().nbins(); 
                
                 // total waveform for iwire
@@ -231,7 +234,7 @@ void Gen::TruthSmearer::process(output_queue& frames)
                         wire_weight = 0.0;
                         std::cerr<<"TruthSmearer: impact "<< imp << " position: "
                             << ib.center(imp) <<" out of +/-1 wire region or at wire boundary,  wire pitch: "
-                            << rb.binsize() <<", "<< pir->pitch() <<", target wire position: "<< wire_pos 
+                            << rb.binsize() <<", "<< pitch <<", target wire position: "<< wire_pos 
                             << std::endl;
                     }
 

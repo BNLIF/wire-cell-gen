@@ -36,6 +36,7 @@ namespace WireCell {
 
             double m_start_time;
             double m_readout_time;
+            double m_tick;
             double m_drift_speed;
             
             double m_time_smear;

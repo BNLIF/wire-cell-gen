@@ -94,6 +94,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     }
 
     m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
+    m_tick = get<double>(cfg, "tick", m_tick);
     m_start_time = get<double>(cfg, "start_time", m_start_time);
     m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
