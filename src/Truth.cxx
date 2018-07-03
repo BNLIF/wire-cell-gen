@@ -22,6 +22,7 @@ Gen::Truth::Truth()
   , m_pitch_range(20*3*units::mm) // +/- 10 wires
   , m_drift_speed(1.0*units::mm/units::us)
   , m_nsigma(3.0)
+  , m_truth_gain(-1.0)
   , m_fluctuate(true)
   , m_frame_count(0)
   , m_eos(false)
@@ -64,6 +65,7 @@ WireCell::Configuration Gen::Truth::default_configuration() const{
   put(cfg, "max_time_frequency", m_max_time_freq);
   put(cfg, "wire_filter_flag", m_wire_flag);
   put(cfg, "time_filter_flag", m_time_flag);
+  put(cfg, "truth_gain", m_truth_gain);
   return cfg;
 }
 
@@ -88,6 +90,7 @@ void Gen::Truth::configure(const WireCell::Configuration& cfg){
   m_start_time = get<double>(cfg, "start_time", m_start_time);
   m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
   m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
+  m_truth_gain = get<double>(cfg, "truth_gain", m_truth_gain);
 
   m_truth_type = get<string>(cfg, "truth_type", m_truth_type);
   m_num_ind_wire = get<double>(cfg, "number_induction_wire", m_num_ind_wire);
@@ -156,6 +159,9 @@ void Gen::Truth::process(output_queue& frames){
 	      continue;
 	    }
 
+        //debugging
+        std::cout<<"Truth: charge spectrum extracted." << imp << std::endl;
+
 	    if(m_truth_type == "Bare"){
 	      const Waveform::compseq_t& charge_spectrum = id->spectrum();
 	      if(charge_spectrum.empty()){
@@ -169,12 +175,13 @@ void Gen::Truth::process(output_queue& frames){
 		continue;
 	      }
 	      Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
+          std::complex<float> charge_gain = m_truth_gain; 
 	      for(int ind=0; ind<nsamples; ind++){
 		if(wires[iwire]->channel()<4800){
-		  conv_spectrum[ind] = charge_spectrum[ind]*timeTruth[ind]*indTruth[iwire];
+		  conv_spectrum[ind] = charge_gain*charge_spectrum[ind]*timeTruth[ind]*indTruth[iwire];
 		}
 		else{
-		  conv_spectrum[ind] = charge_spectrum[ind]*timeTruth[ind]*colTruth[iwire];
+		  conv_spectrum[ind] = charge_gain*charge_spectrum[ind]*timeTruth[ind]*colTruth[iwire];
 		}
 	      }
 	      Waveform::increase(total_spectrum, conv_spectrum);

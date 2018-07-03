@@ -61,8 +61,8 @@ auto colTruth = hf_col.generate(colBins);
 
 // --- time filter ---
 double timeMaxFreq = 1.0*units::megahertz;
-Binning timeBins(tbins.nbins(),0.0,timeMaxFreq);
-double timeSigma = 0.14*units::megahertz;
+Binning timeBins(tbins.nbins()/2.0,0.0,timeMaxFreq);
+double timeSigma = 0.1141*units::megahertz;
 double timePower = 2.0;
 bool timeFlag = true;
 Response::HfFilter hf_time(timeSigma,timePower,timeFlag);
@@ -72,7 +72,7 @@ void test_track(double charge, double track_time, const Ray& track_ray,
 		double stepsize, IRandom::pointer fluctuate, IAnodePlane::pointer iap){
 
   // --- truth type ---
-  int type = 2; // 0=bare; 1=unit; 2=fractional
+  int type = 1; // 0=bare; 1=unit; 2=fractional
   const double pitch_range = 20*3*units::mm;
   
   for(auto face : iap->faces()){
@@ -207,11 +207,11 @@ int main(int argc, char* argv[]){
 
     //Ray track_ray(Point(101*units::mm,0,1000*units::mm),
     //		Point(102*units::mm,0,1000*units::mm));
-    Ray track_ray(Point(101*units::mm,0,1000*units::mm),
-                  Point(201*units::mm,0,1000*units::mm));
+    Ray track_ray(Point(1000*units::mm,0,1000*units::mm),
+                  Point(1000*units::mm,0,2000*units::mm));
     const double track_time = 1*units::ms;
     const double stepsize = 1*units::mm;
-    const double charge = 1e5*units::eplus;
+    const double charge = 5000*units::eplus;
 
     test_track(charge, track_time, track_ray, stepsize, rng, iap);
   
