@@ -18,6 +18,7 @@
 #include "WireCellIface/IChannelStatus.h"
 
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/Waveform.h"
 
 #include <string>
 #include <vector>

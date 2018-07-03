@@ -18,6 +18,8 @@ Gen::Truth::Truth()
   , m_rng_tn("Random")
   , m_start_time(0.0*units::ns)
   , m_readout_time(5.0*units::ms)
+  , m_tick(0.5*units::us)
+  , m_pitch_range(20*3*units::mm) // +/- 10 wires
   , m_drift_speed(1.0*units::mm/units::us)
   , m_nsigma(3.0)
   , m_fluctuate(true)
@@ -44,6 +46,8 @@ WireCell::Configuration Gen::Truth::default_configuration() const{
   put(cfg, "fluctuate", m_fluctuate);
   put(cfg, "start_time", m_start_time);
   put(cfg, "readout_time", m_readout_time);
+  put(cfg, "tick", m_tick);
+  put(cfg, "pitch_range", m_pitch_range);
   put(cfg, "drift_speed", m_drift_speed);
   put(cfg, "first_frame_number", m_frame_count);
   put(cfg, "anode", m_anode_tn);
@@ -80,6 +84,7 @@ void Gen::Truth::configure(const WireCell::Configuration& cfg){
   }
 
   m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
+  m_tick = get<double>(cfg, "tick", m_tick);
   m_start_time = get<double>(cfg, "start_time", m_start_time);
   m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
   m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
@@ -111,12 +116,13 @@ void Gen::Truth::process(output_queue& frames){
   Response::HfFilter hf_col(m_col_sigma,m_wire_power,m_wire_flag);
   auto colTruth = hf_col.generate(colBins);
 
+  const int nbins = m_readout_time / m_tick;
+
   for(auto face : m_anode->faces()){
     for(auto plane : face->planes()){
       const Pimpos* pimpos = plane->pimpos();
-      const PlaneImpactResponse* pir = plane->pir();
-
-      Binning tbins(pir->tbins().nbins(), m_start_time, m_start_time+m_readout_time);
+      
+      Binning tbins(nbins, m_start_time, m_start_time+m_readout_time);
       if(tick < 0){
 	tick = tbins.binsize();
       }
@@ -135,12 +141,12 @@ void Gen::Truth::process(output_queue& frames){
 	auto& wires = plane->wires();
 	const int numwires = pimpos->region_binning().nbins();
 	for(int iwire=0; iwire<numwires; iwire++){
-	  const double pitch_range = pir->pitch_range();
 	  const auto rbins = pimpos->region_binning();
 	  const auto ibins = pimpos->impact_binning();
 	  const double wire_pos = rbins.center(iwire);
-	  const int min_impact = ibins.edge_index(wire_pos - 0.5*pitch_range);
-	  const int max_impact = ibins.edge_index(wire_pos + 0.5*pitch_range);
+          // fixme (?) this under-calculates the min/max impact position by 1/2 wire region (bv).
+	  const int min_impact = ibins.edge_index(wire_pos - 0.5*m_pitch_range);
+	  const int max_impact = ibins.edge_index(wire_pos + 0.5*m_pitch_range);
 	  const int nsamples = tbins.nbins();
 	  Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
 

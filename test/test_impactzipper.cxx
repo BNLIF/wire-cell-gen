@@ -2,15 +2,19 @@
 #include "WireCellGen/TrackDepos.h"
 #include "WireCellGen/BinnedDiffusion.h"
 #include "WireCellGen/TransportedDepo.h"
+#include "WireCellGen/PlaneImpactResponse.h"
 #include "WireCellUtil/ExecMon.h"
 #include "WireCellUtil/Point.h"
 #include "WireCellUtil/Binning.h"
 #include "WireCellUtil/Testing.h"
+#include "WireCellUtil/Response.h"
 
 #include "WireCellUtil/PluginManager.h"
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellIface/IRandom.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellIface/IFieldResponse.h"
+#include "WireCellIface/IPlaneImpactResponse.h"
 
 #include "TCanvas.h"
 #include "TFile.h"
@@ -27,21 +31,13 @@ using namespace std;
 
 int main(const int argc, char *argv[])
 {
-    PluginManager& pm = PluginManager::instance();
-    pm.add("WireCellGen");
-    {
-        auto rngcfg = Factory::lookup<IConfigurable>("Random");
-        auto cfg = rngcfg->default_configuration();
-        rngcfg->configure(cfg);
-    }
-
     string track_types = "point";
     if (argc > 1) {
         track_types = argv[1];
     }
     cerr << "Using tracks type: \"" << track_types << "\"\n";
 
-    string response_file = "ub-10-wnormed.json.bz2";
+    string response_file = "ub-10-half.json.bz2";
     if (argc > 2) {
         response_file = argv[2];
 	cerr << "Using Wire Cell field response file:\n"
@@ -58,8 +54,78 @@ int main(const int argc, char *argv[])
     }
 
 
+    // here we do hard-wired configuration.  User code should NEVER do
+    // this.
+
+    PluginManager& pm = PluginManager::instance();
+    pm.add("WireCellGen");
+    pm.add("WireCellSigProc");
+    {
+        auto rngcfg = Factory::lookup<IConfigurable>("Random");
+        auto cfg = rngcfg->default_configuration();
+        rngcfg->configure(cfg);
+    }
+
+    const int nticks = 9595;
+    const double tick = 0.5*units::us;
+    const double gain = 14.0*units::mV/units::fC;
+    const double shaping  = 2.0*units::us;
+
+    const double t0 = 0.0*units::s;
+    const double readout_time = nticks*tick;
+    const double drift_speed = 1.0*units::mm/units::us; // close, but not real
+
+    const std::string er_tn = "ElecResponse", rc_tn = "RCResponse";
+
+    {                           // configure elecresponse
+        auto icfg = Factory::lookup_tn<IConfigurable>(er_tn);
+        auto cfg = icfg->default_configuration();
+        cfg["gain"] = gain;
+        cfg["shaping"] = shaping;
+        cfg["nticks"] = nticks;
+        cerr << "Setting: " << cfg["nticks"].asInt() << " ticks\n";
+        cfg["tick"] = tick;
+        cfg["start"] = t0;
+        icfg->configure(cfg);
+    }
+    {                           // configure rc response
+        auto icfg = Factory::lookup_tn<IConfigurable>(rc_tn);
+        auto cfg = icfg->default_configuration();
+        cfg["nticks"] = nticks;
+        cfg["tick"] = tick;
+        cfg["start"] = t0;
+        icfg->configure(cfg);
+    }        
+    {
+        auto icfg = Factory::lookup<IConfigurable>("FieldResponse");
+        auto cfg = icfg->default_configuration();
+        cfg["filename"] = response_file;
+        icfg->configure(cfg);
+    }
+
+    std::vector<std::string> pir_tns{ "PlaneImpactResponse:U",
+            "PlaneImpactResponse:V", "PlaneImpactResponse:W"};
+    {                           // configure pirs
+        for (int iplane=0; iplane<3; ++iplane) {
+            auto icfg = Factory::lookup_tn<IConfigurable>(pir_tns[iplane]);
+            auto cfg = icfg->default_configuration();
+            cfg["plane"] = iplane;
+            cfg["nticks"] = nticks;
+            cfg["tick"] = tick;
+            cfg["other_responses"][0] = er_tn;
+            cfg["other_responses"][1] = rc_tn; // double it so
+            cfg["other_responses"][2] = rc_tn; // we get RC^2
+            icfg->configure(cfg);
+        }
+    }
+        
+
+
     WireCell::ExecMon em(out_basename);
-    auto fr = Response::Schema::load(response_file.c_str());
+    auto ifr = Factory::find_tn<IFieldResponse>("FieldResponse");
+    auto fr = ifr->field_response();
+
+
     em("loaded response");
 
     const char* uvw = "UVW";
@@ -96,14 +162,7 @@ int main(const int argc, char *argv[])
                    wwire, wpitch, field_origin, nregion_bins)};
 
     // Digitization and time
-    const double t0 = 0.0*units::s; // eg, optical trigger from prompt interaction activity
-    const double readout_time = 5*units::ms;
-    const double tick = 0.5*units::us;
-    const int nticks = readout_time/tick;
-    const double drift_speed = 1.0*units::mm/units::us; // close but fake/arb value!
     Binning tbins(nticks, t0, t0+readout_time);
-    const double gain = 14.0*units::mV/units::fC;
-    const double shaping  = 2.0*units::us;
 
     // Diffusion
     const int ndiffision_sigma = 3.0;
@@ -198,9 +257,10 @@ int main(const int argc, char *argv[])
     TFile* rootfile = TFile::Open(Form("%s-uvw.root", out_basename.c_str()), "recreate");
     TCanvas* canvas = new TCanvas("c","canvas",1000,1000);
     gStyle->SetOptStat(0);
-    //canvas->Print("test_impactzipper.pdf[","pdf");
 
-
+    std::string pdfname = argv[0];
+    pdfname += ".pdf";
+    canvas->Print((pdfname+"[").c_str(),"pdf");
     
 
     IRandom::pointer rng = nullptr;
@@ -243,20 +303,22 @@ int main(const int argc, char *argv[])
         }
         em("added track depositions");
 
-        PlaneImpactResponse pir(fr, plane_id, tbins, gain, shaping);
-        em("made PlaneImpactResponse");
+        auto ipir = Factory::find_tn<IPlaneImpactResponse>(pir_tns[plane_id]);
+
+        em("looked up " + pir_tns[plane_id]);
         {
-            const Response::Schema::PlaneResponse& pr = pir.plane_response();
-            const double pmax = 0.5*pir.pitch_range();
-            const double pstep = pir.impact();
+            const Response::Schema::PlaneResponse* pr = fr.plane(plane_id);
+            const double pmax = 0.5*ipir->pitch_range();
+            const double pstep = std::abs(pr->paths[1].pitchpos - pr->paths[0].pitchpos);
             const int npbins = 2.0*pmax/pstep;
-            const int ntbins = pr.paths[0].current.size();
+            const int ntbins = pr->paths[0].current.size();
+
             const double tmin = fr.tstart;
             const double tmax = fr.tstart + fr.period*ntbins;
             TH2F* hpir = new TH2F(Form("hfr%d", plane_id), Form("Field Response %c-plane", uvw[plane_id]),
                                   ntbins, tmin, tmax,
                                   npbins, -pmax, pmax);
-            for (auto& path : pr.paths) {
+            for (auto& path : pr->paths) {
                 const double cpitch = path.pitchpos;
                 for (size_t ic=0; ic<path.current.size(); ++ic) {
                     const double ctime = fr.tstart + ic*fr.period;
@@ -273,11 +335,12 @@ int main(const int argc, char *argv[])
                 hpir->GetYaxis()->SetRangeUser(-10.*units::mm,10.*units::mm);
             }
             canvas->Update();
-            canvas->Print(Form("%s_%c_resp.png", out_basename.c_str(), uvw[plane_id]));
+            //canvas->Print(Form("%s_%c_resp.png", out_basename.c_str(), uvw[plane_id]));
+            canvas->Print(pdfname.c_str(), "pdf");
         }
         em("wrote and leaked response hist");
 
-        Gen::ImpactZipper zipper(pir, bindiff);
+        Gen::ImpactZipper zipper(ipir, bindiff);
         em("made ImpactZipper");
 
         // Set pitch range for plot y-axis
@@ -378,7 +441,8 @@ int main(const int argc, char *argv[])
             TLine* line = new TLine(tick1-fudge, wire1, tick2-fudge, wire2);
             line->Write(Form("l%c%d", uvw[plane_id], (int)iline));
             line->Draw();
-            canvas->Print(Form("%s_%c.png", out_basename.c_str(), uvw[plane_id]));
+            //canvas->Print(Form("%s_%c.png", out_basename.c_str(), uvw[plane_id]));
+            canvas->Print(pdfname.c_str(), "pdf");
         }
         em("printed PNG canvases");
         em("end of PIR scope");
@@ -386,7 +450,7 @@ int main(const int argc, char *argv[])
         //canvas->Print("test_impactzipper.pdf","pdf");
     }
     rootfile->Close();
-    //canvas->Print("test_impactzipper.pdf]","pdf");
+    canvas->Print((pdfname+"]").c_str(), "pdf");
     em("done");
 
     //cerr << em.summary() << endl;

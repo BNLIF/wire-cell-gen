@@ -8,6 +8,7 @@
 #define WIRECELLGEN_ANODEPLANE
 
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/IFieldResponse.h" // fixme: remove this and instead directly configure the few numbers that are derived
 #include "WireCellIface/IConfigurable.h"
 #include <unordered_map>
 
@@ -41,7 +42,8 @@ namespace WireCell {
             int m_ident;
             IAnodeFace::vector m_faces;
 
-            Response::Schema::FieldResponse m_fr;
+            // fixme: should remove this and instead provide configurable parameters directly.
+            IFieldResponse::pointer m_fr;
 
             std::unordered_map<int, int> m_c2wpid;
             std::unordered_map<int, IWire::vector> m_c2wires;

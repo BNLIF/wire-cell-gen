@@ -20,6 +20,7 @@ Gen::Ductor::Ductor()
     , m_rng_tn("Random")
     , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
+    , m_tick(0.5*units::us)
     , m_drift_speed(1.0*units::mm/units::us)
     , m_nsigma(3.0)
     , m_fluctuate(true)
@@ -44,6 +45,9 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
     /// The time span for each readout.
     put(cfg, "readout_time", m_readout_time);
 
+    /// The sample period
+    put(cfg, "tick", m_tick);
+
     /// If false then determine start time of each readout based on the
     /// input depos.  This option is useful when running WCT sim on a
     /// source of depos which have already been "chunked" in time.  If
@@ -61,6 +65,12 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
     /// Name of component providing the anode plane.
     put(cfg, "anode", m_anode_tn);
     put(cfg, "rng", m_rng_tn);
+
+    cfg["pirs"] = Json::arrayValue;
+    /// don't set here so user must, but eg:
+    //cfg["pirs"][0] = "PlaneImpactResponseU";
+    //cfg["pirs"][1] = "PlaneImpactResponseV";
+    //cfg["pirs"][2] = "PlaneImpactResponseW";
 
     return cfg;
 }
@@ -88,12 +98,21 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     m_drift_speed = get<double>(cfg, "drift_speed", m_drift_speed);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
 
+    auto jpirs = cfg["pirs"];
+    if (jpirs.isNull() or jpirs.empty()) {
+        THROW(ValueError() << errmsg{"Gen::Ductor: must configure with some plane impact response components"});
+    }
+    m_pirs.empty();
+    for (auto jpir : jpirs) {
+        auto tn = jpir.asString();
+        auto pir = Factory::find_tn<IPlaneImpactResponse>(tn);
+        m_pirs.push_back(pir);
+    }
 }
 
 void Gen::Ductor::process(output_queue& frames)
 {
     ITrace::vector traces;
-    double tick = -1;
 
     for (auto face : m_anode->faces()) {
 
@@ -112,18 +131,14 @@ void Gen::Ductor::process(output_queue& frames)
                  << "with bb: "<< ray.first << " --> " << ray.second <<"\n";
         }
 
+        int iplane = -1;
         for (auto plane : face->planes()) {
+            ++iplane;
 
             const Pimpos* pimpos = plane->pimpos();
-            const PlaneImpactResponse* pir = plane->pir();
 
-            // fixme: this assumes m_readout_time/nbins == tick....
-            Binning tbins(pir->tbins().nbins(), m_start_time,
+            Binning tbins(m_readout_time/m_tick, m_start_time,
                           m_start_time+m_readout_time);
-
-            if (tick < 0) {     // fixme: assume same tick for all.
-                tick = tbins.binsize();
-            }
 
             Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_rng);
             for (auto depo : face_depos) {
@@ -132,7 +147,8 @@ void Gen::Ductor::process(output_queue& frames)
 
             auto& wires = plane->wires();
 
-            Gen::ImpactZipper zipper(*pir, bindiff);
+            auto pir = m_pirs.at(iplane);
+            Gen::ImpactZipper zipper(pir, bindiff);
 
             const int nwires = pimpos->region_binning().nbins();
             for (int iwire=0; iwire<nwires; ++iwire) {
@@ -152,7 +168,7 @@ void Gen::Ductor::process(output_queue& frames)
         }
     }
 
-    auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+    auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
     frames.push_back(frame);
 
     // fixme: what about frame overflow here?  If the depos extend

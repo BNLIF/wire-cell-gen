@@ -5,6 +5,7 @@
 #include "WireCellUtil/Configuration.h"
 #include "WireCellUtil/Persist.h"
 #include "WireCellUtil/Exceptions.h"
+#include "WireCellUtil/Response.h" // fixme: should remove direct dependency
 
 #include "WireCellUtil/NamedFactory.h"
 

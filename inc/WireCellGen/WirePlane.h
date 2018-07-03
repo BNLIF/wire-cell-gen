@@ -11,8 +11,9 @@ namespace WireCell {
 
         class WirePlane : public IWirePlane {
         public:
-
-            WirePlane(int ident, IWire::vector wires, Pimpos* pimpos, PlaneImpactResponse* pir);
+            
+            //WirePlane(int ident, IWire::vector wires, Pimpos* pimpos, PlaneImpactResponse* pir);
+            WirePlane(int ident, IWire::vector wires, Pimpos* pimpos);
             virtual ~WirePlane();
 
             virtual int ident() const { return m_ident; }
@@ -20,7 +21,7 @@ namespace WireCell {
             virtual const Pimpos* pimpos() const { return m_pimpos; }
             
             /// Access response functions.
-            virtual const PlaneImpactResponse* pir() const { return m_pir; }
+            //virtual const PlaneImpactResponse* pir() const { return m_pir; }
             
             /// Return vector of wire objects ordered by increasing Z.
             virtual const IWire::vector& wires() const { return m_wires; }
@@ -29,7 +30,7 @@ namespace WireCell {
 
             int m_ident;
             Pimpos* m_pimpos;
-            PlaneImpactResponse* m_pir;
+            //PlaneImpactResponse* m_pir;
             IWire::vector m_wires;
 
             Ray m_bbox;         // bounding box of wire planes in external coordinates

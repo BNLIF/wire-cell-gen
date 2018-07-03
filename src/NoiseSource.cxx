@@ -67,16 +67,19 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
         THROW(KeyError() << errmsg{"failed to get IChannelSpectrum: " + m_model_tn});
     }
 
-    cerr << "Gen::NoiseSource: using IRandom: \"" << m_rng_tn << "\""
-         << " IAnodePlane: \"" << m_anode_tn << "\""
-         << " IChannelSpectrum: \"" << m_model_tn << "\"\n";
-
-
     m_readout = get<double>(cfg, "readout_time", m_readout);
     m_time = get<double>(cfg, "start_time", m_time);
     m_stop = get<double>(cfg, "stop_time", m_stop);
     m_tick = get<double>(cfg, "sample_period", m_tick);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
+
+    cerr << "Gen::NoiseSource: using IRandom: \"" << m_rng_tn << "\""
+         << " IAnodePlane: \"" << m_anode_tn << "\""
+         << " IChannelSpectrum: \"" << m_model_tn << "\""
+         << " readout time: " << m_readout/units::us << "us\n";
+
+
+    
 }
 
 

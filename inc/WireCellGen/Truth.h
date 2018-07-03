@@ -32,6 +32,7 @@ namespace WireCell{
 
       double m_start_time;
       double m_readout_time;
+      double m_tick, m_pitch_range;
       double m_drift_speed;
       double m_nsigma;
       bool m_fluctuate;

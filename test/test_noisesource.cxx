@@ -39,6 +39,10 @@ int main(int argc, char* argv[])
     
     ExecMon em;
 
+    const int nticks = 1000;
+    const double tick = 0.5*units::us;
+    const double readout_time = nticks*tick;
+
     // In a real WCT application all this configuration is done by
     // wire-cell (or hosting application) and driven by user
     // configuration files.  Here we have to expose some tedium.
@@ -56,8 +60,8 @@ int main(int argc, char* argv[])
         auto icfg = Factory::lookup<IConfigurable>("EmpiricalNoiseModel");
         auto cfg = icfg->default_configuration();
         cfg["spectra_file"] = filenames[0];
-	// cfg["period"] = 1.0*units::us;
-	// cfg["nsamples"] = 5000;
+        cfg["period"] = tick;
+	cfg["nsamples"] = nticks;
         cfg["anode"] = anode_tns[0];
         icfg->configure(cfg);
     }
@@ -67,7 +71,7 @@ int main(int argc, char* argv[])
         cfg["anode"] = anode_tns[0];
         cfg["model"] = "EmpiricalNoiseModel";
         cfg["rng"] = "Random";
-        cfg["readout_time"] = units::ms;
+        cfg["readout_time"] = readout_time;
         icfg->configure(cfg);
     }
 
@@ -87,7 +91,7 @@ int main(int argc, char* argv[])
 
     auto traces = frame->traces();
     const int ntraces = traces->size();
-    const int nticks = traces->at(0)->charge().size();
+    Assert(nticks == traces->at(0)->charge().size());
 
     string tfilename = Form("%s.root", argv[0]);
     cerr << tfilename << endl;

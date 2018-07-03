@@ -34,7 +34,7 @@ WireCell::Configuration Gen::PlaneImpactResponse::default_configuration() const
     // functions.
     cfg["other_responses"] = Json::arrayValue;
     // number of bins in impact response spectra
-    cfg["nbins"] = 10000;
+    cfg["nticks"] = 10000;
     // sample period of response waveforms
     cfg["tick"] = 0.5*units::us; 
     return cfg;
@@ -54,7 +54,7 @@ void Gen::PlaneImpactResponse::configure(const WireCell::Configuration& cfg)
         }
     }
 
-    m_nbins = (size_t) get(cfg, "nbins", (int)m_nbins);
+    m_nbins = (size_t) get(cfg, "nticks", (int)m_nbins);
     m_tick = get(cfg, "tick", m_tick);
 
     build_responses();
@@ -66,32 +66,30 @@ void Gen::PlaneImpactResponse::build_responses()
     auto ifr = Factory::find_tn<IFieldResponse>(m_frname);
 
     // build "other" response spectra
-    WireCell::Waveform::compseq_t other(m_nbins);
+    WireCell::Waveform::compseq_t other(m_nbins, Waveform::complex_t(1.0, 0.0));
     const size_t nother = m_others.size();
     for (size_t ind=0; ind<nother; ++ind) {
         const auto& name = m_others[ind];
         auto iw = Factory::find_tn<IWaveform>(name);
-        if (std::abs(iw->period() - m_tick) < 1*units::ns) {
+        if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
+            cerr << "Gen::PlaneImpactResponse: from " << name
+                 << " got " << iw->waveform_period()/units::us << "us sample period "
+                 << " expected " << m_tick/units::us << "us\n";
             THROW(ValueError() << errmsg{"Tick mismatch in " + name});
         }
-        auto wave = iw->samples(); // copy
+        auto wave = iw->waveform_samples(); // copy
         if (wave.size() != m_nbins) {
             cerr << "Gen::PlaneImpactResponse: warning: "
-                 << "other response has different number of samples ("
+                 << "other response " <<name<<"  has different number of samples ("
                  << wave.size()
                  << ") than expected ("<<m_nbins<<"), resizing\n";
             wave.resize(m_nbins, 0);
         }
+        // note: we are ignoring waveform_start which will introduce
+        // an arbitrary phase shift....
         auto spec = Waveform::dft(wave);
-        if (!ind) {
-            for (size_t ibin=0; ibin < m_nbins; ++ibin) {
-                other[ibin] = spec[ibin];
-            }
-        }
-        else {
-            for (size_t ibin=0; ibin < m_nbins; ++ibin) {
-                other[ibin] *= spec[ibin];
-            }
+        for (size_t ibin=0; ibin < m_nbins; ++ibin) {
+            other[ibin] *= spec[ibin];
         }
     }
 

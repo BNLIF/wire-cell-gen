@@ -8,7 +8,10 @@
 #include "WireCellIface/IDuctor.h"
 
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/IPlaneImpactResponse.h"
 #include "WireCellIface/IRandom.h"
+
+#include <vector>
 
 namespace WireCell {
     namespace Gen {
@@ -33,13 +36,17 @@ namespace WireCell {
             // The "Type:Name" of the IAnodePlane (default is "AnodePlane")
             std::string m_anode_tn;
             std::string m_rng_tn;
+            std::vector<std::string> m_pir_tns;
 
             IAnodePlane::pointer m_anode;
             IRandom::pointer m_rng;
+            std::vector<IPlaneImpactResponse::pointer> m_pirs;
+
             IDepo::vector m_depos;
 
             double m_start_time;
             double m_readout_time;
+            double m_tick;
             double m_drift_speed;
             double m_nsigma;
             bool m_fluctuate;

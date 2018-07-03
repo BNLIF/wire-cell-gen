@@ -13,8 +13,8 @@ namespace WireCell {
     namespace Gen {
 
         /** This IDrifter accepts inserted point depositions of some
-         * number of electrons, drifts them to a plane near an
-         * IAnodePlane and buffers long enough to assure they can be
+         * number of electrons, drifts them to a plane at given
+         * location and buffers long enough to assure they can be
          * delivered in time order.
          *
          * Note that the input electrons are assumed to be already
@@ -22,8 +22,7 @@ namespace WireCell {
          */
         class Drifter : public IDrifter, public IConfigurable {
         public:
-            Drifter(const std::string& anode_plane_component="",
-                    const std::string& rng_tn = "Random");
+            Drifter(const std::string& rng_tn = "Random");
 
             /// WireCell::IDrifter interface.
             virtual void reset();
@@ -44,7 +43,6 @@ namespace WireCell {
 
         private:
 
-            std::string m_anode_tn;
             std::string m_rng_tn;
 
             // Longitudinal and Transverse coefficients of diffusion
@@ -57,15 +55,10 @@ namespace WireCell {
             // If true, fluctuate by number of absorbed electrons.
             bool m_fluctuate;
 
-            // cached, get from anode object.
             double m_location, m_speed; 
 
             // Input buffer sorted by proper time
             DepoTauSortedSet m_input;
-
-            // Set anode plane component title:name.
-            void set_anode();
-
 
             IRandom::pointer m_rng;
         };

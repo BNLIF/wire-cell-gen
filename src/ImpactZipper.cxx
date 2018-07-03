@@ -5,7 +5,7 @@
 using namespace std;
 
 using namespace WireCell;
-Gen::ImpactZipper::ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd)
+Gen::ImpactZipper::ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd)
     :m_pir(pir), m_bd(bd)
 {
     
@@ -20,7 +20,7 @@ Gen::ImpactZipper::~ImpactZipper()
 
 Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 {
-    const double pitch_range = m_pir.pitch_range();
+    const double pitch_range = m_pir->pitch_range();
 
     const auto pimpos = m_bd.pimpos();
     const auto rb = pimpos.region_binning();
@@ -71,7 +71,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
         if (share) {            // fixme: make a configurable option
-            PlaneImpactResponse::TwoImpactResponses two_ir = m_pir.bounded(rel_imp_pos);
+            TwoImpactResponses two_ir = m_pir->bounded(rel_imp_pos);
             if (!two_ir.first || !two_ir.second) {
                 //std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
                 continue;
@@ -97,7 +97,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             }
         }
         else {
-            auto ir = m_pir.closest(rel_imp_pos);
+            auto ir = m_pir->closest(rel_imp_pos);
             if (! ir) {
                 // std::cerr << "ImpactZipper: no impact response for absolute impact number: " << imp << std::endl;
                 continue;

@@ -1,7 +1,9 @@
+// fixme: this should be made a component
+
 #ifndef WIRECELL_IMPACTZIPPER
 #define WIRECELL_IMPACTZIPPER
 
-#include "WireCellUtil/PlaneImpactResponse.h"
+#include "WireCellIface/IPlaneImpactResponse.h"
 #include "WireCellGen/BinnedDiffusion.h"
 
 namespace WireCell {
@@ -15,12 +17,12 @@ namespace WireCell {
          */
         class ImpactZipper
         {
-            const PlaneImpactResponse& m_pir;
+            IPlaneImpactResponse::pointer m_pir;
             BinnedDiffusion& m_bd;
 
         public:
 
-            ImpactZipper(const PlaneImpactResponse& pir, BinnedDiffusion& bd);
+            ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd);
             virtual ~ImpactZipper();
 
             /// Return the wire's waveform.  If the response functions

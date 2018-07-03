@@ -3,9 +3,6 @@
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/String.h"
 
-#include "WireCellIface/IAnodePlane.h"
-#include "WireCellIface/IAnodeFace.h"
-#include "WireCellIface/IWirePlane.h"
 #include "WireCellIface/SimpleDepo.h"
 
 #include <boost/range.hpp>
@@ -18,15 +15,14 @@ WIRECELL_FACTORY(Drifter, WireCell::Gen::Drifter, WireCell::IDrifter, WireCell::
 using namespace std;
 using namespace WireCell;
 
-Gen::Drifter::Drifter(const std::string& anode_tn, const std::string& rng_tn)
-    : m_anode_tn(anode_tn)
-    , m_rng_tn(rng_tn)
+Gen::Drifter::Drifter(const std::string& rng_tn)
+    : m_rng_tn(rng_tn)
     , m_DL(7.2 * units::centimeter2/units::second) // from arXiv:1508.07059v2
     , m_DT(12.0 * units::centimeter2/units::second) // ditto
     , m_lifetime(8*units::ms) // read off RHS of figure 6 in MICROBOONE-NOTE-1003-PUB
     , m_fluctuate(true)
-    , m_location(-1)            // cache
-    , m_speed(-1)               // cache
+    , m_location(0)
+    , m_speed(1.6*units::mm/units::us)
     , m_input()
 {
 }
@@ -39,56 +35,29 @@ void Gen::Drifter::configure(const WireCell::Configuration& cfg)
         cerr << "Gen::Drifter::configure: no such IRandom: " << m_rng_tn << endl;
     }
 
-    m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
-    this->set_anode();
+    m_speed = get<double>(cfg, "speed", m_speed);
+    m_location = get<double>(cfg, "location", m_location);
+    m_input = DepoTauSortedSet(IDepoDriftCompare(m_speed));
+
     m_DL = get<double>(cfg, "DL", m_DL);
     m_DT = get<double>(cfg, "DT", m_DT);
     m_lifetime = get<double>(cfg, "lifetime", m_lifetime);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
-    cerr << "Gen::Drifter: configured with anode plane " << m_anode_tn << endl;
+    cerr << "Gen::Drifter: configured with location " << m_location << endl;
 }
 
 WireCell::Configuration Gen::Drifter::default_configuration() const
 {
     Configuration cfg;
-    cfg["anode"] = m_anode_tn;
     cfg["DL"] = m_DL;
     cfg["DT"] = m_DT;
     cfg["lifetime"] = m_lifetime;
     cfg["fluctuate"] = m_fluctuate;
+    cfg["location"] = m_location;
+    cfg["speed"] = m_speed;
     return cfg;
 }
 
-void Gen::Drifter::set_anode()
-{
-    if (m_anode_tn.empty()) {
-        cerr << "Gen::Drifter: no anode plane type:name configured yet\n";
-        return;
-    }
-    auto anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
-    if (!anode) {
-        cerr << "Gen::Drifter: failed to get anode: \"" << m_anode_tn << "\"\n";
-        return;
-    }
-    if (anode->nfaces() <= 0) {
-        cerr << "Gen::Drifter: anode " << m_anode_tn << " has no faces\n";
-        return;
-    }
-
-    /// Warning: this assumes "front" face.
-    /// Fixme: it's also kind of a long road to walk.....
-    auto faces = anode->faces();
-    auto face = faces[0];
-    auto planes = face->planes();
-    auto plane = planes[face->nplanes()-1];
-    auto pir = plane->pir();
-    const auto& fr = pir->field_response();
-    m_speed = fr.speed;
-    m_location = fr.origin;
-    m_input = DepoTauSortedSet(IDepoDriftCompare(m_speed));
-    cerr << "Gen::Drifter: configured with drift speed=" << m_speed/(units::mm/units::us)
-         << "mm/us drifting to x=" << m_location/units::mm << "mm\n";
-}
 
 double Gen::Drifter::proper_time(IDepo::pointer depo)
 {
@@ -118,12 +87,21 @@ IDepo::pointer Gen::Drifter::transport(IDepo::pointer depo)
 
     // number of electrons to start with
     const double Qi = depo->charge();
-    // final number of electrons after drift
-    double dQ = Qi * (1 - exp(-dt/m_lifetime));
-    // how many electrons remain, with fluctuation.
+
+    // absorption probability of an electron
+    const double absorbprob = 1 - exp(-dt/m_lifetime); 
+
+    // final number of electrons after drift if no fluctuation.
+    double dQ = Qi * absorbprob;
+
+    // How many electrons remain, with fluctuation.
+    // Note: fano/recomb fluctuation should be done before the depo was first made.
     if (m_fluctuate) {
-        dQ = m_rng->poisson(-1.0*dQ);
-        dQ = -dQ;
+        double sign = 1.0;
+        if (dQ < 0) {
+            sign = -1.0;
+        }
+        dQ = sign*m_rng->binomial((int)std::abs(dQ), absorbprob);
     }
     const double Qf = Qi - dQ;
 

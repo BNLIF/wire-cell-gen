@@ -13,7 +13,6 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/Waveform.h"
 #include "WireCellUtil/Response.h"
-#include "WireCellUtil/PlaneImpactResponse.h"
 
 #include "TFile.h"
 #include "TH1F.h"
@@ -74,11 +73,11 @@ void test_track(double charge, double track_time, const Ray& track_ray,
 
   // --- truth type ---
   int type = 2; // 0=bare; 1=unit; 2=fractional
+  const double pitch_range = 20*3*units::mm;
   
   for(auto face : iap->faces()){
     for(auto plane : face->planes()){
       const Pimpos* pimp = plane->pimpos();
-      const PlaneImpactResponse* pir = plane->pir();
 
       // ### drift & diffuse charge ###
       
@@ -114,7 +113,6 @@ void test_track(double charge, double track_time, const Ray& track_ray,
       auto& wires = plane->wires();
       const int numwires = pimp->region_binning().nbins();
       for(int iwire = 0; iwire<numwires; iwire++){
-	const double pitch_range = pir->pitch_range();
 	const double wire_pos = rbins.center(iwire);
 	const int min_impact = ibins.edge_index(wire_pos - 0.5*pitch_range);
 	const int max_impact = ibins.edge_index(wire_pos + 0.5*pitch_range);

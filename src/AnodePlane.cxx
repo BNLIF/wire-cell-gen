@@ -33,8 +33,6 @@ const double default_gain = 14.0*units::mV/units::fC;
 const double default_shaping = 2.0*units::us;
 const double default_rc_constant = 1.0*units::ms;
 const double default_postgain = 1.0;
-const double default_readout = 5.0*units::ms;
-const double default_tick = 0.5*units::us;
 
 WireCell::Configuration Gen::AnodePlane::default_configuration() const
 {
@@ -64,10 +62,10 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
     put(cfg, "rc_constant", default_rc_constant);
     
     /// The period over which to latch responses
-    put(cfg, "readout_time", default_readout);
+    //put(cfg, "readout_time", default_readout);
 
     /// The sample period
-    put(cfg, "tick", default_tick);
+    //put(cfg, "tick", default_tick);
 
     /// A point on the cathode plane(s).  If this is a two faced anode
     /// then the second element is for the "back" face (the face which
@@ -85,17 +83,12 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     double postgain = get<double>(cfg, "postgain", default_postgain);
     double shaping = get<double>(cfg, "shaping", default_shaping);
     double rc_constant = get<double>(cfg, "rc_constant", default_rc_constant);
-    double readout = get<double>(cfg, "readout_time", default_readout);
-    double tick = get<double>(cfg, "tick", default_tick);
-    const int nticks = readout/tick;
 
     cerr << "Gen::AnodePlane: "
          << "gain=" << gain/(units::mV/units::fC) << " mV/fC, "
          << "peaking=" << shaping/units::us << " us, "
          << "RCconstant=" << rc_constant/units::us << " us, "
          << "postgain=" << postgain << ", "
-         << "readout=" << readout/units::ms << " ms, "
-         << "tick=" << tick/units::us << " us "
          << endl;
 
     // pre-check
@@ -107,13 +100,10 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         }
     }
 
-    const double t0 = 0.0; // fixme: t0 not actually used, PIR interface needs reduction
-    const Binning tbins(nticks, t0, t0+readout);
-
     m_faces.clear();
     m_ident = get<int>(cfg, "ident", 0);
 
-    // obsolete:
+    // check for obsolete config params:
     if (!cfg["fields"].isNull() or !cfg["wires"].isNull()) {
         cerr << "\nWarning: your configuration is obsolete.\n"
              << "Use \"field_response\" and \"wire_store\" to name components instead of directly giving file names\n"
@@ -126,10 +116,10 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         cerr << "Gen::AnodePlane::configure() must have an IFieldResponse component specified\n";
         THROW(ValueError() << errmsg{"\"field_response\" parameter must specify an IFieldResponse component"});
     }
-    auto ifr = Factory::find_tn<IFieldResponse>(fr_name); // throws if not found
-    m_fr = ifr->field_response();
-    if (m_fr.speed <= 0) {
-        THROW(ValueError() << errmsg{format("illegal drift speed: %f mm/us", m_fr.speed/(units::mm/units::us))});
+    m_fr = Factory::find_tn<IFieldResponse>(fr_name); // throws if not found
+    const auto& fr = m_fr->field_response();
+    if (fr.speed <= 0) {
+        THROW(ValueError() << errmsg{format("illegal drift speed: %f mm/us", fr.speed/(units::mm/units::us))});
     }
 
     // get wire schema
@@ -147,7 +137,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
     std::vector<WireSchema::Face> ws_faces = ws_store.faces(ws_anode);
     const size_t nfaces = ws_faces.size();
-
+    
     m_faces.resize(nfaces);
     for (size_t iface=0; iface<nfaces; ++iface) { // note, WireSchema requires front/back face ordering in an anode
         const auto& ws_face = ws_faces[iface];
@@ -199,7 +189,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             } // wire
 
 
-            auto pr = m_fr.plane(ws_plane.ident);
+            auto pr = fr.plane(ws_plane.ident);
 
             // Calculate transverse center of wire plane and pushed to
             // a point longitudinally where the field response starts.
@@ -216,9 +206,9 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 sensvol(bb_ray);
             }
             Vector field_origin = 0.5*(bb_ray.first + bb_ray.second);
-            const double to_response_plane = m_fr.origin - pr->location;
+            const double to_response_plane = fr.origin - pr->location;
             // cerr << "AnodePlane:: face:" << iface << " plane:" << iplane
-            //      << " fr.origin:" << m_fr.origin/units::cm << "cm pr.location:" << pr->location/units::cm << "cm"
+            //      << " fr.origin:" << fr.origin/units::cm << "cm pr.location:" << pr->location/units::cm << "cm"
             //      << " delta:"<<to_response_plane/units::cm<<"cm center:" << field_origin/units::cm << "cm\n";
             // cerr << "\tX-axis: " << ecks_dir << endl;
             // cerr << "\tBB:" << bb_ray.first << " --> " << bb_ray.second << endl;
@@ -237,10 +227,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                                         wire_pitch_dirs.first, wire_pitch_dirs.second,
                                         field_origin, nregion_bins);
 
-            PlaneImpactResponse* pir = new PlaneImpactResponse(m_fr, ws_plane.ident, tbins,
-                                                               gain, shaping, postgain, rc_constant);
-
-            planes[iplane] = make_shared<WirePlane>(ws_plane.ident, wires, pimpos, pir);
+            planes[iplane] = make_shared<WirePlane>(ws_plane.ident, wires, pimpos);
 
         } // plane
         {
