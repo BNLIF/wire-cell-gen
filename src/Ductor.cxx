@@ -117,7 +117,9 @@ void Gen::Ductor::process(output_queue& frames)
             const Pimpos* pimpos = plane->pimpos();
             const PlaneImpactResponse* pir = plane->pir();
 
-            Binning tbins(pir->tbins().nbins(), m_start_time, m_start_time+m_readout_time);
+            // fixme: this assumes m_readout_time/nbins == tick....
+            Binning tbins(pir->tbins().nbins(), m_start_time,
+                          m_start_time+m_readout_time);
 
             if (tick < 0) {     // fixme: assume same tick for all.
                 tick = tbins.binsize();
