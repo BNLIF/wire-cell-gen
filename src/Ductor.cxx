@@ -171,6 +171,7 @@ void Gen::Ductor::process(output_queue& frames)
 
     auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
     frames.push_back(frame);
+    cerr << "Gen::Ductor make frame: " << m_frame_count << " with " << traces.size() << " traces @" << m_start_time/units::ms <<"ms\n";
 
     // fixme: what about frame overflow here?  If the depos extend
     // beyond the readout where does their info go?  2nd order,

@@ -29,10 +29,8 @@ Gen::AnodePlane::AnodePlane()
 
 
 
-const double default_gain = 14.0*units::mV/units::fC;
-const double default_shaping = 2.0*units::us;
-const double default_rc_constant = 1.0*units::ms;
-const double default_postgain = 1.0;
+const int default_nimpacts = 10;
+const double default_response_plane = 10*units::cm;
 
 WireCell::Configuration Gen::AnodePlane::default_configuration() const
 {
@@ -45,33 +43,32 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
     // note: this used to be a "wires" parameter directly specifying a filename.
     put(cfg, "wire_schema", "");
 
-    /// Name fo a IFieldResponse component.
-    // note: this used to be a "fields" parameter directly specifying a filename.
-    put(cfg, "field_response", "");
+    // Number of impact positions per wire pitch.  This should likely
+    // match exactly what the field response functions use.
+    put(cfg, "nimpacts", default_nimpacts);
 
-    /// Electronics gain
-    put(cfg, "gain", default_gain);
+    // The AnodePlane has to two faces, one of which may be "null".
+    // Face 0 or "front" is the one that is toward the positive X-axis
+    // (wire coordinate system).  A face consists of wires and some
+    // bounds on the X-coordinate in the form of three planes:
+    //
+    // - response :: The response plane demarks the location where the
+    // complex fields near the wires are considered sufficiently
+    // regular.
+    //
+    // - anode and cathode :: These two planes bracket the region in X
+    // - for the volume associated with the face.  The transverse
+    // - range is determined by the wires.  If anode is not given then
+    // - response will be used instead.  Along with wires, these
+    // - determine the sensitive bounding box of the AnodeFaces.
+    //
+    // eg: faces: [
+    //       {response: 10*wc.cm - 6*wc.mm, 2.5604*wc.m},
+    //       null,
+    //     ]
 
-    /// Post FEE relative gain
-    put(cfg, "postgain", default_postgain);
-
-    /// Electronics shaping time 
-    put(cfg, "shaping", default_shaping);
-
-    /// RC constant of RC filters 
-    put(cfg, "rc_constant", default_rc_constant);
-    
-    /// The period over which to latch responses
-    //put(cfg, "readout_time", default_readout);
-
-    /// The sample period
-    //put(cfg, "tick", default_tick);
-
-    /// A point on the cathode plane(s).  If this is a two faced anode
-    /// then the second element is for the "back" face (the face which
-    /// has (wire) (x) (pitch) direction in the global -X direction.
-    /// If one face is not sensitive then a "null" value may be given.
-    cfg["cathode"] = Json::arrayValue;
+    cfg["faces"][0] = Json::nullValue;
+    cfg["faces"][1] = Json::nullValue;
 
     return cfg;
 }
@@ -79,48 +76,32 @@ WireCell::Configuration Gen::AnodePlane::default_configuration() const
 
 void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 {
-    double gain = get<double>(cfg, "gain", default_gain);
-    double postgain = get<double>(cfg, "postgain", default_postgain);
-    double shaping = get<double>(cfg, "shaping", default_shaping);
-    double rc_constant = get<double>(cfg, "rc_constant", default_rc_constant);
-
-    cerr << "Gen::AnodePlane: "
-         << "gain=" << gain/(units::mV/units::fC) << " mV/fC, "
-         << "peaking=" << shaping/units::us << " us, "
-         << "RCconstant=" << rc_constant/units::us << " us, "
-         << "postgain=" << postgain << ", "
-         << endl;
-
-    // pre-check
-    {
-        auto jcathode = cfg["cathode"];
-        if (jcathode.isNull() or jcathode.size() == 0) {
-            cerr << "Gen::AnodePlane: must be configured with at least one cathode point\n";
-            THROW(ValueError() << errmsg{"Gen::AnodePlane: must be configured with at least one cathode point"});
-        }
-    }
-
     m_faces.clear();
     m_ident = get<int>(cfg, "ident", 0);
 
     // check for obsolete config params:
-    if (!cfg["fields"].isNull() or !cfg["wires"].isNull()) {
+    if (!cfg["wires"].isNull()) {
         cerr << "\nWarning: your configuration is obsolete.\n"
-             << "Use \"field_response\" and \"wire_store\" to name components instead of directly giving file names\n"
+             << "Use \"wire_store\" to name components instead of directly giving file names\n"
              << "This job will likely throw an exception next\n\n";
     }
 
-    // get field responses
-    const string fr_name = get<string>(cfg, "field_response");
-    if (fr_name.empty()) {
-        cerr << "Gen::AnodePlane::configure() must have an IFieldResponse component specified\n";
-        THROW(ValueError() << errmsg{"\"field_response\" parameter must specify an IFieldResponse component"});
+    // AnodePlane used to have the mistake of tight coupling with
+    // field response functions.  
+    if (!cfg["fields"].isNull() or !cfg["field_response"].isNull()) {
+        cerr << "\nWarning: AnodePlane does not require any field response functions.\n";
     }
-    m_fr = Factory::find_tn<IFieldResponse>(fr_name); // throws if not found
-    const auto& fr = m_fr->field_response();
-    if (fr.speed <= 0) {
-        THROW(ValueError() << errmsg{format("illegal drift speed: %f mm/us", fr.speed/(units::mm/units::us))});
+
+    auto jfaces = cfg["faces"];
+    if (jfaces.isNull() or jfaces.empty() or (jfaces[0].isNull() and jfaces[1].isNull())) {
+        cerr << "At least two faces need to be defined, got:\n";
+        cerr << jfaces << endl;
+        THROW(ValueError() << errmsg{"AnodePlane: error in configuration"});        
     }
+
+
+    const int nimpacts = get<int>(cfg, "nimpacts", default_nimpacts);
+
 
     // get wire schema
     const string ws_name = get<string>(cfg, "wire_schema");
@@ -143,28 +124,23 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         const auto& ws_face = ws_faces[iface];
         std::vector<WireSchema::Plane> ws_planes = ws_store.planes(ws_face);
         const size_t nplanes = ws_planes.size();
-
-        // Only include the cathode in the bounding box if given.
-        // Final sensvol will still include the span of the wires.
-        BoundingBox sensvol;
-        auto jcathode = cfg["cathode"][(int)iface];
-        if (! jcathode.isNull()) {
-            auto catpt = convert<Point>(jcathode);
-            sensvol(catpt);
-            cerr << "AnodePlane: adding cathod point: " << catpt << endl;
-        }
+        
+        // location of imaginary boundary planes
+        auto jface = jfaces[(int)iface];
+        const double response_x = jface["response"].asDouble();
+        const double anode_x = get(jface, "anode", response_x);
+        const double cathode_x = jface["cathode"].asDouble();
 
         IWirePlane::vector planes(nplanes);
         for (size_t iplane=0; iplane<nplanes; ++iplane) { // note, WireSchema requires U/V/W plane ordering in a face.
             const auto& ws_plane = ws_planes[iplane];
 
-            // WirePlaneId wire_plane_id(s_plane.ident); // dubious
             WirePlaneId wire_plane_id(iplane2layer[iplane], iface, m_ident);
-
             if (wire_plane_id.index() < 0) {
                 THROW(ValueError() << errmsg{format("bad wire plane id: %d", wire_plane_id.ident())});
             }
 
+            // (wire,pitch) directions
             auto wire_pitch_dirs = ws_store.wire_pitch(ws_plane);
             auto ecks_dir = wire_pitch_dirs.first.cross(wire_pitch_dirs.second);
 
@@ -188,56 +164,37 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 m_c2wpid[chanid] = wire_plane_id.ident();
             } // wire
 
-
-            auto pr = fr.plane(ws_plane.ident);
-
-            // Calculate transverse center of wire plane and pushed to
-            // a point longitudinally where the field response starts.
-            // Note, this requires EXQUISITE coincidence between the
-            // location of wire planes in the wire data file and the
-            // field response file.  There's currently absolutely
-            // nothing that assures this!  If the resulting X origin
-            // for the resuling Pimpos objects for the three plane
-            // don't match, then the coincidence was violated!
-
             const BoundingBox bb = ws_store.bounding_box(ws_plane);
             const Ray bb_ray = bb.bounds();
-            if (!sensvol.empty()) { // only extend the sensitive volume if user gave a cathode point.
-                sensvol(bb_ray);
-            }
-            Vector field_origin = 0.5*(bb_ray.first + bb_ray.second);
-            const double to_response_plane = fr.origin - pr->location;
-            // cerr << "AnodePlane:: face:" << iface << " plane:" << iplane
-            //      << " fr.origin:" << fr.origin/units::cm << "cm pr.location:" << pr->location/units::cm << "cm"
-            //      << " delta:"<<to_response_plane/units::cm<<"cm center:" << field_origin/units::cm << "cm\n";
-            // cerr << "\tX-axis: " << ecks_dir << endl;
-            // cerr << "\tBB:" << bb_ray.first << " --> " << bb_ray.second << endl;
-            field_origin += to_response_plane * ecks_dir;
+            const Vector plane_center = 0.5*(bb_ray.first + bb_ray.second);
 
-            const double wire_pitch = pr->pitch;
-            const double impact_pitch = pr->paths[1].pitchpos - pr->paths[0].pitchpos;
-            const int nregion_bins = round(wire_pitch/impact_pitch);
+            const double pitchmin = wire_pitch_dirs.second.dot(wires[0]->center() - plane_center);
+            const double pitchmax = wire_pitch_dirs.second.dot(wires[nwires-1]->center() - plane_center);
+            const Vector pimpos_origin(response_x, plane_center.y(), plane_center.z());
 
-            // Absolute locations in the pitch dimension of the
-            // first/last wires measured relative to the
-            // centered origin.
-            const double edgewirepitch = wire_pitch * 0.5 * (nwires - 1);
+            cerr << "AnodePlane: face:" << iface <<", plane:"<<iplane << " origin:" << pimpos_origin << "\n";
 
-            Pimpos* pimpos = new Pimpos(nwires, -edgewirepitch, edgewirepitch,
+            Pimpos* pimpos = new Pimpos(nwires, pitchmin, pitchmax,
                                         wire_pitch_dirs.first, wire_pitch_dirs.second,
-                                        field_origin, nregion_bins);
+                                        pimpos_origin, nimpacts);
 
             planes[iplane] = make_shared<WirePlane>(ws_plane.ident, wires, pimpos);
 
-        } // plane
-        {
-            auto ray = sensvol.bounds();
-            cerr << "AnodePlane: ident: "<< m_ident << " making face " << iface << " with ident:" << ws_face.ident
-                 << " sensitive: " << !sensvol.empty()
-                 << " with bb: "<< ray.first << " --> " << ray.second <<"\n";
-        }
-        m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
 
+            // Last iteration, use W plane to define volume
+            if (iplane == nplanes-1) { 
+                const double mean_pitch = (pitchmax - pitchmin) / (nwires-1);
+
+                auto v1 = bb_ray.first;
+                auto v2 = bb_ray.second;
+                // Enlarge to anode/cathode planes in X and by 1/2 pitch in Z.
+                Point p1(  anode_x, v1.y(), std::min(v1.z(), v2.z()) - 0.5*mean_pitch);
+                Point p2(cathode_x, v2.y(), std::max(v1.z(), v2.z()) + 0.5*mean_pitch);
+                const BoundingBox sensvol(Ray(p1,p2));
+                m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
+                cerr << "AnodePlane: face:"<<iface<<" sensvol: " << p1 << " --> " << p2 << endl;
+            }
+        } // plane
     } // face
 
     // remove any duplicate channels
