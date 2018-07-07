@@ -138,12 +138,24 @@ void Gen::MultiDuctor::configure(const WireCell::Configuration& cfg)
     }
 
     /// fixme: this is totally going to break when going to two-faced anodes.
+    if ( m_anode->faces().size() > 1 ) {
+        std::cerr << "Gen::MultDuctor:configure: warning: I currently only support a front-faced AnodePlane.\n";
+    }
+
     std::vector<const Pimpos*> pimpos;
     for (auto face : m_anode->faces()) {
+        if (face->planes().empty()) {
+            std::cerr << "Gen::MultDuctor: not given multi-plane AnodeFace for face "<<face->ident()<<"\n";
+            continue;
+        }
         for (auto plane : face->planes()) {
             pimpos.push_back(plane->pimpos());
         }
         break;                 // fixme: 
+    }
+    if (pimpos.size() != 3) {
+        std::cerr << "Gen::MultiDuctor got unexpected number planes (" << pimpos.size() <<") from anode\n";
+        THROW(ValueError() << errmsg{"Gen::MultiDuctor got unexpected number planes"});
     }
 
     for (auto jchain : jchains) {
