@@ -1,4 +1,4 @@
-#include "WireCellGen/Truth.h"
+#include "WireCellGen/TruthTraceID.h"
 #include "WireCellGen/BinnedDiffusion.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
@@ -8,12 +8,12 @@
 
 #include <string>
 
-WIRECELL_FACTORY(Truth, WireCell::Gen::Truth, WireCell::IDuctor, WireCell::IConfigurable);
+WIRECELL_FACTORY(TruthTraceID, WireCell::Gen::TruthTraceID, WireCell::IDuctor, WireCell::IConfigurable);
 
 using namespace std;
 using namespace WireCell;
 
-Gen::Truth::Truth()
+Gen::TruthTraceID::TruthTraceID()
   : m_anode_tn("AnodePlane")
   , m_rng_tn("Random")
   , m_start_time(0.0*units::ns)
@@ -41,7 +41,7 @@ Gen::Truth::Truth()
 {
 }
 
-WireCell::Configuration Gen::Truth::default_configuration() const{
+WireCell::Configuration Gen::TruthTraceID::default_configuration() const{
   Configuration cfg;
   put(cfg, "nsigma", m_nsigma);
   put(cfg, "fluctuate", m_fluctuate);
@@ -69,7 +69,7 @@ WireCell::Configuration Gen::Truth::default_configuration() const{
   return cfg;
 }
 
-void Gen::Truth::configure(const WireCell::Configuration& cfg){
+void Gen::TruthTraceID::configure(const WireCell::Configuration& cfg){
   m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
   m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
   if(!m_anode){
@@ -106,7 +106,7 @@ void Gen::Truth::configure(const WireCell::Configuration& cfg){
   m_time_flag = get<bool>(cfg, "time_filter_flag", m_time_flag);
 }
 
-void Gen::Truth::process(output_queue& frames){
+void Gen::TruthTraceID::process(output_queue& frames){
   ITrace::vector traces;
   double tick = -1;
 
@@ -216,12 +216,12 @@ void Gen::Truth::process(output_queue& frames){
   ++m_frame_count;
 }
 
-void Gen::Truth::reset(){
+void Gen::TruthTraceID::reset(){
   m_depos.clear();
   m_eos = false;
 }
 
-bool Gen::Truth::operator()(const input_pointer& depo, output_queue& frames){
+bool Gen::TruthTraceID::operator()(const input_pointer& depo, output_queue& frames){
   if(m_eos){
     return false;
   }
