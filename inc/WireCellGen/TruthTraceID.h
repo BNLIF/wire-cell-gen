@@ -1,5 +1,5 @@
-#ifndef WIRECELLGEN_TRUTH
-#define WIRECELLGEN_TRUTH
+#ifndef WIRECELLGEN_TRUTHTRACEID
+#define WIRECELLGEN_TRUTHTRACEID
 
 #include "WireCellUtil/Pimpos.h"
 #include "WireCellUtil/Response.h"
@@ -13,9 +13,9 @@
 
 namespace WireCell{
   namespace Gen{
-    class Truth : public IDuctor, public IConfigurable {
+    class TruthTraceID : public IDuctor, public IConfigurable {
     public:
-      Truth();
+      TruthTraceID();
 
       virtual void reset();
       virtual bool operator()(const input_pointer& depo, output_queue& frames);
