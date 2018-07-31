@@ -10,25 +10,51 @@
 
 namespace WireCell {
 
+    // The xregions are a list of objects specifying locations on the
+    //  X (drift) axis of the coordinate system in which depo
+    //  positions are defined.  Three locations may be defined.
+    //
+    //
+
     namespace Gen {
 
         /** This component drifts depos bounded by planes
          * perpendicular to the X-axis.  The boundary planes are
          * specified with the "xregions" list.  Each list is an object
-         * with "cathode" and "anode" attributes giving their X
-         * location.  Drifting ends when the (negative) deposition
-         * reaches the anode plane.
+         * fully specified with a "cathode" an "anode" and a
+         * "response" attribute giving X locations in the same
+         * coordinate system as depos of three planes.  
+         *
+         * - cathode :: a plane which bounds the maximum possible drift.
+         * - anode :: a plane which bounds the minimum possible drift.
+         * - response :: a plane to which all depositions are drifted.
+         * 
+         * If "anode" is not given then its value is take to be that of
+         * "response" and vice versa and at least one must be specified.
+         * A "cathode" value must be specified.
+         *
+         * Any depo not falling between "anode" and "cathode" will be
+         * dropped.
+         *
+         * Any depo falling between "response" and "cathode" will be
+         * drifted to the "response" plane.
+         *
+         * Any depo falling between "anode" and "response" will be
+         * ANTI-DRIFTED to the "response" plane.  Ie, it will be
+         * "BACKED UP" in space an time as if it had be produced
+         * earlier and at the response plane.
          * 
          * Input depositions must be ordered in absolute time (their
          * current time) and output depositions are produced ordered
-         * by their time at the anode plane.
+         * by their time after being drifted to the response plane.
          * 
          * Diffusion and absorption effects and also, optionally,
          * fluctuations are applied.  Fano factor and Recombination
-         * are not applied in this component.
+         * are not applied in this component (see IRecombinationModel
+         * implementations).
          *
          * Typically a drifter is used just prior to a ductor and in
-         * such cases the "anode" boundary plane should be coincident
+         * such cases the "response" plane should be made coincident
          * with the non-physical "response plane" which defines the
          * starting point for the field response functions.  The
          * location of the response plane *realtive* to the wire
@@ -116,19 +142,25 @@ namespace WireCell {
 
             // A little helper to carry the region extent and depo buffers.
             struct Xregion {
-                Xregion(double ax, double cx);
-                double anode, cathode;
+                Xregion(Configuration cfg);
+                double anode, response, cathode;
                 std::vector<IDepo::pointer> depos; // buffer depos
 
-                bool inside(double x) const;
+                bool inside_bulk(double x) const;
+                bool inside_response(double x) const;
 
             };
             std::vector<Xregion> m_xregions;  
 
-            struct IsInside {
+            struct IsInsideBulk {
                 const input_pointer& depo;
-                IsInside(const input_pointer& depo) : depo(depo) {}
-                bool operator()(const Xregion& xr) const { return xr.inside(depo->pos().x()); }
+                IsInsideBulk(const input_pointer& depo) : depo(depo) {}
+                bool operator()(const Xregion& xr) const { return xr.inside_bulk(depo->pos().x()); }
+            };
+            struct IsInsideResp {
+                const input_pointer& depo;
+                IsInsideResp(const input_pointer& depo) : depo(depo) {}
+                bool operator()(const Xregion& xr) const { return xr.inside_response(depo->pos().x()); }
             };
 
         };

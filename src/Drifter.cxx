@@ -19,14 +19,33 @@ using namespace std;
 using namespace WireCell;
 
 // Xregion helper
-Gen::Drifter::Xregion::Xregion(double ax, double cx)
-    : anode(ax)
-    , cathode(cx)
+Gen::Drifter::Xregion::Xregion(Configuration cfg)
+    : anode(0.0)
+    , response(0.0)
+    , cathode(0.0)
 {
+    auto ja = cfg["anode"];
+    auto jr = cfg["response"];
+    auto jc = cfg["cathode"];
+    if (ja.isNull()) { ja = jr; }
+    if (jr.isNull()) { jr = ja; }
+    anode = ja.asDouble();
+    response = jr.asDouble();
+    cathode = jc.asDouble();
+
+    cerr << "Gen::Drifter: xregion: {"
+         << "anode:" << anode/units::mm << ", "
+         << "response:" << response/units::mm << ", "
+         << "cathode:" << cathode/units::mm << "}mm\n";
+
 }
-bool Gen::Drifter::Xregion::inside(double x) const
+bool Gen::Drifter::Xregion::inside_response(double x) const
 {
-    return (anode < x and x < cathode) or (cathode < x and x < anode);
+    return (anode < x and x < response) or (response < x and x < anode);
+}
+bool Gen::Drifter::Xregion::inside_bulk(double x) const
+{
+    return (response < x and x < cathode) or (cathode < x and x < response);
 }
 
 
@@ -56,9 +75,7 @@ WireCell::Configuration Gen::Drifter::default_configuration() const
     cfg["fluctuate"] = m_fluctuate;
     cfg["drift_speed"] = m_speed;
 
-    // The xregions are a list of objects.  Each object has an "anode"
-    // and a "cathode" attribute which specify the global X coordinate
-    // where their planes are located.
+    // see comments in .h file
     cfg["xregions"] = Json::arrayValue;
     return cfg;
 }
@@ -82,8 +99,7 @@ void Gen::Drifter::configure(const WireCell::Configuration& cfg)
         THROW(ValueError() << errmsg{"no xregions given"});
     }
     for (auto jone : jxregions) {
-        m_xregions.push_back(Xregion(jone["anode"].asDouble(), jone["cathode"].asDouble()));
-        cerr << "Gen::Drifter: {anode:"<<m_xregions.back().anode/units::cm<<"cm, cathode:"<<m_xregions.back().cathode/units::cm<<"cm}\n";
+        m_xregions.push_back(Xregion(jone));
     }
 }
 
@@ -97,48 +113,66 @@ bool Gen::Drifter::insert(const input_pointer& depo)
 {
     // Find which X region to add, or reject.  Maybe there is a faster
     // way to do this than a loop.  For example, the regions could be
-    // examined in order to find some regular bining of the X axis and
-    // then at worse only explicitly check extent partial bins near to
-    // their edges.
+    // examined in order to find some regular binning of the X axis
+    // and then at worse only explicitly check extent partial bins
+    // near to their edges.
+
+    double respx = 0, direction = 0.0;
+
     auto xrit = std::find_if(m_xregions.begin(), m_xregions.end(), 
-                             Gen::Drifter::IsInside(depo));
+                             Gen::Drifter::IsInsideResp(depo));
+    if (xrit != m_xregions.end()) {
+        // Back up in space and time.  This is a best effort fudge.  See:
+        // https://github.com/WireCell/wire-cell-gen/issues/22
+
+        respx = xrit->response;
+        direction = -1.0;
+    }
+    else {
+        xrit = std::find_if(m_xregions.begin(), m_xregions.end(), 
+                            Gen::Drifter::IsInsideBulk(depo));
+        if (xrit != m_xregions.end()) { // in bulk
+            respx = xrit->response;
+            direction = 1.0;
+        }
+    }
     if (xrit == m_xregions.end()) {
-        //cerr << "VX: outside " << depo->pos()/units::cm << "cm \n";
-        return false;           // miss
+        return false;           // outside both regions
     }
 
-    // Now actually do the drift.
     Point pos = depo->pos();
-
-    //cerr << "VX: inside " << pos/units::cm << "cm in ["<<xrit->anode/units::cm<<","<<xrit->cathode/units::cm<<"]cm\n";
-
-    const double dt = std::abs((xrit->anode - pos.x())/m_speed);
-    pos.x(xrit->anode);         // replace
+    const double dt = std::abs((respx - pos.x())/m_speed);
+    pos.x(respx);
 
     // number of electrons to start with
     const double Qi = depo->charge();
 
-    // absorption probability of an electron
-    const double absorbprob = 1 - exp(-dt/m_lifetime); 
+    double dL = depo->extent_long();
+    double dT = depo->extent_tran();
 
-    // final number of electrons after drift if no fluctuation.
-    double dQ = Qi * absorbprob;
+    double Qf = Qi;
+    if (direction > 0) {
+        // final number of electrons after drift if no fluctuation.
+        const double absorbprob = 1 - exp(-dt/m_lifetime);
 
-    // How many electrons remain, with fluctuation.
-    // Note: fano/recomb fluctuation should be done before the depo was first made.
-    if (m_fluctuate) {
-        double sign = 1.0;
-        if (dQ < 0) {
-            sign = -1.0;
+        double dQ = Qi * absorbprob;
+
+        // How many electrons remain, with fluctuation.
+        // Note: fano/recomb fluctuation should be done before the depo was first made.
+        if (m_fluctuate) {
+            double sign = 1.0;
+            if (dQ < 0) {
+                sign = -1.0;
+            }
+            dQ = sign*m_rng->binomial((int)std::abs(dQ), absorbprob);
         }
-        dQ = sign*m_rng->binomial((int)std::abs(dQ), absorbprob);
+        Qf = Qi - dQ;
+
+        dL = sqrt(2.0*m_DL*dt + dL*dL);
+        dT = sqrt(2.0*m_DT*dt + dT*dT);
     }
-    const double Qf = Qi - dQ;
 
-    const double sigmaL = sqrt(2.0*m_DL*dt);
-    const double sigmaT = sqrt(2.0*m_DT*dt);
-
-    auto newdepo = make_shared<SimpleDepo>(depo->time() + dt, pos, Qf, depo, sigmaL, sigmaT);
+    auto newdepo = make_shared<SimpleDepo>(depo->time() + direction*dt, pos, Qf, depo, dL, dT);
     xrit->depos.push_back(newdepo);
     return true;
 }    
@@ -152,6 +186,11 @@ bool by_time(const IDepo::pointer& lhs, const IDepo::pointer& rhs) {
 void Gen::Drifter::flush(output_queue& outq)
 {
     for (auto& xr : m_xregions) {
+        // cerr << "Gen::Drifter: xregion: {"
+        //      << "anode:" << xr.anode/units::mm << ", "
+        //      << "response:" << xr.response/units::mm << ", "
+        //      << "cathode:" << xr.cathode/units::mm << "}mm flushing: " << xr.depos.size() << "\n";
+
         outq.insert(outq.end(), xr.depos.begin(), xr.depos.end());
         xr.depos.clear();
     }
@@ -165,17 +204,26 @@ void Gen::Drifter::flush_ripe(output_queue& outq, double now)
     // exhaustive iteration of each depos stash.  Or not.
     for (auto& xr : m_xregions) {
         std::vector<IDepo::pointer> to_keep;
+        int nflushed = 0, nkept=0;
         for (auto& depo : xr.depos) {
             if (depo->time() < now) {
                 outq.push_back(depo);
+                ++nflushed;
             }
             else {
                 to_keep.push_back(depo);
+                ++nkept;
             }
         }
         xr.depos = to_keep;
-        //cerr << "VX: outputing " << outq.size() << ", keeping " << to_keep.size()
-        //     << " for [" << xr.anode/units::cm <<","<<xr.cathode/units::cm<<"]\n";
+        // if (nflushed) {
+        //     cerr << "Gen::Drifter: xregion: {"
+        //          << "anode:" << xr.anode/units::mm << ", "
+        //          << "response:" << xr.response/units::mm << ", "
+        //          << "cathode:" << xr.cathode/units::mm << "}mm "
+        //          << "flushing ripe: " << nflushed << ", "
+        //          << "keeping: " << nkept << "\n";
+        // }
     }
     std::sort(outq.begin(), outq.end(), by_time);
 }

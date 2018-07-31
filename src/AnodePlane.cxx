@@ -172,7 +172,9 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
             const double pitchmax = wire_pitch_dirs.second.dot(wires[nwires-1]->center() - plane_center);
             const Vector pimpos_origin(response_x, plane_center.y(), plane_center.z());
 
-            cerr << "AnodePlane: face:" << iface <<", plane:"<<iplane << " origin:" << pimpos_origin << "\n";
+            cerr << "AnodePlane: face:" << iface <<", plane:"<<iplane
+                 << " origin:" << pimpos_origin/units::mm
+                 << "mm\n";
 
             Pimpos* pimpos = new Pimpos(nwires, pitchmin, pitchmax,
                                         wire_pitch_dirs.first, wire_pitch_dirs.second,
@@ -192,7 +194,8 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                 Point p2(cathode_x, v2.y(), std::max(v1.z(), v2.z()) + 0.5*mean_pitch);
                 const BoundingBox sensvol(Ray(p1,p2));
                 m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
-                cerr << "AnodePlane: face:"<<iface<<" sensvol: " << p1 << " --> " << p2 << endl;
+                cerr << "AnodePlane: face:"<<iface<<" sensvol: " << p1/units::mm << "mm --> "
+                     << p2/units::mm << "mm\n";
             }
         } // plane
     } // face

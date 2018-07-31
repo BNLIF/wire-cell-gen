@@ -118,17 +118,26 @@ void Gen::Ductor::process(output_queue& frames)
     for (auto face : m_anode->faces()) {
 
         // Select the depos which are in this face's sensitive volume
+        int ndropped = 0;
         IDepo::vector face_depos;
         auto bb = face->sensitive();
         for (auto depo : m_depos) {
             if (bb.inside(depo->pos())) {
                 face_depos.push_back(depo);
             }
+            else {
+                if (!ndropped) {
+                    cerr << "Ductor: dropping depo at " << depo->pos()/units::mm << "mm\n";
+                }
+                ++ndropped;
+            }
         }
 
         {                       // debugging
             auto ray = bb.bounds();
-            cerr << "Ductor: anode:"<<m_anode->ident()<<" face:" << face->ident() << ": processing " << face_depos.size() << " depos "
+            cerr << "Ductor: anode:"<<m_anode->ident()<<" face:" << face->ident()
+                 << ": processing " << face_depos.size() << " (dropped " << ndropped << ") depos "
+
                  << "with bb: "<< ray.first << " --> " << ray.second <<"\n";
         }
 

@@ -155,7 +155,7 @@ void Gen::BlipSource::configure(const WireCell::Configuration& cfg)
     auto pos = cfg["position"];
     if (pos["type"].asString() == "box") {
 	Ray box = WireCell::convert<Ray>(pos["extent"]);
-        std::cerr << "Box: \n\t" << box.first << "\n\t" << box.second << std::endl;
+        std::cerr << "Box: \n\t" << box.first/units::mm << "mm\n\t" << box.second/units::mm << "mm\n";
 	m_pos = new UniformBox(m_rng, box);
     }
     else {
