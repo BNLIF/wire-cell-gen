@@ -138,6 +138,8 @@ namespace WireCell {
             bool m_fluctuate;
 
             double m_speed;   // drift speeds
+            double m_toffset; // time offset
+
             int n_dropped, n_drifted;
 
             // A little helper to carry the region extent and depo buffers.

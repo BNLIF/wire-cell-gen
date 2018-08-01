@@ -57,6 +57,7 @@ Gen::Drifter::Drifter()
     , m_lifetime(8*units::ms) // read off RHS of figure 6 in MICROBOONE-NOTE-1003-PUB
     , m_fluctuate(true)
     , m_speed(1.6*units::mm/units::us)
+    , m_toffset(0.0)
     , n_dropped(0)
     , n_drifted(0)
 {
@@ -74,6 +75,7 @@ WireCell::Configuration Gen::Drifter::default_configuration() const
     cfg["lifetime"] = m_lifetime;
     cfg["fluctuate"] = m_fluctuate;
     cfg["drift_speed"] = m_speed;
+    cfg["time_offset"] = m_toffset;
 
     // see comments in .h file
     cfg["xregions"] = Json::arrayValue;
@@ -92,6 +94,7 @@ void Gen::Drifter::configure(const WireCell::Configuration& cfg)
     m_lifetime = get<double>(cfg, "lifetime", m_lifetime);
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
     m_speed = get<double>(cfg, "drift_speed", m_speed);
+    m_toffset = get<double>(cfg, "time_offset", m_toffset);
 
     auto jxregions = cfg["xregions"];
     if (jxregions.empty()) {
@@ -101,6 +104,8 @@ void Gen::Drifter::configure(const WireCell::Configuration& cfg)
     for (auto jone : jxregions) {
         m_xregions.push_back(Xregion(jone));
     }
+    cerr << "Gen::Drifter: time offset:" << m_toffset/units::ms << "ms "
+         << "drift speed: " << m_speed/(units::mm/units::us) << "mm/us\n";
 }
 
 void Gen::Drifter::reset()
@@ -172,7 +177,7 @@ bool Gen::Drifter::insert(const input_pointer& depo)
         dT = sqrt(2.0*m_DT*dt + dT*dT);
     }
 
-    auto newdepo = make_shared<SimpleDepo>(depo->time() + direction*dt, pos, Qf, depo, dL, dT);
+    auto newdepo = make_shared<SimpleDepo>(depo->time() + direction*dt + m_toffset, pos, Qf, depo, dL, dT);
     xrit->depos.push_back(newdepo);
     return true;
 }    
