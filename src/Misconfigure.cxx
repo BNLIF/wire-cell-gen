@@ -43,7 +43,7 @@ WireCell::Configuration Gen::Misconfigure::default_configuration() const
     /// used to apply the misconfiguring will extend the a trace's
     /// waveform by nsamples-1.  Truncating will clip that much off so
     /// the waveform will remains the same length but some information
-    /// may be lost.  If not turncated, this longer waveform likely
+    /// may be lost.  If not truncated, this longer waveform likely
     /// needs to be handled in some way by the user.  
     cfg["truncate"] = true;
 
