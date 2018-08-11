@@ -18,7 +18,7 @@ int main()
     {
         auto icfg = Factory::lookup<IConfigurable>(df_tn);
         auto cfg = icfg->default_configuration();
-        cfg["multiplicity"] = multiplicity;
+        cfg["multiplicity"] = (int)multiplicity;
         icfg->configure(cfg);
     }
 

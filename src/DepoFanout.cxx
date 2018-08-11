@@ -26,7 +26,7 @@ Gen::DepoFanout::~DepoFanout()
 WireCell::Configuration Gen::DepoFanout::default_configuration() const
 {
     Configuration cfg;
-    cfg["multiplicity"] = m_multiplicity;
+    cfg["multiplicity"] = (int)m_multiplicity;
     return cfg;
 }
 

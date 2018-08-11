@@ -23,7 +23,7 @@ Gen::FrameFanin::~FrameFanin()
 WireCell::Configuration Gen::FrameFanin::default_configuration() const
 {
     Configuration cfg;
-    cfg["multiplicity"] = m_multiplicity;
+    cfg["multiplicity"] = (int)m_multiplicity;
     // A non-null entry in this array is taken as a string and used to
     // tag traces which arrive on the corresponding input port when
     // they are placed  to the output frame.
