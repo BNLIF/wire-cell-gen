@@ -105,21 +105,22 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
       random_real_part.at(i) = m_rng->normal(0,1);
       random_imag_part.at(i) = m_rng->normal(0,1);
     }
+  }else{
+    int shift1 = m_rng->uniform(0,random_real_part.size());
+    // replace certain percentage of the random number
+    int step = 1./ m_rep_percent;
+    for (int i =shift1; i<shift1 + spec.size(); i+=step){
+      if (i<spec.size()){
+	random_real_part.at(i) = m_rng->normal(0,1);
+	random_imag_part.at(i) = m_rng->normal(0,1);
+      }else{
+	random_real_part.at(i-spec.size()) = m_rng->normal(0,1);
+	random_imag_part.at(i-spec.size()) = m_rng->normal(0,1);
+      }
+    }
   }
 
   int shift = m_rng->uniform(0,random_real_part.size());
-  int shift1 = m_rng->uniform(0,random_real_part.size());
-  // replace certain percentage of the random number
-  int step = 1./ m_rep_percent;
-  for (int i =shift1; i<shift1 + spec.size(); i+=step){
-    if (i<spec.size()){
-      random_real_part.at(i) = m_rng->normal(0,1);
-      random_imag_part.at(i) = m_rng->normal(0,1);
-    }else{
-      random_real_part.at(i-spec.size()) = m_rng->normal(0,1);
-      random_imag_part.at(i-spec.size()) = m_rng->normal(0,1);
-    }
-  }
   //std::cout << step << " " << shift << " " << shift1 << std::endl;
   
   //std::cout << spec.size() << " " << m_readout/m_tick << std::endl;
