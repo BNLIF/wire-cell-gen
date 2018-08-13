@@ -93,9 +93,9 @@ WireCell::Configuration Gen::EmpiricalNoiseModel::default_configuration() const
 
 void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
 {
-  // std::cout << spectrum.nsamples << " " << m_nsamples << " " << spectrum.period << " " <<
-  // m_period << std::endl;
-
+  //  std::cout << spectrum.nsamples << " " << m_nsamples << " " << spectrum.period << " " <<
+  //m_period << std::endl;
+  
     if (spectrum.nsamples == m_nsamples && spectrum.period == m_period) {
         return;
     }
@@ -135,7 +135,7 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
      	mu = (frequency - spectrum.freqs.at(count_low)) / (spectrum.freqs.at(count_high)-spectrum.freqs.at(count_low));
       }
       
-      //std::cout << i << " " << frequency/units::megahertz << " " << spectrum.freqs.at(count_low)/units::megahertz << " " << spectrum.freqs.at(count_high)/units::megahertz << " " << mu << std::endl;
+      //  std::cout << i << " " << frequency/units::megahertz << " " << spectrum.freqs.at(count_low)/units::megahertz << " " << spectrum.freqs.at(count_high)/units::megahertz << " " << mu << std::endl;
       
       temp_amplitudes.at(i) = (1-mu) * spectrum.amps[count_low] + mu * spectrum.amps[count_high];
       
@@ -225,6 +225,9 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     auto jdat = Persist::load(m_spectra_file);
     const int nentries = jdat.size();
     m_spectral_data.clear();
+
+    gen_elec_resp_default();
+    
     for (int ientry=0; ientry<nentries; ++ientry) {
         auto jentry = jdat[ientry];
         NoiseSpectrum *nsptr = new NoiseSpectrum();
@@ -255,7 +258,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
         }
 	// put the constant term at the end of the amplitude ... 
 	// nsptr->amps[namps] = nsptr->constant;
-
+	
         resample(*nsptr);
         m_spectral_data[nsptr->plane].push_back(nsptr); // assumes ordered by wire length!
     }        
