@@ -80,10 +80,11 @@ int main(int argc, char* argv[])
     auto noisesrc = Factory::lookup<IFrameSource>("NoiseSource");
 
     IFrame::pointer frame;
+    
     bool ok = (*noisesrc)(frame);
     em("got noise frame");
     Assert(ok);
-
+    
     // WARNING: if you are reading this for ideas of how to use frames
     // and traces beware that, for brevity, this test assumes the
     // frame is a filled in rectangle of channels X ticks and with
