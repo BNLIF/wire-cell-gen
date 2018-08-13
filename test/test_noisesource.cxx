@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     
     ExecMon em;
 
-    const int nticks = 9600;
+    const int nticks = 1000;
     const double tick = 0.5*units::us;
     const double readout_time = nticks*tick;
 
