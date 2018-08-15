@@ -109,8 +109,8 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
     int shift1 = m_rng->uniform(0,random_real_part.size());
     // replace certain percentage of the random number
     int step = 1./ m_rep_percent;
-    for (int i =shift1; i<shift1 + spec.size(); i+=step){
-      if (i<spec.size()){
+    for (int i =shift1; i<shift1 + int(spec.size()); i+=step){
+      if (i<int(spec.size())){
 	random_real_part.at(i) = m_rng->normal(0,1);
 	random_imag_part.at(i) = m_rng->normal(0,1);
       }else{
@@ -132,7 +132,7 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
   // 2) properly sample it
   
   
-  for (unsigned int i=shift;i<spec.size();i++){
+  for (int i=shift;i<int(spec.size());i++){
     // int count = i + shift;
     // if (count >= 2 * random_real_part.size()){
     //   count -= 2 * random_real_part.size();
@@ -151,10 +151,10 @@ Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
     // }
     // std::cout << " " << noise_freq.at(i) << " " << real_part << " " << imag_part << std::endl;
   }
-  for (unsigned int i=0;i<shift;i++){
-    double amplitude = spec.at(i+spec.size()-shift) * sqrt(2./3.1415926);
-    noise_freq.at(i+spec.size()-shift).real(random_real_part.at(i) * amplitude);
-    noise_freq.at(i+spec.size()-shift).imag(random_imag_part.at(i) * amplitude);
+  for (int i=0;i<shift;i++){
+    double amplitude = spec.at(i+int(spec.size())-shift) * sqrt(2./3.1415926);
+    noise_freq.at(i+int(spec.size())-shift).real(random_real_part.at(i) * amplitude);
+    noise_freq.at(i+int(spec.size())-shift).imag(random_imag_part.at(i) * amplitude);
   }
   
   
