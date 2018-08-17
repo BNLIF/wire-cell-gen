@@ -8,7 +8,7 @@
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/NamedFactory.h"
 
-WIRECELL_FACTORY(Digitizer, WireCell::Gen::Digitizer, WireCell::IFrameFilter);
+WIRECELL_FACTORY(Digitizer, WireCell::Gen::Digitizer, WireCell::IFrameFilter, WireCell::IConfigurable);
 
 using namespace std;
 using namespace WireCell;
