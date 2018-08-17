@@ -149,7 +149,7 @@ int main(int argc, const char* argv[])
     Binning tbins(nticks, t0, t0 + readout_time);
 
     string out_basename = argv[0];
-    string response_file = "ub-10.json.bz2";
+    string response_file = "ub-10-half.json.bz2";
     if (argc > 1) {
         response_file = argv[1];
     };
