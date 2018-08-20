@@ -18,6 +18,7 @@ using namespace WireCell;
 
 Gen::MultiDuctor::MultiDuctor(const std::string anode)
     : m_anode_tn(anode)
+    , m_tick(0.5*units::us)
     , m_start_time(0.0*units::ns)
     , m_readout_time(5.0*units::ms)
     , m_frame_count(0)
@@ -43,6 +44,9 @@ WireCell::Configuration Gen::MultiDuctor::default_configuration() const
     Configuration cfg;
     cfg["anode"] = m_anode_tn;
     cfg["chain"] = Json::arrayValue;
+
+    // must be consistent with subductors
+    cfg["tick"] = m_tick;
 
     /// The initial time for this ductor
     cfg["start_time"] = m_start_time;
@@ -121,6 +125,7 @@ struct ReturnBool {
 void Gen::MultiDuctor::configure(const WireCell::Configuration& cfg)
 {
     m_readout_time = get<double>(cfg, "readout_time", m_readout_time);
+    m_tick = get<double>(cfg, "tick", m_tick);
     m_start_time = get<double>(cfg, "start_time", m_start_time);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
     m_continuous = get(cfg, "continuous", m_continuous);
@@ -246,10 +251,6 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
         }
     }
 
-    double tick = 0.5*units::us; // note, could be differ from what
-                                 // sub-ductors use when they actually
-                                 // have waveforms to give us.
-
     // we must read out, and yet we have nothing
     //
     // fixme: the default behavior of this is to make sequential
@@ -262,7 +263,7 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
                   << " at " << m_start_time << "\n";
 
         ITrace::vector traces;
-        auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+        auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
         outframes.push_back(frame);
 
         m_start_time += m_readout_time;
@@ -288,7 +289,15 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
             continue;
         }   
 
-        tick = frame->tick();
+        {
+            const double tick = frame->tick();
+            if (std::abs(tick - m_tick) > 0.0001) {
+                std::cerr << "MultiDuctor: configuration error: got different tick in frame from sub-ductor = "
+                     << tick/units::us << "us, mine = " << m_tick/units::us << "us\n";
+                THROW(ValueError() << errmsg{"tick size mismatch"});
+            }
+        }
+
         int cmp = FrameTools::frmtcmp(frame, target_time);
         // std::cerr << "Gen::MultiDuctor: checking to keep: "
         //           << std::setprecision(12)
@@ -333,7 +342,7 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
                   << m_frame_count<<" at " << m_start_time << "\n";
 
         ITrace::vector traces;
-        auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+        auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
         outframes.push_back(frame);
         m_start_time += m_readout_time;
         ++m_frame_count;
@@ -353,7 +362,7 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
     ITrace::vector traces;
     for (auto frame: to_extract) {
         const double tref = frame->time();
-        const int extra_tbins = (tref-m_start_time)/tick;
+        const int extra_tbins = (tref-m_start_time)/m_tick;
         for (auto trace : (*frame->traces())) {
             const int tbin = trace->tbin() + extra_tbins;
             const int chid = trace->channel();
@@ -366,7 +375,7 @@ void Gen::MultiDuctor::maybe_extract(const input_pointer& depo, output_queue& ou
             traces.push_back(mtrace);
         }
     }
-    auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, tick);
+    auto frame = std::make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
     dump_frame(frame, "Gen::MultiDuctor: output frame");
 
     outframes.push_back(frame);
