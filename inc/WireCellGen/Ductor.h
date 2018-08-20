@@ -50,7 +50,7 @@ namespace WireCell {
             double m_drift_speed;
             double m_nsigma;
             bool m_fluctuate;
-            bool m_continuous;
+            std::string m_mode;
 
             int m_frame_count;
 

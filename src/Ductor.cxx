@@ -24,7 +24,7 @@ Gen::Ductor::Ductor()
     , m_drift_speed(1.0*units::mm/units::us)
     , m_nsigma(3.0)
     , m_fluctuate(true)
-    , m_continuous(true)
+    , m_mode("continuous")
     , m_frame_count(0)
 {
 }
@@ -56,6 +56,10 @@ WireCell::Configuration Gen::Ductor::default_configuration() const
     /// some readout time with no depos.
     put(cfg, "continuous", true);
 
+    /// Fixed mode simply reads out the same time window all the time.
+    /// It implies discontinuous (continuous == false).
+    put(cfg, "fixed", false);
+
     /// The nominal speed of drifting electrons
     put(cfg, "drift_speed", m_drift_speed);
 
@@ -85,7 +89,17 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     }
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
-    m_continuous = get<bool>(cfg, "continuous", m_continuous);
+    bool continuous = get<bool>(cfg, "continuous", true);
+    bool fixed = get<bool>(cfg, "fixed", false);
+
+    m_mode = "continuous";
+    if (fixed) {
+        m_mode = "fixed";
+    }
+    else if (!continuous) {
+        m_mode = "discontinuous";
+    }
+
     m_fluctuate = get<bool>(cfg, "fluctuate", m_fluctuate);
     m_rng = nullptr;
     if (m_fluctuate) {
@@ -189,7 +203,9 @@ void Gen::Ductor::process(output_queue& frames)
     // lost?
     m_depos.clear();
 
-    m_start_time += m_readout_time;
+    if (m_mode == "continuous") {
+        m_start_time += m_readout_time;
+    }
     ++m_frame_count;
 }
 
@@ -201,8 +217,11 @@ bool Gen::Ductor::start_processing(const input_pointer& depo)
         return true;
     }
 
-    if (!m_continuous) {
-        if (m_depos.empty()) {
+    if (m_depos.empty()) {
+        if (m_mode == "fixed") {
+            return false;
+        }
+        if (m_mode == "discontinuous") {
             m_start_time = depo->time();
             return false;
         }
