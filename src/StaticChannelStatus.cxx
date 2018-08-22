@@ -26,7 +26,7 @@ WireCell::Configuration Gen::StaticChannelStatus::default_configuration() const
     Configuration cfg;          // load hard-coded defaults
     cfg["nominal_gain"] = m_nominal_gain;
     cfg["nominal_shaping"] = m_nominal_shaping;
-    cfg["deviant_status"] = Json::arrayValue;
+    cfg["deviants"] = Json::arrayValue;
     for (auto it : m_deviants) {
         Json::Value jdev(Json::objectValue);
         jdev["chid"] = it.first;
