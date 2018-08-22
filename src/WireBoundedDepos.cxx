@@ -60,15 +60,19 @@ void Gen::WireBoundedDepos::configure(const WireCell::Configuration& cfg)
     }
     m_accept = cfg["mode"].asString() == "accept";
 
-    auto jwires = cfg["wires"];
-    for (auto jone : jwires) {
-        m_wires.push_back(wire_bounds_t(jone["plane"].asInt(),
-                                        jone["min"].asInt(),
-                                        jone["max"].asInt()));
+    auto jregions = cfg["regions"];
+    for (auto jregion : jregions) {
+        wire_region_t wr;
+        for (auto jtrio : jregion) {
+            wr.push_back(wire_bounds_t(jtrio["plane"].asInt(),
+                                       jtrio["min"].asInt(),
+                                       jtrio["max"].asInt()));
+        }
+        m_regions.push_back(wr);
     }
 
     std::cerr << "WireBoundedDepos: " << cfg ["mode"]
-              << " with " << m_wires.size() << " wires in "
+              << " with " << m_regions.size() << " wires in "
               << m_pimpos.size() << " planes\n";
 }
 
@@ -79,24 +83,33 @@ bool Gen::WireBoundedDepos::operator()(const input_pointer& depo, output_queue& 
         return true;
     }
 
-    // lazily calcualte nearest wire
+    // lazily calculate nearest wire
     const size_t nplanes = m_pimpos.size();
     std::vector<bool> already(nplanes, false);
     std::vector<int> closest_wire(nplanes, -1);
 
-    for (const auto& pmm : m_wires) {
+    for (const auto& region : m_regions) {
         
-        const int iplane = get<0>(pmm);
-        const int imin = get<1>(pmm);
-        const int imax = get<2>(pmm);
+        bool inregion = true;
+        for (const auto& trio : region) {
 
-        if (!already[iplane]) { // lazy
-            const double pitch = m_pimpos[iplane]->distance(depo->pos(), 2);
-            closest_wire[iplane] = m_pimpos[iplane]->region_binning().bin(pitch);
-            already[iplane] = true;
+            const int iplane = get<0>(trio);
+            const int imin = get<1>(trio);
+            const int imax = get<2>(trio);
+
+            if (!already[iplane]) { // lazy
+                const double pitch = m_pimpos[iplane]->distance(depo->pos(), 2);
+                closest_wire[iplane] = m_pimpos[iplane]->region_binning().bin(pitch);
+                already[iplane] = true;
+            }
+            const int iwire = closest_wire[iplane];
+            
+            if (iwire < imin or iwire > imax) {
+                inregion = false;
+                break;
+            }
         }
-        const int iwire = closest_wire[iplane];
-        const bool inregion = imin <= iwire && iwire <= imax;
+
 
         if (inregion) {
             if (m_accept) {

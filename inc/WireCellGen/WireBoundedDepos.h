@@ -57,8 +57,10 @@ namespace WireCell {
             IAnodePlane::pointer m_anode;
             bool m_accept;
             std::vector<const Pimpos*> m_pimpos;
+
             typedef std::tuple<int,int,int> wire_bounds_t;
-            std::vector<wire_bounds_t> m_wires;
+            typedef std::vector<wire_bounds_t> wire_region_t;
+            std::vector<wire_region_t> m_regions;
         };
     }
 }
