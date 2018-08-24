@@ -84,7 +84,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
     if (!m_anode) {
-        cerr << "Ductor["<<(void*)this <<"]: failed to get anode: \"" << m_anode_tn << "\"\n";
+        cerr << "Gen::Ductor["<<(void*)this <<"]: failed to get anode: \"" << m_anode_tn << "\"\n";
         return;                 // fixme: should throw something!
     }
 
@@ -117,12 +117,20 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
     if (jpirs.isNull() or jpirs.empty()) {
         THROW(ValueError() << errmsg{"Gen::Ductor: must configure with some plane impact response components"});
     }
-    m_pirs.empty();
+    m_pirs.clear();
     for (auto jpir : jpirs) {
         auto tn = jpir.asString();
         auto pir = Factory::find_tn<IPlaneImpactResponse>(tn);
         m_pirs.push_back(pir);
     }
+
+    cerr << "Gen::Ductor: AnodePlane:" << m_anode_tn
+         << " mode:" << m_mode
+         << " fluctuate:" << (m_fluctuate ? "on" : "off")
+         << " time start: " << m_start_time/units::ms << "ms"
+         << " readout time: " << m_readout_time/units::ms << "ms"
+         << " frame start: " << m_frame_count
+         << "\n";
 }
 
 void Gen::Ductor::process(output_queue& frames)
@@ -132,27 +140,30 @@ void Gen::Ductor::process(output_queue& frames)
     for (auto face : m_anode->faces()) {
 
         // Select the depos which are in this face's sensitive volume
-        int ndropped = 0;
-        IDepo::vector face_depos;
+        IDepo::vector face_depos, dropped_depos;
         auto bb = face->sensitive();
         for (auto depo : m_depos) {
             if (bb.inside(depo->pos())) {
                 face_depos.push_back(depo);
             }
             else {
-                if (!ndropped) {
-                    cerr << "Ductor: dropping depo at " << depo->pos()/units::mm << "mm\n";
-                }
-                ++ndropped;
+                dropped_depos.push_back(depo);
             }
         }
 
-        {                       // debugging
+        if (face_depos.size()) {
             auto ray = bb.bounds();
-            cerr << "Ductor: anode:"<<m_anode->ident()<<" face:" << face->ident()
-                 << ": processing " << face_depos.size() << " (dropped " << ndropped << ") depos "
-
-                 << "with bb: "<< ray.first << " --> " << ray.second <<"\n";
+            cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
+                 << ": processing " << face_depos.size() << " depos spanning: t:["
+                 << face_depos.front()->time()/units::ms << ", "
+                 << face_depos.back()->time()/units::ms << "]ms, bb: "
+                 << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
+        }
+        if (dropped_depos.size()) {
+            cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
+                 << ": dropped " << dropped_depos.size()<<" depos spanning: t:["
+                 << dropped_depos.front()->time()/units::ms << ", "
+                 << dropped_depos.back()->time()/units::ms << "]ms\n";
         }
 
         int iplane = -1;
@@ -194,7 +205,8 @@ void Gen::Ductor::process(output_queue& frames)
 
     auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
     frames.push_back(frame);
-    cerr << "Gen::Ductor make frame: " << m_frame_count << " with " << traces.size() << " traces @" << m_start_time/units::ms <<"ms\n";
+    cerr << "Gen::Ductor made frame: " << m_frame_count
+         << " with " << traces.size() << " traces @" << m_start_time/units::ms <<"ms\n";
 
     // fixme: what about frame overflow here?  If the depos extend
     // beyond the readout where does their info go?  2nd order,
@@ -206,6 +218,7 @@ void Gen::Ductor::process(output_queue& frames)
     if (m_mode == "continuous") {
         m_start_time += m_readout_time;
     }
+
     ++m_frame_count;
 }
 
@@ -217,15 +230,21 @@ bool Gen::Ductor::start_processing(const input_pointer& depo)
         return true;
     }
 
-    if (m_depos.empty()) {
-        if (m_mode == "fixed") {
-            return false;
-        }
-        if (m_mode == "discontinuous") {
+    if (m_mode == "fixed") {
+        // fixed mode waits until EOS
+        return false;
+    }
+
+    if (m_mode == "discontinuous") {
+        // discontinuous mode sets start time on first depo.
+        if (m_depos.empty()) {
             m_start_time = depo->time();
             return false;
         }
     }
+
+    // continuous and discontinuous modes follow Just Enough
+    // Processing(TM) strategy.
 
     // Note: we use this depo time even if it may not actually be
     // inside our sensitive volume.
