@@ -6,6 +6,8 @@
 #include "WireCellUtil/Persist.h"
 #include "WireCellUtil/NamedFactory.h"
 
+#include "Noise.h"
+
 #include <iostream>
 
 WIRECELL_FACTORY(NoiseSource, WireCell::Gen::NoiseSource, WireCell::IFrameSource, WireCell::IConfigurable);
@@ -90,82 +92,6 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
 }
 
 
-Waveform::realseq_t Gen::NoiseSource::waveform(int channel_ident)
-{
-  // In here use the noise model to:
-  
-  
-  // 1) get the amplitude spectrum.  Be careful to hold as reference to avoid copy
-  auto& spec = (*m_model)(channel_ident);
-
-  if (random_real_part.size()!=spec.size()){
-    random_real_part.resize(spec.size(),0);
-    random_imag_part.resize(spec.size(),0);
-    for (unsigned int i=0;i<spec.size();i++){
-      random_real_part.at(i) = m_rng->normal(0,1);
-      random_imag_part.at(i) = m_rng->normal(0,1);
-    }
-  }else{
-    int shift1 = m_rng->uniform(0,random_real_part.size());
-    // replace certain percentage of the random number
-    int step = 1./ m_rep_percent;
-    for (int i =shift1; i<shift1 + int(spec.size()); i+=step){
-      if (i<int(spec.size())){
-	random_real_part.at(i) = m_rng->normal(0,1);
-	random_imag_part.at(i) = m_rng->normal(0,1);
-      }else{
-	random_real_part.at(i-spec.size()) = m_rng->normal(0,1);
-	random_imag_part.at(i-spec.size()) = m_rng->normal(0,1);
-      }
-    }
-  }
-
-  int shift = m_rng->uniform(0,random_real_part.size());
-  //std::cout << step << " " << shift << " " << shift1 << std::endl;
-  
-  //std::cout << spec.size() << " " << m_readout/m_tick << std::endl;
-  // for (int i=0;i!=spec.size();i++){
-  //   std::cout << i << " " << spec.at(i)/units::mV << std::endl;
-  // }
-  WireCell::Waveform::compseq_t noise_freq(spec.size(),0); 
-  //std::cout << medians_freq.size() << std::endl;
-  // 2) properly sample it
-  
-  
-  for (int i=shift;i<int(spec.size());i++){
-    // int count = i + shift;
-    // if (count >= 2 * random_real_part.size()){
-    //   count -= 2 * random_real_part.size();
-    // }else if (count >= random_real_part.size()){
-    //   count -= random_real_part.size();
-    // }
-    double amplitude = spec.at(i-shift) * sqrt(2./3.1415926);// / units::mV;
-    //std::cout << distribution(generator) * amplitude << " " << distribution(generator) * amplitude << std::endl;
-    //double real_part = random_real_part.at(count) * amplitude;
-    //double imag_part = random_imag_part.at(count) * amplitude;
-    // if (i<=spec.size()/2.){
-    noise_freq.at(i-shift).real(random_real_part.at(i) * amplitude);
-    noise_freq.at(i-shift).imag(random_imag_part.at(i) * amplitude);//= complex_t(real_part,imag_part);
-    // }else{
-    //   noise_freq.at(i) = std::conj(noise_freq.at(spec.size()-i));
-    // }
-    // std::cout << " " << noise_freq.at(i) << " " << real_part << " " << imag_part << std::endl;
-  }
-  for (int i=0;i<shift;i++){
-    double amplitude = spec.at(i+int(spec.size())-shift) * sqrt(2./3.1415926);
-    noise_freq.at(i+int(spec.size())-shift).real(random_real_part.at(i) * amplitude);
-    noise_freq.at(i+int(spec.size())-shift).imag(random_imag_part.at(i) * amplitude);
-  }
-  
-  
-  
-  // 3) convert back to time domain (use function "idft()")
-  Waveform::realseq_t noise_time = WireCell::Waveform::idft(noise_freq);
-
-  return noise_time;
-  // a dummy for now    
-  //return Waveform::realseq_t(m_readout/m_tick, 0.0*units::volt); 
-}
 
 bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 {
@@ -182,7 +108,8 @@ bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
     const int tbin = 0;
     int nsamples = 0;
     for (auto chid : m_anode->channels()) {
-        Waveform::realseq_t noise = waveform(chid);
+        const auto& spec = (*m_model)(chid);
+        Waveform::realseq_t noise = Gen::Noise::generate_waveform(spec, m_rng, m_rep_percent);
         auto trace = make_shared<SimpleTrace>(chid, tbin, noise);
         traces.push_back(trace);
         nsamples += noise.size();

@@ -35,9 +35,6 @@ namespace WireCell {
             virtual void configure(const WireCell::Configuration& config);
             virtual WireCell::Configuration default_configuration() const;
 
-
-            virtual Waveform::realseq_t waveform(int channel_ident);
-
         private:
             IRandom::pointer m_rng;
             IAnodePlane::pointer m_anode;
@@ -47,9 +44,6 @@ namespace WireCell {
             std::string m_anode_tn, m_model_tn,  m_rng_tn;
 	    double m_rep_percent;
 	    bool m_eos;
-	    
-	    std::vector<double> random_real_part;
-	    std::vector<double> random_imag_part;
 	    
 	};
     }
