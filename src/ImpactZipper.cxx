@@ -29,11 +29,11 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
     const int min_impact = ib.edge_index(wire_pos - 0.5*pitch_range);
     const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
-    const int nsamples = m_bd.tbins().nbins();
+  const int nsamples = m_bd.tbins().nbins();
     Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
 
 
-    int nfound=0;
+   int nfound=0;
     const bool share=true;
     const Waveform::complex_t complex_one_half(0.5,0.0);
 
@@ -121,12 +121,12 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     // fixme: this is a dumb way to go. Better to make an iterator.
     m_bd.erase(0, min_impact); 
 
-    if (!nfound) {
-        return Waveform::realseq_t(nsamples, 0.0);
-    }
+      if (!nfound) {
+    return Waveform::realseq_t(nsamples, 0.0);
+	 }
     
-    auto waveform = Waveform::idft(total_spectrum);
+      auto waveform = Waveform::idft(total_spectrum);
 
-    return waveform;
+      return waveform;
 }
 

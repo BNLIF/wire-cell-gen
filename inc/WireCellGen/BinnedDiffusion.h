@@ -104,7 +104,8 @@ namespace WireCell {
 	    std::pair<int,int> m_window;
 	    // the content of the current window
 	    std::map<int, ImpactData::mutable_pointer> m_impacts;
-            std::vector<std::shared_ptr<GaussianDiffusion> > m_diffs;
+            //std::vector<std::shared_ptr<GaussianDiffusion> > m_diffs;
+	    std::set<std::shared_ptr<GaussianDiffusion> > m_diffs;
 
             int m_outside_pitch;
             int m_outside_time;
