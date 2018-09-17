@@ -157,7 +157,8 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
         cerr << "No impact bins [" << pval_range.first/units::mm << "," << pval_range.second/units::mm << "] mm\n";
         return;
     }
-    
+
+    // weightstrat = 1;
 
     // make charge weights for later interpolation.
     /// fixme: for hanyu.

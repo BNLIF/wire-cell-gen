@@ -45,7 +45,7 @@ void Gen::ImpactData::calculate(int nticks) const
     for (auto diff : m_diffusions) {
 
 	const auto patch = diff->patch();
-    const auto qweight = diff->weights();
+	const auto qweight = diff->weights();
 
         const int poffset_bin = diff->poffset_bin();
         const int pbin = m_impact - poffset_bin;
@@ -57,9 +57,14 @@ void Gen::ImpactData::calculate(int nticks) const
         const int toffset_bin = diff->toffset_bin();
         const int nt = patch.cols();
 
+	//	std::cout << pbin << " " << poffset_bin << " " << m_impact << std::endl;
+	
         for (int tbin=0; tbin<nt; ++tbin) {
             const int absbin = tbin+toffset_bin;
             m_waveform[absbin] += patch(pbin, tbin);
+
+	    //  std::cout << pbin << " " << tbin << " " << patch(pbin,tbin) << std::endl;
+	    
             // for interpolation
             m_weights[absbin] += qweight[pbin]*patch(pbin, tbin);
         }

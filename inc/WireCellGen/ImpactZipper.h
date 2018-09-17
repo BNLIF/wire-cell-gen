@@ -5,6 +5,8 @@
 
 #include "WireCellIface/IPlaneImpactResponse.h"
 #include "WireCellGen/BinnedDiffusion.h"
+#include "WireCellUtil/Array.h"
+
 
 namespace WireCell {
     namespace Gen {
@@ -19,7 +21,16 @@ namespace WireCell {
         {
             IPlaneImpactResponse::pointer m_pir;
             BinnedDiffusion& m_bd;
-
+	    
+	    int m_flag;
+	    int m_num_group;  // how many 2D convolution is needed
+	    int m_num_pad_wire; // how many wires are needed to pad on each side
+	    std::vector<std::map<int, IImpactResponse::pointer> > m_vec_map_resp;
+	    std::vector<std::vector<std::tuple<int,int,double> > > m_vec_vec_charge; // ch, time, charge
+	    std::vector<int> m_vec_impact;
+	    Array::array_xxf m_decon_data;
+	    
+	    
         public:
 
             ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd);
@@ -37,6 +48,8 @@ namespace WireCell {
             // fixme: this should be a forward iterator so that it may cal bd.erase() safely to conserve memory
             Waveform::realseq_t waveform(int wire) const;
 
+
+	    
         };
 
     }  // Gen

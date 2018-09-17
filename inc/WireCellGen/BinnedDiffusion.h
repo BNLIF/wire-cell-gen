@@ -74,6 +74,10 @@ namespace WireCell {
 	    /// drastically different response.
 	    ImpactData::pointer impact_data(int bin) const;
 
+	    // test ... 
+	    void get_charge_vec(std::vector<std::vector<std::tuple<int,int, double> > >& vec_vec_charge, std::vector<int>& vec_impact);
+
+	    
             /// Return the range of pitch containing depos out to
             /// given nsigma and without bounds checking.
             std::pair<double,double> pitch_range(double nsigma=0.0) const;

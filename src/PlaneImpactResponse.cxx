@@ -249,6 +249,8 @@ IImpactResponse::pointer Gen::PlaneImpactResponse::closest(double relpitch) cons
                   << std::endl;
         return nullptr;
     }
+    // std::cout << relpitch << " " << wi.first << " " << wi.second << " " << irind << std::endl;
+    
     return m_ir[irind];
 }
 
@@ -262,9 +264,11 @@ TwoImpactResponses Gen::PlaneImpactResponse::bounded(double relpitch) const
 
     auto region = m_bywire[wi.first];
     if (wi.second == 0) {
+      //std::cout << relpitch << " " << 0 << " A " << 1 << " " << region[0] << " " << region[1] << std::endl;
         return std::make_pair(m_ir[region[0]], m_ir[region[1]]);
     }
     if (wi.second == (int)region.size()-1) {
+      // std::cout << relpitch << " " << wi.second-1 << " B " << wi.second << " " << region[wi.second-1] << " "<< region[wi.second] << std::endl;
         return std::make_pair(m_ir[region[wi.second-1]], m_ir[region[wi.second]]);
     }
 
@@ -272,8 +276,10 @@ TwoImpactResponses Gen::PlaneImpactResponse::bounded(double relpitch) const
     const double sign = absimpact - wi.second*m_impact;
 
     if (sign > 0) {
+      //   std::cout << relpitch << " " << wi.second << " C " << wi.second+1 << " " << region[wi.second] << " " << region[wi.second+1] << std::endl;
         return TwoImpactResponses(m_ir[region[wi.second]], m_ir[region[wi.second+1]]);
     }
+    //    std::cout << relpitch << " " << wi.second-1 << " D " << wi.second << " " << region[wi.second-1] << " " << region[wi.second] << std::endl;
     return TwoImpactResponses(m_ir[region[wi.second-1]], m_ir[region[wi.second]]);
 }
 

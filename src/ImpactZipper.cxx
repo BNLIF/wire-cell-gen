@@ -6,57 +6,337 @@ using namespace std;
 
 using namespace WireCell;
 Gen::ImpactZipper::ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd)
-    :m_pir(pir), m_bd(bd)
+  :m_pir(pir), m_bd(bd), m_flag(0)
 {
+
+  // for (int i=0;i!=210;i++){
+  //   double pos = -31.5 + 0.3*i+1e-9;0
+  //   m_pir->closest(pos);
+  // }
+  
+  
+  if (m_flag==1){
+    // arrange the field response (210 in total, pitch_range/impact)
+    // number of wires nwires ... 
+    m_num_group = std::round(m_pir->pitch()/m_pir->impact())+1; // 10
+    m_num_pad_wire = std::round((m_pir->nwires()-1)/2.); // 10
     
+    //std::cout << m_num_group << " " << m_num_pad_wire << std::endl;
+    
+    for (int i=0;i!=m_num_group;i++){
+      double rel_cen_imp_pos ;
+      if (i!=m_num_group-1){
+	rel_cen_imp_pos = -m_pir->pitch()/2.+m_pir->impact()*i+1e-9;
+      }else{
+	rel_cen_imp_pos = -m_pir->pitch()/2.+m_pir->impact()*i-1e-9;
+      }
+      m_vec_impact.push_back(std::round(rel_cen_imp_pos/m_pir->impact()));
+      std::map<int, IImpactResponse::pointer> map_resp; // already in freq domain
+
+      for (int j=0;j!=m_pir->nwires();j++){
+	map_resp[j-m_num_pad_wire] = m_pir->closest(rel_cen_imp_pos - (j-m_num_pad_wire)*m_pir->pitch());
+	Waveform::compseq_t response_spectrum = map_resp[j-m_num_pad_wire]->spectrum();
+
+	//	std::cout << i << " " << j << " " << rel_cen_imp_pos - (j-m_num_pad_wire)*m_pir->pitch()<< " " << response_spectrum.size() << std::endl;
+      }
+      //std::cout << m_vec_impact.back() << std::endl;
+      // std::cout << rel_cen_imp_pos << std::endl;
+      // std::cout << map_resp.size() << std::endl;
+      m_vec_map_resp.push_back(map_resp);
+      
+      std::vector<std::tuple<int,int, double> > vec_charge; // ch, time, charge
+      m_vec_vec_charge.push_back(vec_charge);
+    }
+    
+    
+    // now work on the charge part ...
+    // trying to sampling ...
+    m_bd.get_charge_vec(m_vec_vec_charge, m_vec_impact);
+    
+    // for (size_t i=0;i!=m_vec_vec_charge.size();i++){
+    //   std::cout << m_vec_vec_charge[i].size() << std::endl;
+    // }
+    
+    // length and width ...
+    const int nsamples = m_bd.tbins().nbins();
+    const auto pimpos = m_bd.pimpos();
+    const auto rb = pimpos.region_binning();
+    const int nwires = rb.nbins();
+    
+    // std::cout << nwires << " " << nsamples << std::endl;
+    //  m_decon_data = Array::array_xxf::Zero(nwires+2*m_num_pad_wire,nsamples);
+    
+    // for saving the accumulated wire data in the time frequency domain ...
+    // adding no padding now, it make the FFT slower, need some other methods ... 
+    
+    int npad_wire =0;
+    if (nwires == 2400){
+      npad_wire=50; // 2500
+    }else if (nwires ==3456){
+      npad_wire=72; //3600
+    }
+    
+    Array::array_xxc acc_data_f_w = Array::array_xxc::Zero(nwires+2*npad_wire,nsamples); 
+
+    int num_double = (m_vec_vec_charge.size()-1)/2;
+    
+    // speed up version , first five
+    for (int i=0;i!=num_double;i++){
+      //if (i!=0) continue;
+      
+      Array::array_xxc c_data = Array::array_xxc::Zero(nwires+2*npad_wire,nsamples);
+
+      // fill normal order
+      for (size_t j=0;j!=m_vec_vec_charge.at(i).size();j++){
+      	c_data(std::get<0>(m_vec_vec_charge.at(i).at(j))+npad_wire,std::get<1>(m_vec_vec_charge.at(i).at(j))) +=  std::get<2>(m_vec_vec_charge.at(i).at(j));
+      }
+      m_vec_vec_charge.at(i).clear();
+      
+      // fill reverse order
+      int ii=num_double*2-i;
+      for (size_t j=0;j!=m_vec_vec_charge.at(ii).size();j++){
+	//	c_data(std::get<0>(m_vec_vec_charge.at(ii).at(j)),std::get<1>(m_vec_vec_charge.at(ii).at(j))) +=  std::get<2>(m_vec_vec_charge.at(ii).at(j));
+	c_data(nwires+npad_wire-1-std::get<0>(m_vec_vec_charge.at(ii).at(j)),std::get<1>(m_vec_vec_charge.at(ii).at(j))) +=  std::complex<float>(0,std::get<2>(m_vec_vec_charge.at(ii).at(j)));
+      }
+      m_vec_vec_charge.at(ii).clear();
+
+      // Do FFT on time
+      c_data = Array::dft_cc(c_data,0);
+      // Do FFT on wire
+      c_data = Array::dft_cc(c_data,1);
+
+      {
+    	Array::array_xxc resp_f_w = Array::array_xxc::Zero(nwires+2*npad_wire,nsamples);
+    	{
+    	  Waveform::compseq_t rs1 = m_vec_map_resp.at(i)[0]->spectrum();
+    	  for (int icol = 0; icol != nsamples; icol++){
+    	    resp_f_w(0,icol) = rs1[icol];
+    	  }
+    	}
+    	for (int irow = 0; irow!=m_num_pad_wire;irow++){
+    	  Waveform::compseq_t rs1 = m_vec_map_resp.at(i)[irow+1]->spectrum();
+    	  Waveform::compseq_t rs2 = m_vec_map_resp.at(i)[-irow-1]->spectrum();
+    	  for (int icol = 0; icol != nsamples; icol++){
+    	    resp_f_w(irow+1,icol) = rs1[icol];
+    	    resp_f_w(nwires-1-irow+2*npad_wire,icol) = rs2[icol];
+    	  }
+    	}
+    	// Do FFT on wire for response // slight larger
+    	resp_f_w = Array::dft_cc(resp_f_w,1); // Now becomes the f and f in both time and wire domain ...
+    	// multiply them together
+    	c_data = c_data * resp_f_w;
+      }
+
+      // Do inverse FFT on wire
+      c_data = Array::idft_cc(c_data,1);
+      
+      // Add to wire result in frequency
+      acc_data_f_w += c_data;
+      
+    }
+
+
+    
+    // central region ...
+    {
+      int i = num_double;
+       // fill response array in frequency domain
+
+      Array::array_xxc data_f_w;
+      {
+    	Array::array_xxf data_t_w = Array::array_xxf::Zero(nwires+2*npad_wire,nsamples);
+    	// fill charge array in time-wire domain // slightly larger
+    	for (size_t j=0;j!=m_vec_vec_charge.at(i).size();j++){
+    	  data_t_w(std::get<0>(m_vec_vec_charge.at(i).at(j))+npad_wire,std::get<1>(m_vec_vec_charge.at(i).at(j))) +=  std::get<2>(m_vec_vec_charge.at(i).at(j));
+    	}
+    	m_vec_vec_charge.at(i).clear();
+	
+    	// Do FFT on time
+    	data_f_w = Array::dft_rc(data_t_w,0);
+    	// Do FFT on wire
+    	data_f_w = Array::dft_cc(data_f_w,1);
+      }
+      
+      {
+    	Array::array_xxc resp_f_w = Array::array_xxc::Zero(nwires+2*npad_wire,nsamples);
+    	{
+    	  Waveform::compseq_t rs1 = m_vec_map_resp.at(i)[0]->spectrum();
+    	  for (int icol = 0; icol != nsamples; icol++){
+    	    resp_f_w(0,icol) = rs1[icol];
+    	  }
+    	}
+    	for (int irow = 0; irow!=m_num_pad_wire;irow++){
+    	  Waveform::compseq_t rs1 = m_vec_map_resp.at(i)[irow+1]->spectrum();
+    	  Waveform::compseq_t rs2 = m_vec_map_resp.at(i)[-irow-1]->spectrum();
+    	  for (int icol = 0; icol != nsamples; icol++){
+    	    resp_f_w(irow+1,icol) = rs1[icol];
+    	    resp_f_w(nwires-1-irow+2*npad_wire,icol) = rs2[icol];
+    	  }
+    	}
+    	// Do FFT on wire for response // slight larger
+    	resp_f_w = Array::dft_cc(resp_f_w,1); // Now becomes the f and f in both time and wire domain ...
+    	// multiply them together
+    	data_f_w = data_f_w * resp_f_w;
+      }
+      
+      // Do inverse FFT on wire
+      data_f_w = Array::idft_cc(data_f_w,1);
+      
+      // Add to wire result in frequency
+      acc_data_f_w += data_f_w;
+    }
+    
+    //m_decon_data = Array::array_xxc::Zero(nwires,nsamples);
+    if (npad_wire!=0){
+      Array::array_xxc temp_m_decon_data = Array::idft_cc(acc_data_f_w,0).block(npad_wire,0,nwires,nsamples);
+      Array::array_xxf real_m_decon_data = temp_m_decon_data.real();
+      Array::array_xxf img_m_decon_data = temp_m_decon_data.imag().colwise().reverse();
+
+      // std::cout << real_m_decon_data(1900,5182)/units::mV << " " << img_m_decon_data(1900,5182)/units::mV << std::endl;
+      
+      m_decon_data = real_m_decon_data + img_m_decon_data;
+    }else{
+      Array::array_xxc temp_m_decon_data = Array::idft_cc(acc_data_f_w,0);
+      
+      Array::array_xxf real_m_decon_data = temp_m_decon_data.real();
+      Array::array_xxf img_m_decon_data = temp_m_decon_data.imag().rowwise().reverse();
+      m_decon_data = real_m_decon_data + img_m_decon_data;
+    }
+    
+    
+    
+    // // prepare FFT, loop 11 of them ... (older version)
+    // for (size_t i=0;i!=m_vec_vec_charge.size();i++){
+    //   // fill response array in frequency domain
+    //   if (i!=10) continue;
+      
+    //   Array::array_xxc data_f_w;
+    //   {
+    // 	Array::array_xxf data_t_w = Array::array_xxf::Zero(nwires+2*npad_wire,nsamples);
+    // 	// fill charge array in time-wire domain // slightly larger
+    // 	for (size_t j=0;j!=m_vec_vec_charge.at(i).size();j++){
+    // 	  data_t_w(std::get<0>(m_vec_vec_charge.at(i).at(j))+npad_wire,std::get<1>(m_vec_vec_charge.at(i).at(j))) +=  std::get<2>(m_vec_vec_charge.at(i).at(j));
+    // 	}
+    // 	m_vec_vec_charge.at(i).clear();
+	
+    // 	// Do FFT on time
+    // 	data_f_w = Array::dft_rc(data_t_w,0);
+    // 	// Do FFT on wire
+    // 	data_f_w = Array::dft_cc(data_f_w,1);
+    //   }
+      
+    //   {
+    // 	Array::array_xxc resp_f_w = Array::array_xxc::Zero(nwires+2*npad_wire,nsamples);
+    // 	{
+    // 	  Waveform::compseq_t rs1 = m_vec_map_resp.at(i)[0]->spectrum();
+    // 	  for (int icol = 0; icol != nsamples; icol++){
+    // 	    resp_f_w(0,icol) = rs1[icol];
+    // 	  }
+    // 	}
+    // 	for (int irow = 0; irow!=m_num_pad_wire;irow++){
+    // 	  Waveform::compseq_t rs1 = m_vec_map_resp.at(i)[irow+1]->spectrum();
+    // 	  Waveform::compseq_t rs2 = m_vec_map_resp.at(i)[-irow-1]->spectrum();
+    // 	  for (int icol = 0; icol != nsamples; icol++){
+    // 	    resp_f_w(irow+1,icol) = rs1[icol];
+    // 	    resp_f_w(nwires-1-irow+2*npad_wire,icol) = rs2[icol];
+    // 	  }
+    // 	}
+    // 	// Do FFT on wire for response // slight larger
+    // 	resp_f_w = Array::dft_cc(resp_f_w,1); // Now becomes the f and f in both time and wire domain ...
+    // 	// multiply them together
+    // 	data_f_w = data_f_w * resp_f_w;
+    //   }
+      
+    //   // Do inverse FFT on wire
+    //   data_f_w = Array::idft_cc(data_f_w,1);
+      
+    //   // Add to wire result in frequency
+    //   acc_data_f_w += data_f_w;
+    // }
+    // m_vec_vec_charge.clear();
+    
+    // // do inverse FFT on time for the final results ... 
+    
+    // if (npad_wire!=0){
+    //   Array::array_xxf temp_m_decon_data = Array::idft_cr(acc_data_f_w,0);
+    //   m_decon_data = temp_m_decon_data.block(npad_wire,0,nwires,nsamples);
+    // }else{
+    //   m_decon_data = Array::idft_cr(acc_data_f_w,0);
+    // }
+    
+    
+    // std::cout << m_decon_data(1900,5182)/units::mV << " " << m_decon_data(1900,5182)/units::mV << std::endl;
+    
+      
+
+
+    
+    // int nrows = resp_f_w.rows();
+    // int ncols = resp_f_w.cols();
+    std::cout << m_decon_data.rows() << " " << m_decon_data.cols() << std::endl;
+  }
 }
 
 
 
 Gen::ImpactZipper::~ImpactZipper()
 {
+  
 }
 
 
 Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 {
-    const double pitch_range = m_pir->pitch_range();
 
-    const auto pimpos = m_bd.pimpos();
-    const auto rb = pimpos.region_binning();
-    const auto ib = pimpos.impact_binning();
-    const double wire_pos = rb.center(iwire);
-
-    const int min_impact = ib.edge_index(wire_pos - 0.5*pitch_range);
-    const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
+  if (m_flag==1){
+    Waveform::realseq_t wf(m_decon_data.cols(), 0.0);
+    for (int i=0;i!=m_decon_data.cols();i++){
+      wf.at(i) = m_decon_data(iwire,i);
+    }
+    return wf;
+  }else{
+  //  std::cout << m_pir->pitch() << " " << m_pir->pitch_range() << " " << m_pir->nwires() << " " << m_pir->impact() << " " << std::endl;  
+  const double pitch_range = m_pir->pitch_range();
+  
+  const auto pimpos = m_bd.pimpos();
+  const auto rb = pimpos.region_binning();
+  const auto ib = pimpos.impact_binning();
+  const double wire_pos = rb.center(iwire);
+  
+  const int min_impact = ib.edge_index(wire_pos - 0.5*pitch_range);
+  const int max_impact = ib.edge_index(wire_pos + 0.5*pitch_range);
   const int nsamples = m_bd.tbins().nbins();
-    Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
+  Waveform::compseq_t total_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
+  
+  
+  int nfound=0;
+  const bool share=true;
+  const Waveform::complex_t complex_one_half(0.5,0.0);
+  
+  // The BinnedDiffusion is indexed by absolute impact and the
+  // PlaneImpactResponse relative impact.
+  for (int imp = min_impact; imp <= max_impact; ++imp) {
 
+    
+    
+      // ImpactData
+      auto id = m_bd.impact_data(imp);
+      if (!id) {
+          // common as we are scanning all impacts covering a wire
+          // fixme: is there a way to predict this to avoid the query?
+          //std::cerr << "ImpactZipper: no data for absolute impact number: " << imp << std::endl;
+          continue;
+      }
 
-   int nfound=0;
-    const bool share=true;
-    const Waveform::complex_t complex_one_half(0.5,0.0);
-
-    // The BinnedDiffusion is indexed by absolute impact and the
-    // PlaneImpactResponse relative impact.
-    for (int imp = min_impact; imp <= max_impact; ++imp) {
-        
-        // ImpactData
-        auto id = m_bd.impact_data(imp);
-        if (!id) {
-            // common as we are scanning all impacts covering a wire
-            // fixme: is there a way to predict this to avoid the query?
-            //std::cerr << "ImpactZipper: no data for absolute impact number: " << imp << std::endl;
-            continue;
-        }
-        
-        const Waveform::compseq_t& charge_spectrum = id->spectrum();
-        // for interpolation
-        const Waveform::compseq_t& weightcharge_spectrum = id->weight_spectrum();
-   
-        if (charge_spectrum.empty()) {
-            // should not happen
-            std::cerr << "ImpactZipper: no charge for absolute impact number: " << imp << std::endl;
+      //      std::cout << "qx " << iwire << " " << imp << std::endl;
+      
+      const Waveform::compseq_t& charge_spectrum = id->spectrum();
+      // for interpolation
+      const Waveform::compseq_t& weightcharge_spectrum = id->weight_spectrum();
+  
+      if (charge_spectrum.empty()) {
+          // should not happen
+          std::cerr << "ImpactZipper: no charge for absolute impact number: " << imp << std::endl;
             continue;
         }
         if (weightcharge_spectrum.empty()) {
@@ -67,7 +347,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 
         const double imp_pos = ib.center(imp);
         const double rel_imp_pos = imp_pos - wire_pos;
-        //std::cerr << "IZ: " << " imp=" << imp << " imp_pos=" << imp_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
+	//	std::cout << "IZ: " << " imp=" << imp << " imp_pos=" << imp_pos << " wire_pos=" << wire_pos << " rel_imp_pos=" << rel_imp_pos << std::endl;
 
         Waveform::compseq_t conv_spectrum(nsamples, Waveform::complex_t(0.0,0.0));
         if (share) {            // fixme: make a configurable option
@@ -78,7 +358,8 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
             }
             // fixme: this is average, not interpolation.
             Waveform::compseq_t rs1 = two_ir.first->spectrum();            
-            Waveform::compseq_t rs2 = two_ir.second->spectrum();            
+            Waveform::compseq_t rs2 = two_ir.second->spectrum();
+	    // std::cout << rs1.size() << " " << rs2.size() << std::endl;
             
             for (int ind=0; ind < nsamples; ++ind) {
                 //conv_spectrum[ind] = complex_one_half*(rs1[ind]+rs2[ind])*charge_spectrum[ind];
@@ -121,12 +402,13 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
     // fixme: this is a dumb way to go. Better to make an iterator.
     m_bd.erase(0, min_impact); 
 
-      if (!nfound) {
+    if (!nfound) {
     return Waveform::realseq_t(nsamples, 0.0);
-	 }
+    }
     
-      auto waveform = Waveform::idft(total_spectrum);
-
-      return waveform;
+    auto waveform = Waveform::idft(total_spectrum);
+    
+    return waveform;
+  }
 }
 
