@@ -196,6 +196,9 @@ void Gen::Ductor::process(output_queue& frames)
                 
                 int chid = wires[iwire]->channel();
                 int tbin = mm.first;
+
+		//std::cout << mm.first << " "<< mm.second << std::endl;
+		
                 ITrace::ChargeSequence charge(wave.begin()+mm.first, wave.begin()+mm.second);
                 auto trace = make_shared<SimpleTrace>(chid, tbin, charge);
                 traces.push_back(trace);

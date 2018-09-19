@@ -6,7 +6,7 @@ using namespace std;
 
 using namespace WireCell;
 Gen::ImpactZipper::ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd)
-  :m_pir(pir), m_bd(bd), m_flag(0)
+  :m_pir(pir), m_bd(bd), m_flag(1)
 {
 
   // for (int i=0;i!=210;i++){
@@ -387,7 +387,7 @@ Gen::ImpactZipper::ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusi
     
     // int nrows = resp_f_w.rows();
     // int ncols = resp_f_w.cols();
-    std::cout << m_decon_data.rows() << " " << m_decon_data.cols() << std::endl;
+    std::cout << "# of channels: " << m_decon_data.rows() << " # of ticks: " << m_decon_data.cols() << std::endl;
   }
 }
 
@@ -412,7 +412,7 @@ Waveform::realseq_t Gen::ImpactZipper::waveform(int iwire) const
 	if (i>=m_start_tick && i < m_end_tick){
 	  wf.at(i) = m_decon_data(iwire-m_start_ch,i-m_start_tick);
 	}else{
-	  wf.at(i) = 1e-25;
+	  //wf.at(i) = 1e-25;
 	}
 	//std::cout << m_decon_data(iwire-m_start_ch,i-m_start_tick) << std::endl;
       }
