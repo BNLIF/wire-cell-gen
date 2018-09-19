@@ -101,7 +101,7 @@ Gen::ImpactZipper::ImpactZipper(IPlaneImpactResponse::pointer pir, BinnedDiffusi
     
     int npad_time = 3000; // considering the RCRC 500 us 
     int ntotal_ticks = pow(2,std::ceil(log(end_tick - start_tick + npad_time)/log(2)));
-    if (ntotal_ticks >9800 && nsamples <9800)
+    if (ntotal_ticks >9800 && nsamples <9800 && nsamples >9550)
       ntotal_ticks = 9800;
     npad_time = ntotal_ticks - end_tick + start_tick;
     m_start_tick = start_tick;
