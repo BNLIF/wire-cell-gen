@@ -142,6 +142,12 @@ void Gen::Ductor::process(output_queue& frames)
         // Select the depos which are in this face's sensitive volume
         IDepo::vector face_depos, dropped_depos;
         auto bb = face->sensitive();
+        if (bb.empty()) {
+            cerr << "Gen::Ductor anode:" << m_anode->ident() << " face:" << face->ident()
+                 << " is marked insensitive, skipping\n";
+            continue;
+        }
+
         for (auto depo : m_depos) {
             if (bb.inside(depo->pos())) {
                 face_depos.push_back(depo);
@@ -160,10 +166,13 @@ void Gen::Ductor::process(output_queue& frames)
                  << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
         }
         if (dropped_depos.size()) {
+            auto ray = bb.bounds();
             cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
                  << ": dropped " << dropped_depos.size()<<" depos spanning: t:["
                  << dropped_depos.front()->time()/units::ms << ", "
-                 << dropped_depos.back()->time()/units::ms << "]ms\n";
+                 << dropped_depos.back()->time()/units::ms << "]ms, outside bb: "
+                 << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
+
         }
 
         int iplane = -1;
