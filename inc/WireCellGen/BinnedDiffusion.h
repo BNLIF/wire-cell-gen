@@ -94,7 +94,8 @@ namespace WireCell {
             /// constrained so that either number is in [0,nticks].
             std::pair<int,int> time_bin_range(double nsigma=0.0) const;
 
-
+	    double get_nsigma() const {return m_nsigma;};
+	    
 	private:
 	    
             const Pimpos& m_pimpos;

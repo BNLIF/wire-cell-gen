@@ -29,7 +29,10 @@ namespace WireCell {
 	    std::vector<std::vector<std::tuple<int,int,double> > > m_vec_vec_charge; // ch, time, charge
 	    std::vector<int> m_vec_impact;
 	    Array::array_xxf m_decon_data;
-	    
+	    int m_start_ch;
+	    int m_end_ch;
+	    int m_start_tick;
+	    int m_end_tick;
 	    
         public:
 
