@@ -46,7 +46,7 @@ WireCell::Configuration Gen::Reframer::default_configuration() const
 void Gen::Reframer::configure(const WireCell::Configuration& cfg)
 {
     const std::string anode_tn = cfg["anode"].asString();
-    std::cerr << "Reframer: using anode: \"" << anode_tn << "\"\n";
+    std::cerr << "Gen::Reframer: using anode: \"" << anode_tn << "\"\n";
     m_anode = Factory::find_tn<IAnodePlane>(anode_tn);
 
     m_input_tags.clear();
@@ -137,5 +137,8 @@ bool Gen::Reframer::operator()(const input_pointer& inframe, output_pointer& out
                                         inframe->time() + m_toffset + m_tbin*inframe->tick(),
                                         out_traces,
                                         inframe->tick());
+    std::cerr << "Gen::Reframer: frame " << inframe->ident()
+              << " " << out_traces.size() << " traces, "
+              << m_nticks << " ticks\n";
     return true;
 }

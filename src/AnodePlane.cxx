@@ -1,6 +1,7 @@
 #include "WireCellGen/AnodePlane.h"
 #include "WireCellGen/AnodeFace.h"
 #include "WireCellGen/WirePlane.h"
+#include "WireCellGen/SimpleChannel.h"
 
 #include "WireCellUtil/WireSchema.h"
 #include "WireCellUtil/BoundingBox.h"
@@ -126,10 +127,19 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
         const size_t nplanes = ws_planes.size();
         
         // location of imaginary boundary planes
+        bool sensitive_face = true;
         auto jface = jfaces[(int)iface];
+        if (jface.isNull()) {
+            sensitive_face = false;
+            cerr << "AnodePlane: anode " << m_ident << " face " << iface
+                 << " is not sensitivie\n";
+        }
         const double response_x = jface["response"].asDouble();
         const double anode_x = get(jface, "anode", response_x);
         const double cathode_x = jface["cathode"].asDouble();
+        cerr << "AnodePlane: X planes: \"cathode\"@ " << cathode_x / units::m
+             << "m \"response\"@" << response_x / units::m
+             << "m \"anode\"@" << anode_x/units::m << "m\n";
 
         IWirePlane::vector planes(nplanes);
         for (size_t iplane=0; iplane<nplanes; ++iplane) { // note, WireSchema requires U/V/W plane ordering in a face.
@@ -180,22 +190,36 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                                         wire_pitch_dirs.first, wire_pitch_dirs.second,
                                         pimpos_origin, nimpacts);
 
-            planes[iplane] = make_shared<WirePlane>(ws_plane.ident, wires, pimpos);
-
+            IChannel::vector plane_channels;
+            {
+                for (auto w : wires) {
+                    if (w->segment() > 0) {
+                        continue;
+                    }
+                    const int chanid = w->channel();
+                    auto ich = make_shared<SimpleChannel>(chanid, plane_channels.size(),
+                                                          m_c2wires[chanid]);
+                    m_ichannels[chanid] = ich;
+                    plane_channels.push_back(ich);
+                }
+            }
+            sort(wires.begin(), wires.end(), IWireCompareIndex());
+            planes[iplane] = make_shared<WirePlane>(ws_plane.ident, pimpos, wires, plane_channels);
 
             // Last iteration, use W plane to define volume
             if (iplane == nplanes-1) { 
                 const double mean_pitch = (pitchmax - pitchmin) / (nwires-1);
-
-                auto v1 = bb_ray.first;
-                auto v2 = bb_ray.second;
-                // Enlarge to anode/cathode planes in X and by 1/2 pitch in Z.
-                Point p1(  anode_x, v1.y(), std::min(v1.z(), v2.z()) - 0.5*mean_pitch);
-                Point p2(cathode_x, v2.y(), std::max(v1.z(), v2.z()) + 0.5*mean_pitch);
-                const BoundingBox sensvol(Ray(p1,p2));
+                BoundingBox sensvol;
+                if (sensitive_face) {
+                    auto v1 = bb_ray.first;
+                    auto v2 = bb_ray.second;
+                    // Enlarge to anode/cathode planes in X and by 1/2 pitch in Z.
+                    Point p1(  anode_x, v1.y(), std::min(v1.z(), v2.z()) - 0.5*mean_pitch);
+                    sensvol(p1);
+                    Point p2(cathode_x, v2.y(), std::max(v1.z(), v2.z()) + 0.5*mean_pitch);
+                    sensvol(p2);
+                }
                 m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
-                cerr << "AnodePlane: face:"<<iface<<" sensvol: " << p1/units::mm << "mm --> "
-                     << p2/units::mm << "mm\n";
             }
         } // plane
     } // face
@@ -204,6 +228,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     std::sort(m_channels.begin(), m_channels.end());
     auto chend = std::unique(m_channels.begin(), m_channels.end());
     m_channels.resize( std::distance(m_channels.begin(), chend) );
+
 }
 
 
@@ -229,9 +254,13 @@ WirePlaneId Gen::AnodePlane::resolve(int channel) const
     return WirePlaneId(got->second);
 }
 
-IChannel::pointer Gen::AnodePlane::channel(int ident) const
+IChannel::pointer Gen::AnodePlane::channel(int chident) const
 {
-    return nullptr;             // not yet
+    auto it = m_ichannels.find(chident);
+    if (it == m_ichannels.end()) {
+        return nullptr;
+    }
+    return it->second;
 }
 
 std::vector<int> Gen::AnodePlane::channels() const
