@@ -103,6 +103,7 @@ bool Gen::DepoZipper::operator()(const input_pointer& in, output_pointer& out)
 {
     if (!in) {
         out = nullptr;
+        cerr << "Gen::DepoZipper: EOS\n";
         return true;
     }
 
@@ -116,7 +117,7 @@ bool Gen::DepoZipper::operator()(const input_pointer& in, output_pointer& out)
         IDepo::vector face_depos, dropped_depos;
         auto bb = face->sensitive();
         if (bb.empty()) {
-            cerr << "Gen::Ductor anode:" << m_anode->ident() << " face:" << face->ident()
+            cerr << "Gen::DepoZipper anode:" << m_anode->ident() << " face:" << face->ident()
                  << " is marked insensitive, skipping\n";
             continue;
         }
@@ -189,6 +190,7 @@ bool Gen::DepoZipper::operator()(const input_pointer& in, output_pointer& out)
     }
 
     auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
+    cerr << "Gen::DepoZipper: make frame " << m_frame_count << "\n";
     ++m_frame_count;
     out = frame;
     return true;

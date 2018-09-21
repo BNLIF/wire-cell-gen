@@ -39,12 +39,11 @@ void Gen::DepoBagger::configure(const WireCell::Configuration& cfg)
 bool Gen::DepoBagger::operator()(const input_pointer& depo, output_queue& deposetqueue)
 {
     if (!depo) {                // EOS
-        if (!m_depos.empty()) {
-            auto out = std::make_shared<SimpleDepoSet>(m_count, m_depos);
-            deposetqueue.push_back(out);
-            m_depos.clear();
-        }
-        deposetqueue.push_back(nullptr);
+        // even if empyt, must send out something to retain sync.
+        auto out = std::make_shared<SimpleDepoSet>(m_count, m_depos);
+        deposetqueue.push_back(out);
+        m_depos.clear();
+        deposetqueue.push_back(nullptr); // pass on EOS
         ++m_count;
         return true;
     }

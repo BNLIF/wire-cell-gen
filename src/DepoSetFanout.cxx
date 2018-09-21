@@ -51,6 +51,12 @@ std::vector<std::string> Gen::DepoSetFanout::output_types()
 bool Gen::DepoSetFanout::operator()(const input_pointer& in, output_vector& outv)
 {
     // Note: if "in" indicates EOS, just pass it on
+    if (in) {
+        std::cerr << "DepoSetFanout (" << m_multiplicity << ") fanout data\n";
+    }
+    else {
+        std::cerr << "DepoSetFanout (" << m_multiplicity << ") fanout EOS\n";
+    }
 
     outv.resize(m_multiplicity);
     for (size_t ind=0; ind<m_multiplicity; ++ind) {
