@@ -378,8 +378,6 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
     
     //    std::cout << m_decon_data(40,5195-m_start_tick)/units::mV << " " << m_decon_data(40,5195-m_start_tick)/units::mV << std::endl;
     
-      
-
 
     
     // int nrows = resp_f_w.rows();
