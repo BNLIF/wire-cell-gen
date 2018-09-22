@@ -3,6 +3,7 @@
 #include "WireCellGen/PlaneImpactResponse.h"
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/FFTBestLength.h"
 
 #include <iostream>             // debugging
 
@@ -13,6 +14,24 @@ WIRECELL_FACTORY(PlaneImpactResponse, WireCell::Gen::PlaneImpactResponse,
 using namespace std;
 using namespace WireCell;
 
+
+const Waveform::compseq_t& Gen::ImpactResponse::spectrum(){
+  if (m_spectrum.size()!=0){
+    return m_spectrum;
+  }else{
+    m_spectrum = Waveform::dft(m_waveform);
+    return m_spectrum;
+  }
+}
+
+const Waveform::compseq_t& Gen::ImpactResponse::long_aux_spectrum(){
+  if (m_long_spectrum.size()!=0){
+    return m_long_spectrum;
+  }else{
+    m_long_spectrum = Waveform::dft(m_long_waveform);
+    return m_long_spectrum;
+  }
+}
 
 Gen::PlaneImpactResponse::PlaneImpactResponse(int plane_ident, size_t nbins, double tick)
     : m_frname("FieldResponse")
@@ -32,7 +51,10 @@ WireCell::Configuration Gen::PlaneImpactResponse::default_configuration() const
     cfg["plane"] = 0;            
     // names of IWaveforms interpreted as subsequent response
     // functions.
-    cfg["other_responses"] = Json::arrayValue;
+    cfg["short_responses"] = Json::arrayValue;
+    cfg["overall_short_padding"] = 100*units::us;
+    cfg["long_responses"] = Json::arrayValue;
+    cfg["long_padding"] = 1.5*units::ms;
     // number of bins in impact response spectra
     cfg["nticks"] = 10000;
     // sample period of response waveforms
@@ -45,18 +67,32 @@ void Gen::PlaneImpactResponse::configure(const WireCell::Configuration& cfg)
     m_frname = get(cfg, "field_response", m_frname);
     m_plane_ident = get(cfg, "plane", m_plane_ident);
 
-    m_others.clear();
-    auto jfilts = cfg["other_responses"];
+    m_short.clear();
+    auto jfilts = cfg["short_responses"];
     if (!jfilts.isNull() and !jfilts.empty()) {
         for (auto jfn: jfilts) {
             auto tn = jfn.asString();
-            m_others.push_back(tn);
+            m_short.push_back(tn);
         }
     }
+    
+    m_long.clear();
+    auto jfilts1 = cfg["long_responses"];
+    if (!jfilts1.isNull() and !jfilts1.empty()) {
+        for (auto jfn: jfilts1) {
+            auto tn = jfn.asString();
+            m_long.push_back(tn);
+        }
+    }
+
+    m_overall_short_padding = get(cfg, "overall_short_padding", m_overall_short_padding);
+    m_long_padding = get(cfg, "long_padding", m_long_padding);
 
     m_nbins = (size_t) get(cfg, "nticks", (int)m_nbins);
     m_tick = get(cfg, "tick", m_tick);
 
+    // std::cout << m_long.size() << " " << m_long_padding << " " << m_overall_short_padding << std::endl;
+    
     build_responses();
 }
 
@@ -65,11 +101,14 @@ void Gen::PlaneImpactResponse::build_responses()
 {
     auto ifr = Factory::find_tn<IFieldResponse>(m_frname);
 
-    // build "other" response spectra
-    WireCell::Waveform::compseq_t other(m_nbins, Waveform::complex_t(1.0, 0.0));
-    const size_t nother = m_others.size();
-    for (size_t ind=0; ind<nother; ++ind) {
-        const auto& name = m_others[ind];
+    const int n_short_length = cal_fft_best_length(m_overall_short_padding/m_tick);
+    //    std::cout << n_short_length << std::endl;
+    
+    // build "short" response spectra
+    WireCell::Waveform::compseq_t short_spec(n_short_length, Waveform::complex_t(1.0, 0.0));
+    const size_t nshort = m_short.size();
+    for (size_t ind=0; ind<nshort; ++ind) {
+        const auto& name = m_short[ind];
         auto iw = Factory::find_tn<IWaveform>(name);
         if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
             cerr << "Gen::PlaneImpactResponse: from " << name
@@ -78,21 +117,54 @@ void Gen::PlaneImpactResponse::build_responses()
             THROW(ValueError() << errmsg{"Tick mismatch in " + name});
         }
         auto wave = iw->waveform_samples(); // copy
-        if (wave.size() != m_nbins) {
+        if (wave.size() != n_short_length) {
             cerr << "Gen::PlaneImpactResponse: warning: "
-                 << "other response " <<name<<"  has different number of samples ("
+                 << "short response " <<name<<"  has different number of samples ("
                  << wave.size()
-                 << ") than expected ("<<m_nbins<<"), resizing\n";
-            wave.resize(m_nbins, 0);
+                 << ") than expected ("<< n_short_length<<"), resizing\n";
+            wave.resize(n_short_length, 0);
         }
         // note: we are ignoring waveform_start which will introduce
         // an arbitrary phase shift....
         auto spec = Waveform::dft(wave);
-        for (size_t ibin=0; ibin < m_nbins; ++ibin) {
-            other[ibin] *= spec[ibin];
+        for (size_t ibin=0; ibin < n_short_length; ++ibin) {
+            short_spec[ibin] *= spec[ibin];
         }
+	//std::cout << ind << std::endl;
     }
 
+    
+    // build "long" response spectrum in time domain ...
+    int n_long_length = cal_fft_best_length(m_nbins);
+    WireCell::Waveform::compseq_t long_spec(n_long_length, Waveform::complex_t(1.0, 0.0));
+    const size_t nlong = m_long.size();
+    for (size_t ind=0; ind<nlong; ++ind) {
+        const auto& name = m_long[ind];
+        auto iw = Factory::find_tn<IWaveform>(name);
+        if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
+            cerr << "Gen::PlaneImpactResponse: from " << name
+                 << " got " << iw->waveform_period()/units::us << "us sample period "
+                 << " expected " << m_tick/units::us << "us\n";
+            THROW(ValueError() << errmsg{"Tick mismatch in " + name});
+        }
+        auto wave = iw->waveform_samples(); // copy
+        if (wave.size() != n_long_length) {
+            cerr << "Gen::PlaneImpactResponse: warning: "
+                 << "short response " <<name<<"  has different number of samples ("
+                 << wave.size()
+                 << ") than expected ("<< n_long_length<<"), resizing\n";
+            wave.resize(n_long_length, 0);
+        }
+        // note: we are ignoring waveform_start which will introduce
+        // an arbitrary phase shift....
+        auto spec = Waveform::dft(wave);
+        for (size_t ibin=0; ibin < n_long_length; ++ibin) {
+            long_spec[ibin] *= spec[ibin];
+        }
+	//std::cout << ind << std::endl;
+    }
+    WireCell::Waveform::realseq_t long_wf = Waveform::idft(long_spec);
+    
 
     const auto& fr = ifr->field_response();
     const auto& pr = *fr.plane(m_plane_ident);
@@ -139,20 +211,20 @@ void Gen::PlaneImpactResponse::build_responses()
         wire_to_ind[wirenum].push_back(ipath);
 
         // match response sampling to digi and zero-pad
-        WireCell::Waveform::realseq_t wave(m_nbins, 0.0);
+        WireCell::Waveform::realseq_t wave(n_short_length, 0.0);
         for (int rind=0; rind<rawresp_size; ++rind) { // sample at fine bins of response function
             const double time = rawresp_bins.center(rind);
 
             // fixme: assumes field response appropriately centered
             const size_t bin = time/m_tick; 
 
-            if (bin>= m_nbins) {
+            if (bin>= n_short_length) {
                 std::cerr << "PIR: out of bounds field response bin: " << bin
-                          << " ntbins=" << m_nbins
+                          << " ntbins=" << n_short_length
                           << " time=" << time/units::us << "us"
                           << " tick=" << m_tick/units::us << "us"
                           << std::endl;
-                THROW(ValueError() << errmsg{"PIR: out of bounds field response bin"});
+		//     THROW(ValueError() << errmsg{"PIR: out of bounds field response bin"});
             }
 
 
@@ -170,15 +242,17 @@ void Gen::PlaneImpactResponse::build_responses()
         }
         WireCell::Waveform::compseq_t spec = Waveform::dft(wave);
 
-        // Convolve with other responses
-        if (nother) {
-            for (size_t find=0; find < m_nbins; ++find) {
-                spec[find] *= other[find];
+        // Convolve with short responses
+        if (nshort) {
+            for (size_t find=0; find < n_short_length; ++find) {
+                spec[find] *= short_spec[find];
             }
         }
-
-        IImpactResponse::pointer ir = std::make_shared<Gen::ImpactResponse>(ipath, spec);
-        m_ir.push_back(ir);
+	Waveform::realseq_t wf = Waveform::idft(spec);
+	wf.resize(m_nbins,0);
+	
+	IImpactResponse::pointer ir = std::make_shared<Gen::ImpactResponse>(ipath, wf, m_overall_short_padding/m_tick, long_wf, m_long_padding/m_tick);
+	m_ir.push_back(ir);
     }
 
     // apply symmetry.

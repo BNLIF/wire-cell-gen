@@ -56,7 +56,7 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
   // }
   
   // length and width ...
-  const int nsamples = m_bd.tbins().nbins();
+  //  const int nsamples = m_bd.tbins().nbins();
   const auto pimpos = m_bd.pimpos();
   //const auto rb = pimpos.region_binning();
   //const int nwires = rb.nbins();
@@ -93,8 +93,9 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
   m_start_ch = start_ch - npad_wire;
   m_end_ch = end_ch + npad_wire;
   //std::cout << start_ch << " " << end_ch << " " << npad_wire << " " << start_tick << " " << end_tick << " " << m_start_ch << " " << m_end_ch << std::endl;
+
   
-  int npad_time = 200; // considering the RCRC 500 us 
+  int npad_time = m_pir->closest(0)->waveform_pad();
   int ntotal_ticks = cal_fft_best_length(end_tick - start_tick + npad_time);
 
   // pow(2,std::ceil(log(end_tick - start_tick + npad_time)/log(2)));
@@ -409,6 +410,24 @@ Waveform::realseq_t Gen::ImpactTransform::waveform(int iwire) const
       }
       //std::cout << m_decon_data(iwire-m_start_ch,i-m_start_tick) << std::endl;
     }
+    
+    // now convolute with the long-range response ...
+    int nlength = cal_fft_best_length(nsamples + m_pir->closest(0)->long_aux_waveform_pad());
+
+    //nlength = nsamples;
+    
+    wf.resize(nlength,0);
+    Waveform::realseq_t long_resp = m_pir->closest(0)->long_aux_waveform();
+    long_resp.resize(nlength,0);
+    Waveform::compseq_t spec = Waveform::dft(wf);
+    Waveform::compseq_t long_spec = Waveform::dft(long_resp);
+    for (int i=0;i!=nlength;i++){
+      spec.at(i) *= long_spec.at(i);
+    }
+    wf = Waveform::idft(spec);
+    wf.resize(nsamples,0);
+    
+    
     return wf;
   }
 

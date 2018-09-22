@@ -19,13 +19,29 @@ namespace WireCell {
     class ImpactResponse : public IImpactResponse {
         int m_impact;
 	Waveform::compseq_t m_spectrum;
+	Waveform::realseq_t m_waveform;
+	int m_waveform_pad;
+
+	Waveform::compseq_t m_long_spectrum;
+	Waveform::realseq_t m_long_waveform;
+	int m_long_waveform_pad;
 
     public:
-	ImpactResponse(int impact, const Waveform::compseq_t& spec)
-            : m_impact(impact), m_spectrum(spec) {}
+	ImpactResponse(int impact, const Waveform::realseq_t& wf, int waveform_pad, const Waveform::realseq_t& long_wf, int long_waveform_pad)
+	  : m_impact(impact), m_waveform(wf), m_waveform_pad(waveform_pad)
+	  , m_long_waveform(long_wf), m_long_waveform_pad(waveform_pad)
+	{}
 
 	/// Frequency-domain spectrum of response
-	const Waveform::compseq_t& spectrum() const { return m_spectrum; }
+	const Waveform::compseq_t& spectrum();
+	const Waveform::realseq_t& waveform() const {return m_waveform;};
+	int waveform_pad() const {return m_waveform_pad;};
+
+	const Waveform::compseq_t& long_aux_spectrum();
+	const Waveform::realseq_t& long_aux_waveform() const {return m_long_waveform;};
+	int long_aux_waveform_pad() const {return m_long_waveform_pad;};
+	
+	
 
         /// Corresponding impact number
         int impact() const { return m_impact; }
@@ -87,8 +103,11 @@ namespace WireCell {
 
     private:
         std::string m_frname;
-        std::vector<std::string> m_others;
-
+        std::vector<std::string> m_short;
+	double m_overall_short_padding;
+	std::vector<std::string> m_long;
+	double m_long_padding;
+	
 	int m_plane_ident;
         size_t m_nbins;
         double m_tick;
