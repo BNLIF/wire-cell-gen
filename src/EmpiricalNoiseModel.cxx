@@ -8,6 +8,7 @@
 #include "WireCellUtil/Response.h" // fixme: should remove direct dependency
 
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/FFTBestLength.h"
 
 #include <iostream>             // debug
 
@@ -37,6 +38,8 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
     , m_chanstat_tn(chanstat_tn)
     , m_amp_cache(4)
 {
+  m_fft_length = cal_fft_best_length(m_nsamples);
+  //  m_fft_length = m_nsamples;
   gen_elec_resp_default();
 }
 
@@ -49,7 +52,7 @@ void Gen::EmpiricalNoiseModel::gen_elec_resp_default(){
   // double shaping[5]={1,1.1,2,2.2,3}; // us
   
   // calculate the frequencies ... 
-  m_elec_resp_freq.resize(m_nsamples,0);
+  m_elec_resp_freq.resize(m_fft_length,0);
   for (unsigned int i=0;i!=m_elec_resp_freq.size();i++){
     if (i<=m_elec_resp_freq.size()/2.){
       m_elec_resp_freq.at(i) = i / (m_elec_resp_freq.size() *1.0) * 1./m_period ; // the second half is useless ... 
@@ -66,7 +69,7 @@ void Gen::EmpiricalNoiseModel::gen_elec_resp_default(){
 
   // for (int i=0;i!=5;i++){
   //   Response::ColdElec elec_resp(1, shaping[i]); // default at 1 mV/fC
-  //   auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+  //   auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_fft_length*m_period), m_fft_length);
   //   auto filt   = Waveform::dft(sig);
   //   int nconfig = shaping[i]/ 0.1;
   //   auto ele_resp_amp = Waveform::magnitude(filt);
@@ -96,12 +99,12 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
   //  std::cout << spectrum.nsamples << " " << m_nsamples << " " << spectrum.period << " " <<
   //m_period << std::endl;
   
-    if (spectrum.nsamples == m_nsamples && spectrum.period == m_period) {
+    if (spectrum.nsamples == m_fft_length && spectrum.period == m_period) {
         return;
     }
     
     // scale the amplitude ... 
-    double scale = sqrt(m_nsamples/(spectrum.nsamples*1.0) * spectrum.period / (m_period*1.0));
+    double scale = sqrt(m_fft_length/(spectrum.nsamples*1.0) * spectrum.period / (m_period*1.0));
     spectrum.constant *= scale;
     for (unsigned int ind = 0; ind!=spectrum.amps.size(); ind++){
       spectrum.amps[ind] *= scale;
@@ -109,11 +112,11 @@ void Gen::EmpiricalNoiseModel::resample(NoiseSpectrum& spectrum) const
     
     // interpolate ... 
     
-    amplitude_t temp_amplitudes(m_nsamples,0);
+    amplitude_t temp_amplitudes(m_fft_length,0);
     int count_low  = 0;
     int count_high = 1;
     double mu=0;
-    for (int i=0;i!=m_nsamples;i++){
+    for (int i=0;i!=m_fft_length;i++){
       double frequency = m_elec_resp_freq.at(i);
       if (frequency <= spectrum.freqs[0]){
 	count_low = 0;
@@ -212,6 +215,8 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     }
         
     m_nsamples = get(cfg, "nsamples", m_nsamples);
+    m_fft_length = cal_fft_best_length(m_nsamples);
+    //m_fft_length = m_nsamples;
     m_period = get(cfg, "period", m_period);
     m_wlres = get(cfg, "wire_length_scale", m_wlres);
     // m_tres = get(cfg, "time_scale", m_tres);
@@ -414,7 +419,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
 	//	std::cout << "hh" << std::endl;
 
 	Response::ColdElec elec_resp(10, ch_shaping); // default at 1 mV/fC
-	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_fft_length*m_period), m_fft_length);
 	auto filt   = Waveform::dft(sig);
 	auto ele_resp_amp = Waveform::magnitude(filt);
 
@@ -429,7 +434,7 @@ const IChannelSpectrum::amplitude_t& Gen::EmpiricalNoiseModel::operator()(int ch
       auto resp2 = m_elec_resp_cache.find(nconfig);
       if (resp2 == m_elec_resp_cache.end()){
 	Response::ColdElec elec_resp(10, db_shaping); // default at 1 mV/fC
-	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_nsamples*m_period), m_nsamples);
+	auto sig   =   elec_resp.generate(WireCell::Waveform::Domain(0, m_fft_length*m_period), m_fft_length);
 	auto filt   = Waveform::dft(sig);
 	auto ele_resp_amp = Waveform::magnitude(filt);
 

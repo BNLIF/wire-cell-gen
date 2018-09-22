@@ -37,6 +37,7 @@ namespace WireCell {
             IChannelSpectrum::pointer m_model;
 
             std::string m_model_tn,  m_rng_tn;
+	    int m_nsamples;
 	    double m_rep_percent;
 	    
 	};

@@ -24,6 +24,7 @@ Gen::NoiseSource::NoiseSource(const std::string& model, const std::string& anode
     , m_anode_tn(anode)
     , m_model_tn(model)
     , m_rng_tn(rng)
+    , m_nsamples(9600)
     , m_rep_percent(0.02) // replace 2% at a time
     , m_eos(false)
 {
@@ -51,6 +52,7 @@ WireCell::Configuration Gen::NoiseSource::default_configuration() const
     cfg["anode"] = m_anode_tn;
     cfg["model"] = m_model_tn;
     cfg["rng"] = m_rng_tn;
+    cfg["nsamples"] = m_nsamples;
     cfg["replacement_percentage"] = m_rep_percent;
     return cfg;
 }
@@ -80,6 +82,7 @@ void Gen::NoiseSource::configure(const WireCell::Configuration& cfg)
     m_stop = get<double>(cfg, "stop_time", m_stop);
     m_tick = get<double>(cfg, "sample_period", m_tick);
     m_frame_count = get<int>(cfg, "first_frame_number", m_frame_count);
+    m_nsamples = get<int>(cfg,"m_nsamples",m_nsamples);
     m_rep_percent = get<double>(cfg,"replacement_percentage",m_rep_percent);
     
     cerr << "Gen::NoiseSource: using IRandom: \"" << m_rng_tn << "\""
@@ -109,7 +112,10 @@ bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
     int nsamples = 0;
     for (auto chid : m_anode->channels()) {
         const auto& spec = (*m_model)(chid);
-        Waveform::realseq_t noise = Gen::Noise::generate_waveform(spec, m_rng, m_rep_percent);
+	
+	Waveform::realseq_t noise = Gen::Noise::generate_waveform(spec, m_rng, m_rep_percent);
+	//	std::cout << noise.size() << " " << nsamples << std::endl;
+	noise.resize(nsamples,0);
         auto trace = make_shared<SimpleTrace>(chid, tbin, noise);
         traces.push_back(trace);
         nsamples += noise.size();

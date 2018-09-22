@@ -42,6 +42,7 @@ namespace WireCell {
             double m_time, m_stop, m_readout, m_tick;
             int m_frame_count;
             std::string m_anode_tn, m_model_tn,  m_rng_tn;
+	    int m_nsamples;
 	    double m_rep_percent;
 	    bool m_eos;
 	    

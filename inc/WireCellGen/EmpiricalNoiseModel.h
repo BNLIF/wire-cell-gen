@@ -83,13 +83,15 @@ namespace WireCell {
             // between those given in the spectra file.
             amplitude_t interpolate(int plane, double wire_length) const;
 
-
+	    int get_nsamples(){return m_nsamples;};
+	    
         private:
             IAnodePlane::pointer m_anode;
             IChannelStatus::pointer m_chanstat;
 
             std::string m_spectra_file;
             int m_nsamples;
+	    int m_fft_length;
 	    double m_period, m_wlres;
 	    // double m_tres, m_gres, m_fres;
 	    std::string m_anode_tn, m_chanstat_tn;
