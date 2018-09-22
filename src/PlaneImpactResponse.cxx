@@ -250,6 +250,8 @@ void Gen::PlaneImpactResponse::build_responses()
         }
 	Waveform::realseq_t wf = Waveform::idft(spec);
 	wf.resize(m_nbins,0);
+
+	//	std::cout << m_long_padding/m_tick << std::endl;
 	
 	IImpactResponse::pointer ir = std::make_shared<Gen::ImpactResponse>(ipath, wf, m_overall_short_padding/m_tick, long_wf, m_long_padding/m_tick);
 	m_ir.push_back(ir);

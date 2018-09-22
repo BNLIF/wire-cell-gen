@@ -415,6 +415,8 @@ Waveform::realseq_t Gen::ImpactTransform::waveform(int iwire) const
     int nlength = cal_fft_best_length(nsamples + m_pir->closest(0)->long_aux_waveform_pad());
 
     //nlength = nsamples;
+
+    //   std::cout << nlength << " " << nsamples + m_pir->closest(0)->long_aux_waveform_pad() << std::endl;
     
     wf.resize(nlength,0);
     Waveform::realseq_t long_resp = m_pir->closest(0)->long_aux_waveform();
