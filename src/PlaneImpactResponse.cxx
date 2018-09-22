@@ -150,7 +150,7 @@ void Gen::PlaneImpactResponse::build_responses()
         auto wave = iw->waveform_samples(); // copy
         if (wave.size() != n_long_length) {
             cerr << "Gen::PlaneImpactResponse: warning: "
-                 << "short response " <<name<<"  has different number of samples ("
+                 << "long response " <<name<<"  has different number of samples ("
                  << wave.size()
                  << ") than expected ("<< n_long_length<<"), resizing\n";
             wave.resize(n_long_length, 0);
