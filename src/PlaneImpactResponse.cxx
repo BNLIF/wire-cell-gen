@@ -163,8 +163,10 @@ void Gen::PlaneImpactResponse::build_responses()
         }
 	//std::cout << ind << std::endl;
     }
-    WireCell::Waveform::realseq_t long_wf = Waveform::idft(long_spec);
-    
+    WireCell::Waveform::realseq_t long_wf;
+    if (nlong >0)
+      long_wf = Waveform::idft(long_spec);
+   
 
     const auto& fr = ifr->field_response();
     const auto& pr = *fr.plane(m_plane_ident);

@@ -411,24 +411,25 @@ Waveform::realseq_t Gen::ImpactTransform::waveform(int iwire) const
       //std::cout << m_decon_data(iwire-m_start_ch,i-m_start_tick) << std::endl;
     }
     
-    // now convolute with the long-range response ...
-    int nlength = cal_fft_best_length(nsamples + m_pir->closest(0)->long_aux_waveform_pad());
-
-    //nlength = nsamples;
-
-    //   std::cout << nlength << " " << nsamples + m_pir->closest(0)->long_aux_waveform_pad() << std::endl;
-    
-    wf.resize(nlength,0);
-    Waveform::realseq_t long_resp = m_pir->closest(0)->long_aux_waveform();
-    long_resp.resize(nlength,0);
-    Waveform::compseq_t spec = Waveform::dft(wf);
-    Waveform::compseq_t long_spec = Waveform::dft(long_resp);
-    for (int i=0;i!=nlength;i++){
-      spec.at(i) *= long_spec.at(i);
+    if (m_pir->closest(0)->long_aux_waveform().size()>0){
+      // now convolute with the long-range response ...
+      int nlength = cal_fft_best_length(nsamples + m_pir->closest(0)->long_aux_waveform_pad());
+      
+      //nlength = nsamples;
+      
+      //   std::cout << nlength << " " << nsamples + m_pir->closest(0)->long_aux_waveform_pad() << std::endl;
+      
+      wf.resize(nlength,0);
+      Waveform::realseq_t long_resp = m_pir->closest(0)->long_aux_waveform();
+      long_resp.resize(nlength,0);
+      Waveform::compseq_t spec = Waveform::dft(wf);
+      Waveform::compseq_t long_spec = Waveform::dft(long_resp);
+      for (int i=0;i!=nlength;i++){
+	spec.at(i) *= long_spec.at(i);
+      }
+      wf = Waveform::idft(spec);
+      wf.resize(nsamples,0);
     }
-    wf = Waveform::idft(spec);
-    wf.resize(nsamples,0);
-    
     
     return wf;
   }
