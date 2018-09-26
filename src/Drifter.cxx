@@ -166,10 +166,10 @@ bool Gen::Drifter::insert(const input_pointer& depo)
         // Note: fano/recomb fluctuation should be done before the depo was first made.
         if (m_fluctuate) {
             double sign = 1.0;
-            if (dQ < 0) {
+            if (Qi < 0) {
                 sign = -1.0;
             }
-            dQ = sign*m_rng->binomial((int)std::abs(dQ), absorbprob);
+            dQ = sign*m_rng->binomial((int)std::abs(Qi), absorbprob);
         }
         Qf = Qi - dQ;
 
