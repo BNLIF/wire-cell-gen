@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
         cfg["model"] = "EmpiricalNoiseModel";
         cfg["rng"] = "Random";
         cfg["readout_time"] = readout_time;
+	cfg["m_nsamples"] = nticks;
         icfg->configure(cfg);
     }
 
@@ -92,6 +93,9 @@ int main(int argc, char* argv[])
 
     auto traces = frame->traces();
     const int ntraces = traces->size();
+
+    std::cout << nticks << " " << traces->at(0)->charge().size() << std::endl;
+
     Assert(nticks == traces->at(0)->charge().size());
 
     string tfilename = Form("%s.root", argv[0]);

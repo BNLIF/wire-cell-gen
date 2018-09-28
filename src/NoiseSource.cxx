@@ -115,7 +115,7 @@ bool Gen::NoiseSource::operator()(IFrame::pointer& frame)
 	
 	Waveform::realseq_t noise = Gen::Noise::generate_waveform(spec, m_rng, m_rep_percent);
 	//	std::cout << noise.size() << " " << nsamples << std::endl;
-	noise.resize(nsamples,0);
+	noise.resize(m_nsamples,0);
         auto trace = make_shared<SimpleTrace>(chid, tbin, noise);
         traces.push_back(trace);
         nsamples += noise.size();
