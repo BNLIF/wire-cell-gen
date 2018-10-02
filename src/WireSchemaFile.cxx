@@ -5,7 +5,7 @@
 
 WIRECELL_FACTORY(WireSchemaFile,
                  WireCell::Gen::WireSchemaFile,
-                 WireCell::IWireSchema, WireCell::IConfigurable);
+                 WireCell::IWireSchema, WireCell::IConfigurable)
 
 
 using namespace WireCell;

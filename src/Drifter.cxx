@@ -13,7 +13,8 @@
 #include <sstream>
 #include <iostream>
 
-WIRECELL_FACTORY(Drifter, WireCell::Gen::Drifter, WireCell::IDrifter, WireCell::IConfigurable);
+WIRECELL_FACTORY(Drifter, WireCell::Gen::Drifter,
+                 WireCell::IDrifter, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;
@@ -116,11 +117,20 @@ void Gen::Drifter::reset()
 
 bool Gen::Drifter::insert(const input_pointer& depo)
 {
+    // electrical charge to drift.  Electrons should be negative
+    const double Qi = depo->charge();
+    if (Qi == 0.0) {
+        // Yes, some silly depo sources ask us to drift nothing....
+        return false;
+    }
+
     // Find which X region to add, or reject.  Maybe there is a faster
     // way to do this than a loop.  For example, the regions could be
     // examined in order to find some regular binning of the X axis
     // and then at worse only explicitly check extent partial bins
     // near to their edges.
+
+
 
     double respx = 0, direction = 0.0;
 
@@ -149,9 +159,7 @@ bool Gen::Drifter::insert(const input_pointer& depo)
     const double dt = std::abs((respx - pos.x())/m_speed);
     pos.x(respx);
 
-    // number of electrons to start with
-    const double Qi = depo->charge();
-
+    
     double dL = depo->extent_long();
     double dT = depo->extent_tran();
 

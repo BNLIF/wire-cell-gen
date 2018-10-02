@@ -6,7 +6,7 @@
 #include "WireCellIface/SimpleTrace.h"
 
 WIRECELL_FACTORY(Misconfigure, WireCell::Gen::Misconfigure,
-                 WireCell::IFrameFilter, WireCell::IConfigurable);
+                 WireCell::IFrameFilter, WireCell::IConfigurable)
 
 using namespace WireCell;
 

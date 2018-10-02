@@ -15,7 +15,8 @@
 
 #include <random>
 
-WIRECELL_FACTORY(Random, WireCell::Gen::Random, WireCell::IRandom, WireCell::IConfigurable);
+WIRECELL_FACTORY(Random, WireCell::Gen::Random,
+                 WireCell::IRandom, WireCell::IConfigurable)
 
 using namespace WireCell;
 

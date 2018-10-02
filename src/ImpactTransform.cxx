@@ -78,7 +78,7 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
   // adding no padding now, it make the FFT slower, need some other methods ... 
   
   int npad_wire =0;
-  int ntotal_wires = cal_fft_best_length(end_ch - start_ch + 2 * m_num_pad_wire,1);
+  const size_t ntotal_wires = fft_best_length(end_ch - start_ch + 2 * m_num_pad_wire,1);
 
   //   pow(2,std::ceil(log(end_ch - start_ch + 2 * m_num_pad_wire)/log(2)));
   //  if (nwires == 2400){
@@ -96,7 +96,7 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
 
   
   int npad_time = m_pir->closest(0)->waveform_pad();
-  int ntotal_ticks = cal_fft_best_length(end_tick - start_tick + npad_time);
+  const size_t ntotal_ticks = fft_best_length(end_tick - start_tick + npad_time);
 
   // pow(2,std::ceil(log(end_tick - start_tick + npad_time)/log(2)));
   // if (ntotal_ticks >9800 && nsamples <9800 && nsamples >9550)
@@ -413,7 +413,7 @@ Waveform::realseq_t Gen::ImpactTransform::waveform(int iwire) const
     
     if (m_pir->closest(0)->long_aux_waveform().size()>0){
       // now convolute with the long-range response ...
-      int nlength = cal_fft_best_length(nsamples + m_pir->closest(0)->long_aux_waveform_pad());
+      const size_t nlength = fft_best_length(nsamples + m_pir->closest(0)->long_aux_waveform_pad());
       
       //nlength = nsamples;
       
@@ -424,7 +424,7 @@ Waveform::realseq_t Gen::ImpactTransform::waveform(int iwire) const
       long_resp.resize(nlength,0);
       Waveform::compseq_t spec = Waveform::dft(wf);
       Waveform::compseq_t long_spec = Waveform::dft(long_resp);
-      for (int i=0;i!=nlength;i++){
+      for (size_t i=0;i!=nlength;i++){
 	spec.at(i) *= long_spec.at(i);
       }
       wf = Waveform::idft(spec);

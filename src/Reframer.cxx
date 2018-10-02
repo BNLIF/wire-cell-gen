@@ -10,7 +10,8 @@
 #include <unordered_set>
 
 
-WIRECELL_FACTORY(Reframer, WireCell::Gen::Reframer, WireCell::IFrameFilter, WireCell::IConfigurable);
+WIRECELL_FACTORY(Reframer, WireCell::Gen::Reframer,
+                 WireCell::IFrameFilter, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

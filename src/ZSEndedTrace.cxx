@@ -37,5 +37,4 @@ const ZSEndedTrace::ChargeSequence& ZSEndedTrace::charge() const
 	}
     }
     return m_charge; 
-};
-
+}

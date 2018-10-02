@@ -5,11 +5,11 @@
 #include <cmath>
 
 WIRECELL_FACTORY(MipRecombination, WireCell::Gen::MipRecombination,
-                 WireCell::IRecombinationModel, WireCell::IConfigurable);
+                 WireCell::IRecombinationModel, WireCell::IConfigurable)
 WIRECELL_FACTORY(BirksRecombination, WireCell::Gen::MipRecombination,
-                 WireCell::IRecombinationModel, WireCell::IConfigurable);
+                 WireCell::IRecombinationModel, WireCell::IConfigurable)
 WIRECELL_FACTORY(BoxRecombination, WireCell::Gen::MipRecombination,
-                 WireCell::IRecombinationModel, WireCell::IConfigurable);
+                 WireCell::IRecombinationModel, WireCell::IConfigurable)
 
 
 using namespace WireCell;

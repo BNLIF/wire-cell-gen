@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-WIRECELL_FACTORY(DumpFrames, WireCell::Gen::DumpFrames, WireCell::IFrameSink);
+WIRECELL_FACTORY(DumpFrames, WireCell::Gen::DumpFrames, WireCell::IFrameSink)
 
 using namespace std;
 using namespace WireCell;

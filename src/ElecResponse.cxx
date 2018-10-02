@@ -6,7 +6,7 @@
 #include <iostream>
 
 WIRECELL_FACTORY(ElecResponse, WireCell::Gen::ElecResponse,
-                 WireCell::IWaveform, WireCell::IConfigurable);
+                 WireCell::IWaveform, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

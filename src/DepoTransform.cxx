@@ -48,7 +48,8 @@
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
 
-WIRECELL_FACTORY(DepoTransform, WireCell::Gen::DepoTransform, WireCell::IDepoFramer, WireCell::IConfigurable);
+WIRECELL_FACTORY(DepoTransform, WireCell::Gen::DepoTransform,
+                 WireCell::IDepoFramer, WireCell::IConfigurable)
 
 using namespace WireCell;
 using namespace std;

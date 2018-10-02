@@ -3,7 +3,7 @@
 
 #include "WireCellUtil/NamedFactory.h"
 WIRECELL_FACTORY(DepoBagger, WireCell::Gen::DepoBagger,
-                 WireCell::IDepoCollector, WireCell::IConfigurable);
+                 WireCell::IDepoCollector, WireCell::IConfigurable)
 using namespace std;
 using namespace WireCell;
 

@@ -11,7 +11,7 @@
 #include <vector>
 #include <iostream>		// debug
 
-WIRECELL_FACTORY(BoundCells, WireCell::BoundCells, WireCell::ICellMaker);
+WIRECELL_FACTORY(BoundCells, WireCell::BoundCells, WireCell::ICellMaker)
 
 using namespace std;
 using namespace WireCell;

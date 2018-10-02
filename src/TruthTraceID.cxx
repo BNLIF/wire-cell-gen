@@ -8,7 +8,8 @@
 
 #include <string>
 
-WIRECELL_FACTORY(TruthTraceID, WireCell::Gen::TruthTraceID, WireCell::IDuctor, WireCell::IConfigurable);
+WIRECELL_FACTORY(TruthTraceID, WireCell::Gen::TruthTraceID,
+                 WireCell::IDuctor, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

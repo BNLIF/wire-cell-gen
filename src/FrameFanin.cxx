@@ -7,7 +7,7 @@
 #include <iostream>
 
 WIRECELL_FACTORY(FrameFanin, WireCell::Gen::FrameFanin,
-                 WireCell::IFrameFanin, WireCell::IConfigurable);
+                 WireCell::IFrameFanin, WireCell::IConfigurable)
 
 
 using namespace WireCell;

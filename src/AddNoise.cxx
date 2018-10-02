@@ -11,7 +11,7 @@
 #include <iostream>
 
 WIRECELL_FACTORY(AddNoise, WireCell::Gen::AddNoise,
-                 WireCell::IFrameFilter, WireCell::IConfigurable);
+                 WireCell::IFrameFilter, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

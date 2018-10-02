@@ -5,7 +5,7 @@
 
 
 WIRECELL_FACTORY(RCResponse, WireCell::Gen::RCResponse,
-                 WireCell::IWaveform, WireCell::IConfigurable);
+                 WireCell::IWaveform, WireCell::IConfigurable)
 
 using namespace WireCell;
 

@@ -6,7 +6,8 @@
 #include <iostream> 		// debugging
 #include <vector>
 
-WIRECELL_FACTORY(WireGenerator, WireCell::WireGenerator, WireCell::IWireGenerator);
+WIRECELL_FACTORY(WireGenerator, WireCell::WireGenerator,
+                 WireCell::IWireGenerator)
 
 using namespace WireCell;
 using namespace std;

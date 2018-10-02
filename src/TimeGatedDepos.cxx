@@ -14,7 +14,7 @@
 #include <iostream>
 
 WIRECELL_FACTORY(TimeGatedDepos, WireCell::Gen::TimeGatedDepos,
-                 WireCell::IDrifter, WireCell::IConfigurable);
+                 WireCell::IDrifter, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

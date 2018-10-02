@@ -5,7 +5,8 @@
 
 #include <memory>
 
-WIRECELL_FACTORY(SilentNoise, WireCell::Gen::SilentNoise, WireCell::IFrameSource, WireCell::IConfigurable);
+WIRECELL_FACTORY(SilentNoise, WireCell::Gen::SilentNoise,
+                 WireCell::IFrameSource, WireCell::IConfigurable)
 
 
 

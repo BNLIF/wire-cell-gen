@@ -4,7 +4,7 @@
 
 
 WIRECELL_FACTORY(DepoMerger, WireCell::Gen::DepoMerger,
-                 WireCell::IDepoMerger, WireCell::IConfigurable);
+                 WireCell::IDepoMerger, WireCell::IConfigurable)
 
 
 using namespace WireCell;

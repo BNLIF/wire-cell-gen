@@ -10,7 +10,8 @@
 
 #include <iostream>
 
-WIRECELL_FACTORY(NoiseSource, WireCell::Gen::NoiseSource, WireCell::IFrameSource, WireCell::IConfigurable);
+WIRECELL_FACTORY(NoiseSource, WireCell::Gen::NoiseSource,
+                 WireCell::IFrameSource, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

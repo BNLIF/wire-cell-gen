@@ -12,7 +12,8 @@
 
 #include <vector>
 
-WIRECELL_FACTORY(MultiDuctor, WireCell::Gen::MultiDuctor, WireCell::IDuctor, WireCell::IConfigurable);
+WIRECELL_FACTORY(MultiDuctor, WireCell::Gen::MultiDuctor,
+                 WireCell::IDuctor, WireCell::IConfigurable)
 
 using namespace WireCell;
 

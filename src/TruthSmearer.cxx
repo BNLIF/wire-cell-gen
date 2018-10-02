@@ -10,7 +10,8 @@
 
 #include <string>
 
-WIRECELL_FACTORY(TruthSmearer, WireCell::Gen::TruthSmearer, WireCell::IDuctor, WireCell::IConfigurable);
+WIRECELL_FACTORY(TruthSmearer, WireCell::Gen::TruthSmearer,
+                 WireCell::IDuctor, WireCell::IConfigurable)
 
 
 using namespace std;

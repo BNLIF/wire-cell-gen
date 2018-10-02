@@ -3,7 +3,8 @@
 #include "WireCellUtil/NamedFactory.h"
 
 
-WIRECELL_FACTORY(StaticChannelStatus, WireCell::Gen::StaticChannelStatus, WireCell::IChannelStatus, WireCell::IConfigurable);
+WIRECELL_FACTORY(StaticChannelStatus, WireCell::Gen::StaticChannelStatus,
+                 WireCell::IChannelStatus, WireCell::IConfigurable)
 
 using namespace WireCell;
 

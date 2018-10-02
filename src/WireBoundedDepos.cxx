@@ -14,7 +14,7 @@
 #include <iostream>
 
 WIRECELL_FACTORY(WireBoundedDepos, WireCell::Gen::WireBoundedDepos,
-                 WireCell::IDrifter, WireCell::IConfigurable);
+                 WireCell::IDrifter, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

@@ -6,7 +6,8 @@
 
 #include "WireCellGen/GenPipeline.h"
 
-WIRECELL_FACTORY(FourDee, WireCell::Gen::Fourdee, WireCell::IApplication, WireCell::IConfigurable);
+WIRECELL_FACTORY(FourDee, WireCell::Gen::Fourdee,
+                 WireCell::IApplication, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

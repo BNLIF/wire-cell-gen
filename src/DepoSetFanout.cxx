@@ -6,7 +6,7 @@
 #include <iostream>
 
 WIRECELL_FACTORY(DepoSetFanout, WireCell::Gen::DepoSetFanout,
-                 WireCell::IDepoSetFanout, WireCell::IConfigurable);
+                 WireCell::IDepoSetFanout, WireCell::IConfigurable)
 
 
 using namespace WireCell;

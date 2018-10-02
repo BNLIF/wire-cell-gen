@@ -1,7 +1,8 @@
 #include "WireCellGen/WireSource.h"
 #include "WireCellUtil/NamedFactory.h"
 
-WIRECELL_FACTORY(WireSource, WireCell::WireSource, WireCell::IWireSource, WireCell::IConfigurable);
+WIRECELL_FACTORY(WireSource, WireCell::WireSource,
+                 WireCell::IWireSource, WireCell::IConfigurable)
 
 using namespace WireCell;
 

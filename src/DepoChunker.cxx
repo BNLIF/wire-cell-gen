@@ -4,7 +4,7 @@
 
 #include "WireCellUtil/NamedFactory.h"
 WIRECELL_FACTORY(DepoChunker, WireCell::Gen::DepoChunker,
-                 WireCell::IDepoCollector, WireCell::IConfigurable);
+                 WireCell::IDepoCollector, WireCell::IConfigurable)
 using namespace std;
 using namespace WireCell;
 

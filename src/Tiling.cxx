@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 
-WIRECELL_FACTORY(Tiling, WireCell::Tiling, WireCell::ITiling);
+WIRECELL_FACTORY(Tiling, WireCell::Tiling, WireCell::ITiling)
 
 using namespace WireCell;
 

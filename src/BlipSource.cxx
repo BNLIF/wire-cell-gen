@@ -6,7 +6,8 @@
 
 #include <iostream>
 
-WIRECELL_FACTORY(BlipSource, WireCell::Gen::BlipSource, WireCell::IDepoSource, WireCell::IConfigurable);
+WIRECELL_FACTORY(BlipSource, WireCell::Gen::BlipSource,
+                 WireCell::IDepoSource, WireCell::IConfigurable)
 
 using namespace WireCell;
 

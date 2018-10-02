@@ -13,7 +13,7 @@
 #include <iostream>             // debug
 
 WIRECELL_FACTORY(EmpiricalNoiseModel, WireCell::Gen::EmpiricalNoiseModel,
-                 WireCell::IChannelSpectrum, WireCell::IConfigurable);
+                 WireCell::IChannelSpectrum, WireCell::IConfigurable)
 
  
 using namespace WireCell;
@@ -38,7 +38,7 @@ Gen::EmpiricalNoiseModel::EmpiricalNoiseModel(const std::string& spectra_file,
     , m_chanstat_tn(chanstat_tn)
     , m_amp_cache(4)
 {
-  m_fft_length = cal_fft_best_length(m_nsamples);
+  m_fft_length = fft_best_length(m_nsamples);
   //  m_fft_length = m_nsamples;
   gen_elec_resp_default();
 }
@@ -215,7 +215,7 @@ void Gen::EmpiricalNoiseModel::configure(const WireCell::Configuration& cfg)
     }
         
     m_nsamples = get(cfg, "nsamples", m_nsamples);
-    m_fft_length = cal_fft_best_length(m_nsamples);
+    m_fft_length = fft_best_length(m_nsamples);
     //m_fft_length = m_nsamples;
     m_period = get(cfg, "period", m_period);
     m_wlres = get(cfg, "wire_length_scale", m_wlres);

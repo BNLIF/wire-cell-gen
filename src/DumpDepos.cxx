@@ -4,7 +4,7 @@
 #include <iostream>
 #include <sstream>
 
-WIRECELL_FACTORY(DumpDepos, WireCell::DumpDepos, WireCell::IDepoSink);
+WIRECELL_FACTORY(DumpDepos, WireCell::DumpDepos, WireCell::IDepoSink)
 
 using namespace WireCell;
 using namespace std;

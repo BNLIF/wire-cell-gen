@@ -15,7 +15,8 @@
 
 #include <string>
 
-WIRECELL_FACTORY(AnodePlane, WireCell::Gen::AnodePlane, WireCell::IAnodePlane, WireCell::IConfigurable);
+WIRECELL_FACTORY(AnodePlane, WireCell::Gen::AnodePlane,
+                 WireCell::IAnodePlane, WireCell::IConfigurable)
 
 
 using namespace WireCell;

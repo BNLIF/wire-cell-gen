@@ -10,7 +10,8 @@
 #include <iostream>		// debug
 #include <sstream>
 
-WIRECELL_FACTORY(TrackDepos, WireCell::Gen::TrackDepos, WireCell::IDepoSource, WireCell::IConfigurable);
+WIRECELL_FACTORY(TrackDepos, WireCell::Gen::TrackDepos,
+                 WireCell::IDepoSource, WireCell::IConfigurable)
 
 using namespace std;
 using namespace WireCell;

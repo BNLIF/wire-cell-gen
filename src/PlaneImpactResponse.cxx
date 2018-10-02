@@ -8,7 +8,7 @@
 #include <iostream>             // debugging
 
 WIRECELL_FACTORY(PlaneImpactResponse, WireCell::Gen::PlaneImpactResponse,
-                 WireCell::IPlaneImpactResponse, WireCell::IConfigurable);
+                 WireCell::IPlaneImpactResponse, WireCell::IConfigurable)
 
 
 using namespace std;
@@ -101,7 +101,7 @@ void Gen::PlaneImpactResponse::build_responses()
 {
     auto ifr = Factory::find_tn<IFieldResponse>(m_frname);
 
-    const int n_short_length = cal_fft_best_length(m_overall_short_padding/m_tick);
+    const size_t n_short_length = fft_best_length(m_overall_short_padding/m_tick);
     //    std::cout << n_short_length << std::endl;
     
     // build "short" response spectra
@@ -135,7 +135,7 @@ void Gen::PlaneImpactResponse::build_responses()
 
     
     // build "long" response spectrum in time domain ...
-    int n_long_length = cal_fft_best_length(m_nbins);
+    size_t n_long_length = fft_best_length(m_nbins);
     WireCell::Waveform::compseq_t long_spec(n_long_length, Waveform::complex_t(1.0, 0.0));
     const size_t nlong = m_long.size();
     for (size_t ind=0; ind<nlong; ++ind) {

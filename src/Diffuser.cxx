@@ -10,7 +10,8 @@
 #include <sstream>
 #include <iostream>
 
-WIRECELL_FACTORY(Diffuser, WireCell::Diffuser, WireCell::IDiffuser, WireCell::IConfigurable);
+WIRECELL_FACTORY(Diffuser, WireCell::Diffuser,
+                 WireCell::IDiffuser, WireCell::IConfigurable)
 
 using namespace std;		// debugging
 using namespace WireCell;

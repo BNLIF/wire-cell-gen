@@ -5,7 +5,8 @@
 
 using namespace WireCell;
 
-WIRECELL_FACTORY(WireSummarizer, WireCell::WireSummarizer, WireCell::IWireSummarizer);
+WIRECELL_FACTORY(WireSummarizer, WireCell::WireSummarizer,
+                 WireCell::IWireSummarizer)
 
 WireSummarizer::WireSummarizer()
 {

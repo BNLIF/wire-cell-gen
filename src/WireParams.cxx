@@ -5,7 +5,8 @@
 
 #include <iostream>
 
-WIRECELL_FACTORY(WireParams, WireCell::WireParams, WireCell::IWireParameters, WireCell::IConfigurable);
+WIRECELL_FACTORY(WireParams, WireCell::WireParams,
+                 WireCell::IWireParameters, WireCell::IConfigurable)
 
 using namespace WireCell;
 using namespace std;

@@ -3,7 +3,8 @@
 
 #include "WireCellUtil/NamedFactory.h"
 
-WIRECELL_FACTORY(DepoFramer, WireCell::Gen::DepoFramer, WireCell::IDepoFramer, WireCell::IConfigurable);
+WIRECELL_FACTORY(DepoFramer, WireCell::Gen::DepoFramer,
+                 WireCell::IDepoFramer, WireCell::IConfigurable)
 
 
 using namespace WireCell;
