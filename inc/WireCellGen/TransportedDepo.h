@@ -27,6 +27,7 @@ namespace WireCell {
 	    virtual double charge() const { return m_from->charge(); }
 	    virtual int id() const { return m_from->id(); }
 	    virtual int pdg() const { return m_from->pdg(); }
+	    virtual double energy() const { return m_from->energy(); }
 	    virtual WireCell::IDepo::pointer prior() const { return m_from; }
 	};
 
