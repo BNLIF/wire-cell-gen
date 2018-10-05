@@ -32,7 +32,6 @@ Gen::AnodePlane::AnodePlane()
 
 
 const int default_nimpacts = 10;
-const double default_response_plane = 10*units::cm;
 
 WireCell::Configuration Gen::AnodePlane::default_configuration() const
 {

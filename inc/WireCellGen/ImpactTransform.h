@@ -18,7 +18,6 @@ namespace WireCell {
             IPlaneImpactResponse::pointer m_pir;
             BinnedDiffusion& m_bd;
 	    
-	    int m_flag;
 	    int m_num_group;  // how many 2D convolution is needed
 	    int m_num_pad_wire; // how many wires are needed to pad on each side
 	    std::vector<std::map<int, IImpactResponse::pointer> > m_vec_map_resp;
