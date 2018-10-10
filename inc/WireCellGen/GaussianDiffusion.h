@@ -97,6 +97,7 @@ namespace WireCell {
                               double nsigma = 3.0, 
                               IRandom::pointer fluctuate=nullptr, 
                               unsigned int weightstrat = 1/*see BinnedDiffusion ImpactDataCalculationStrategy*/);
+	    void clear_sampling();
 
 	    /// Get the diffusion patch as an array of N_pitch rows X
 	    /// N_time columns.  Index as patch(i_pitch, i_time).

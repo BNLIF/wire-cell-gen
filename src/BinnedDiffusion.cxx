@@ -140,6 +140,8 @@ void Gen::BinnedDiffusion::get_charge_vec(std::vector<std::vector<std::tuple<int
     }
   }
 
+  std::map<std::tuple<int,int,int>, int> map_tuple_pos;
+  
   //  int min_redimp =  m_pimpos.wire_impacts(2).first - m_pimpos.wire_impact(2);
   //  int max_redimp =  m_pimpos.wire_impacts(2).second - 1 - m_pimpos.wire_impact(2);
   int min_imp = 0;
@@ -177,16 +179,30 @@ void Gen::BinnedDiffusion::get_charge_vec(std::vector<std::vector<std::tuple<int
 	//	std::cout << pbin << " " << tbin << " " << patch(pbin,tbin) << std::endl;
 	// figure out how to convert the abs_pbin to fine position
 	// figure out how to use the weight given the above ???
-	vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*weight));
 	// the other side
 	//	if (map_imp_redimp[abs_pbin]==max_redimp){
 	//  vec_vec_charge.at(map_redimp_vec[min_redimp]).push_back(std::make_tuple(map_imp_ch[abs_pbin]+1,abs_tbin,charge*(1-weight)));
 	//}else{
-	vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*(1-weight)));
 	//}
+
+
+	if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
+	  map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).size();
+	vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*weight));
+	}else{
+	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)])) += charge * weight;
+	}
+	
+	if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
+	  map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).size();
+	vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*(1-weight)));
+	}else{
+	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)]) ) += charge*(1-weight);
+	}
       }
     }
-
+    
+    diff->clear_sampling();
     // need to figure out wire #, time #, charge, and weight ...
   }
 
