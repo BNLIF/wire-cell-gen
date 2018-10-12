@@ -207,10 +207,10 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 	    }
 	}
         if (fluc_sum == 0 && unfluc_sum!=0) {
-            cerr << "No net charge after fluctuation. Total unfluctuated = "
-                 << unfluc_sum
-                 << " Qdepo = " << m_deposition->charge()
-                 << endl;
+           // cerr << "No net charge after fluctuation. Total unfluctuated = "
+           //      << unfluc_sum
+           //      << " Qdepo = " << m_deposition->charge()
+           //      << endl;
         }
         else {
             ret *= m_deposition->charge() / fluc_sum;
