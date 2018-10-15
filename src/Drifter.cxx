@@ -19,7 +19,20 @@ WIRECELL_FACTORY(Drifter, WireCell::Gen::Drifter,
 using namespace std;
 using namespace WireCell;
 
+bool Gen::Drifter::DepoTimeCompare::operator()(const IDepo::pointer& lhs, const IDepo::pointer& rhs) const
+{
+    if (lhs->time() == rhs->time()) {
+	if (lhs->pos().x() == lhs->pos().x()) {
+	    return lhs.get() < rhs.get(); // break tie by pointer
+	}
+	return lhs->pos().x() < lhs->pos().x();
+    }
+    return lhs->time() < rhs->time();
+}
+
+
 // Xregion helper
+
 Gen::Drifter::Xregion::Xregion(Configuration cfg)
     : anode(0.0)
     , response(0.0)
@@ -34,10 +47,10 @@ Gen::Drifter::Xregion::Xregion(Configuration cfg)
     response = jr.asDouble();
     cathode = jc.asDouble();
 
-    cerr << "Gen::Drifter: xregion: {"
-         << "anode:" << anode/units::mm << ", "
-         << "response:" << response/units::mm << ", "
-         << "cathode:" << cathode/units::mm << "}mm\n";
+    // cerr << "Gen::Drifter: xregion: {"
+    //      << "anode:" << anode/units::mm << ", "
+    //      << "response:" << response/units::mm << ", "
+    //      << "cathode:" << cathode/units::mm << "}mm\n";
 
 }
 bool Gen::Drifter::Xregion::inside_response(double x) const
@@ -186,7 +199,7 @@ bool Gen::Drifter::insert(const input_pointer& depo)
     }
 
     auto newdepo = make_shared<SimpleDepo>(depo->time() + direction*dt + m_toffset, pos, Qf, depo, dL, dT);
-    xrit->depos.push_back(newdepo);
+    xrit->depos.insert(newdepo);
     return true;
 }    
 
@@ -216,27 +229,28 @@ void Gen::Drifter::flush_ripe(output_queue& outq, double now)
     // It might be faster to use a sorted set which would avoid an
     // exhaustive iteration of each depos stash.  Or not.
     for (auto& xr : m_xregions) {
-        std::vector<IDepo::pointer> to_keep;
-        int nflushed = 0, nkept=0;
-        for (auto& depo : xr.depos) {
-            if (depo->time() < now) {
-                outq.push_back(depo);
-                ++nflushed;
-            }
-            else {
-                to_keep.push_back(depo);
-                ++nkept;
-            }
+        if (xr.depos.empty()) {
+            continue;
         }
-        xr.depos = to_keep;
-        // if (nflushed) {
-        //     cerr << "Gen::Drifter: xregion: {"
-        //          << "anode:" << xr.anode/units::mm << ", "
-        //          << "response:" << xr.response/units::mm << ", "
-        //          << "cathode:" << xr.cathode/units::mm << "}mm "
-        //          << "flushing ripe: " << nflushed << ", "
-        //          << "keeping: " << nkept << "\n";
-        // }
+
+        Xregion::ordered_depos_t::const_iterator depo_beg=xr.depos.begin(), depo_end=xr.depos.end();
+        Xregion::ordered_depos_t::iterator depoit = depo_beg;
+        while (depoit != depo_end) {
+            if ((*depoit)->time() < now) {
+                ++depoit;
+                continue;
+            }
+            break;
+        }
+        if (depoit == depo_beg) {
+            continue;
+        }
+        
+        outq.insert(outq.end(), depo_beg, depoit);
+        xr.depos.erase(depo_beg, depoit);
+    }
+    if (outq.empty()) {
+        return;
     }
     std::sort(outq.begin(), outq.end(), by_time);
 }

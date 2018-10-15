@@ -6,7 +6,8 @@
 #include "WireCellIface/IRandom.h"
 #include "WireCellUtil/Units.h"
 
-#include <deque>
+
+#include <set>
 
 namespace WireCell {
 
@@ -142,11 +143,18 @@ namespace WireCell {
 
             int n_dropped, n_drifted;
 
+
+            // keep the depos sorted by time
+            struct DepoTimeCompare {
+                bool operator()(const IDepo::pointer& lhs, const IDepo::pointer& rhs) const;
+            };
+
             // A little helper to carry the region extent and depo buffers.
             struct Xregion {
                 Xregion(Configuration cfg);
                 double anode, response, cathode;
-                std::vector<IDepo::pointer> depos; // buffer depos
+                typedef std::set<IDepo::pointer, DepoTimeCompare> ordered_depos_t;
+                ordered_depos_t depos; // buffer depos
 
                 bool inside_bulk(double x) const;
                 bool inside_response(double x) const;
