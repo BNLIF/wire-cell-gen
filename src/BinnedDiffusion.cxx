@@ -7,6 +7,18 @@ using namespace std;
 
 using namespace WireCell;
 
+// bool Gen::GausDiffTimeCompare::operator()(const std::shared_ptr<Gen::GaussianDiffusion>& lhs, const std::shared_ptr<Gen::GaussianDiffusion>& rhs) const
+// {
+//   if (lhs->depo_time() == rhs->depo_time()) {
+//     if (lhs->depo_x() == lhs->depo_x()) {
+//       return lhs.get() < rhs.get(); // break tie by pointer
+//     }
+//     return lhs->depo_x() < lhs->depo_x();
+//   }
+//   return lhs->depo_time() < rhs->depo_time();
+// }
+
+
 Gen::BinnedDiffusion::BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
                                       double nsigma, IRandom::pointer fluctuate,
                                       ImpactDataCalculationStrategy calcstrat)
@@ -148,11 +160,22 @@ void Gen::BinnedDiffusion::get_charge_vec(std::vector<std::vector<std::tuple<int
   int max_imp = ib.nbins();
 
   // std::cout << min_redimp << " " << max_redimp << " " << max_imp << std::endl;
+
+  int counter = 0;
+
+  // std::set<std::shared_ptr<GaussianDiffusion>, GausDiffTimeCompare> m_diffs1;
+  // for (auto diff : m_diffs){
+  //    diff->set_sampling(m_tbins, ib, m_nsigma, m_fluctuate, m_calcstrat);
+  //    m_diffs1.insert(diff);
+  // }
+  
   
   for (auto diff : m_diffs){
+    //    std::cout << diff->depo()->time() << std::endl
     //diff->set_sampling(m_tbins, ib, m_nsigma, 0, m_calcstrat);
     diff->set_sampling(m_tbins, ib, m_nsigma, m_fluctuate, m_calcstrat);
-
+    counter ++;
+    
     const auto patch = diff->patch();
     const auto qweight = diff->weights();
 
@@ -199,8 +222,24 @@ void Gen::BinnedDiffusion::get_charge_vec(std::vector<std::vector<std::tuple<int
 	}else{
 	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)]) ) += charge*(1-weight);
 	}
+	
+	
       }
     }
+
+    if (counter % 5000==0){
+      // std::vector<std::tuple<int,int,int> > del_keys;
+      // for (auto it  = map_tuple_pos.begin(); it!=map_tuple_pos.end(); it++){
+      // 	if (get<2>(it->first) < toffset_bin - 60){
+      // 	  del_keys.push_back(it->first);
+      // 	}
+      // }
+      // for (auto it = del_keys.begin(); it!=del_keys.end(); it++){
+      // 	map_tuple_pos.erase(*it);
+      // }
+      map_tuple_pos.clear();
+    }
+
     
     diff->clear_sampling();
     // need to figure out wire #, time #, charge, and weight ...

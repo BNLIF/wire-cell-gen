@@ -63,11 +63,14 @@ namespace WireCell {
 	    
 	};
 
+	
+	
 	class GaussianDiffusion {
 	  public:
 
 	    typedef std::shared_ptr<GaussianDiffusion> pointer;
-
+	   
+	  
 	    /// A patch is a 2D array of diffuse charge in (nimpacts X
 	    /// nticks) bins.  patch[0] is drifted/diffused charge
 	    /// waveform at impact position 0 (relative to min pitch
@@ -114,6 +117,9 @@ namespace WireCell {
 
 	    /// Access deposition.
 	    IDepo::pointer depo() const { return m_deposition; }
+
+	    double depo_time() const { return m_deposition->time();}
+	    double depo_x() const { return m_deposition->pos().x();}
 	    
 	    const GausDesc pitch_desc() { return m_pitch_desc; }
 	    const GausDesc time_desc() { return m_time_desc; }
