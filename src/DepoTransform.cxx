@@ -44,7 +44,7 @@
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellIface/SimpleTrace.h"
 #include "WireCellIface/SimpleFrame.h"
-#include "WireCellGen/BinnedDiffusion.h"
+#include "WireCellGen/BinnedDiffusion_transform.h"
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Point.h"
 
@@ -197,7 +197,7 @@ bool Gen::DepoTransform::operator()(const input_pointer& in, output_pointer& out
             Binning tbins(m_readout_time/m_tick, m_start_time,
                           m_start_time+m_readout_time);
 
-            Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_rng);
+            Gen::BinnedDiffusion_transform bindiff(*pimpos, tbins, m_nsigma, m_rng);
             for (auto depo : face_depos) {
                 bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
             }

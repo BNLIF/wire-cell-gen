@@ -2,7 +2,7 @@
 #define WIRECELL_IMPACTTRANSFORM
 
 #include "WireCellIface/IPlaneImpactResponse.h"
-#include "WireCellGen/BinnedDiffusion.h"
+#include "WireCellGen/BinnedDiffusion_transform.h"
 #include "WireCellUtil/Array.h"
 
 
@@ -16,7 +16,7 @@ namespace WireCell {
         class ImpactTransform
         {
             IPlaneImpactResponse::pointer m_pir;
-            BinnedDiffusion& m_bd;
+            BinnedDiffusion_transform& m_bd;
 	    
 	    int m_num_group;  // how many 2D convolution is needed
 	    int m_num_pad_wire; // how many wires are needed to pad on each side
@@ -31,7 +31,7 @@ namespace WireCell {
 	    
         public:
 
-            ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd);
+            ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedDiffusion_transform& bd);
             virtual ~ImpactTransform();
 
             /// Return the wire's waveform.  If the response functions

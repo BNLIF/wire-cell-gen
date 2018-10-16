@@ -6,7 +6,7 @@
 using namespace std;
 
 using namespace WireCell;
-Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedDiffusion& bd)
+Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedDiffusion_transform& bd)
   :m_pir(pir), m_bd(bd)
 {
 

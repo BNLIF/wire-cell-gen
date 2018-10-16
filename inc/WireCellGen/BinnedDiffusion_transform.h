@@ -1,5 +1,5 @@
-#ifndef WIRECELLGEN_BINNEDDIFFUSION
-#define WIRECELLGEN_BINNEDDIFFUSION
+#ifndef WIRECELLGEN_BINNEDDIFFUSION_TRANSFORM
+#define WIRECELLGEN_BINNEDDIFFUSION_TRANSFORM
 
 #include "WireCellUtil/Pimpos.h"
 #include "WireCellUtil/Point.h"
@@ -16,17 +16,17 @@ namespace WireCell {
       /* struct GausDiffTimeCompare{ */
       /* 	bool operator()(const std::shared_ptr<Gen::GaussianDiffusion>& lhs, const std::shared_ptr<Gen::GaussianDiffusion>& rhs) const; */
       /* }; */
-	/**  A BinnedDiffusion maintains an association between impact
+	/**  A BinnedDiffusion_transform maintains an association between impact
 	 * positions along the pitch direction of a wire plane and
 	 * the diffused depositions that drift to them.
          *
          * It covers a fixed and discretely sampled time and pitch
          * domain.
 	 */
-	class BinnedDiffusion {
+	class BinnedDiffusion_transform {
 	public:
 
-	    /** Create a BinnedDiffusion. 
+	    /** Create a BinnedDiffusion_transform. 
 
                Arguments are:
 	      	
@@ -49,7 +49,7 @@ namespace WireCell {
             /// Useful to client code to mark a calculation strategy. 
             enum ImpactDataCalculationStrategy { constant=1, linear=2 };
 
-	    BinnedDiffusion(const Pimpos& pimpos, const Binning& tbins,
+	    BinnedDiffusion_transform(const Pimpos& pimpos, const Binning& tbins,
 			    double nsigma=3.0, IRandom::pointer fluctuate=nullptr,
                             ImpactDataCalculationStrategy calcstrat = linear);
 
@@ -62,22 +62,22 @@ namespace WireCell {
 
 	    /// Unconditionally associate an already built
 	    /// GaussianDiffusion to one impact.  
-	    void add(std::shared_ptr<GaussianDiffusion> gd, int impact_index);
+	    //void add(std::shared_ptr<GaussianDiffusion> gd, int impact_index);
 
 	    /// Drop any stored ImpactData within the half open
 	    /// impact index range.
-	    void erase(int begin_impact_index, int end_impact_index);
+	    // void erase(int begin_impact_index, int end_impact_index);
 
 	    /// Return the data in the given impact bin.  Note, this
 	    /// bin represents drifted charge between two impact
-	    /// positions.  Take care when using BinnedDiffusion and
+	    /// positions.  Take care when using BinnedDiffusion_transform and
 	    /// field responses because epsilon above or below the
 	    /// impact position exactly in the middle of two wires
 	    /// drastically different response.
-	    ImpactData::pointer impact_data(int bin) const;
+	    //ImpactData::pointer impact_data(int bin) const;
 
 	    // test ... 
-	    //	    void get_charge_vec(std::vector<std::vector<std::tuple<int,int, double> > >& vec_vec_charge, std::vector<int>& vec_impact);
+	    void get_charge_vec(std::vector<std::vector<std::tuple<int,int, double> > >& vec_vec_charge, std::vector<int>& vec_impact);
 
 	    
             /// Return the range of pitch containing depos out to
