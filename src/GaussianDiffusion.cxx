@@ -206,11 +206,12 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 		ret(ip,it) = charge_sign*number;
 	    }
 	}
-        if (fluc_sum == 0 && unfluc_sum!=0) {
+        if (fluc_sum == 0) {
            // cerr << "No net charge after fluctuation. Total unfluctuated = "
            //      << unfluc_sum
            //      << " Qdepo = " << m_deposition->charge()
            //      << endl;
+           return;
         }
         else {
             ret *= m_deposition->charge() / fluc_sum;
@@ -219,12 +220,12 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 
 
     {                           // debugging
-        double retsum=0.0;
-        for (size_t ip = 0; ip < npss; ++ip) {
-            for (size_t it = 0; it < ntss; ++it) {
-                retsum += ret(ip,it);
-            }
-        }
+        //double retsum=0.0;
+        //for (size_t ip = 0; ip < npss; ++ip) {
+        //    for (size_t it = 0; it < ntss; ++it) {
+        //        retsum += ret(ip,it);
+        //    }
+        //}
         // cerr << "GaussianDiffusion: Q in electrons: depo=" << m_deposition->charge()/units::eplus
         //      << " rawsum=" << raw_sum/units::eplus << " flucsum=" << fluc_sum/units::eplus
         //      << " returned=" << retsum/units::eplus << endl;

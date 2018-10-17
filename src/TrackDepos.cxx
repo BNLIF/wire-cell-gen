@@ -96,7 +96,7 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
     if (charge > 0) {
 	charge_per_depo = -charge / (length / m_stepsize);
     }
-    else if (charge < 0) {
+    else if (charge <= 0) {
 	charge_per_depo = charge;
     }
 
