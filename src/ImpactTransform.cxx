@@ -351,9 +351,9 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
   
   //m_decon_data = Array::array_xxc::Zero(nwires,nsamples);
   //    if (npad_wire!=0){
-  Array::array_xxc temp_m_decon_data = Array::idft_cc(acc_data_f_w,0);//.block(npad_wire,0,nwires,nsamples);
-  Array::array_xxf real_m_decon_data = temp_m_decon_data.real();
-  Array::array_xxf img_m_decon_data = temp_m_decon_data.imag().colwise().reverse();
+  acc_data_f_w = Array::idft_cc(acc_data_f_w,0);//.block(npad_wire,0,nwires,nsamples);
+  Array::array_xxf real_m_decon_data = acc_data_f_w.real();
+  Array::array_xxf img_m_decon_data = acc_data_f_w.imag().colwise().reverse();
   m_decon_data = real_m_decon_data + img_m_decon_data;
   
   // std::cout << real_m_decon_data(40,5182) << " " << img_m_decon_data(40,5182) << std::endl;

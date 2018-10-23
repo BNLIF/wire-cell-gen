@@ -3,6 +3,7 @@
 #include "WireCellUtil/Units.h"
 
 #include <iostream>             // debug
+#include <unordered_map>
 using namespace std;
 
 using namespace WireCell;
@@ -223,9 +224,13 @@ void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std:
   const auto ib = m_pimpos.impact_binning();
 
   // map between reduced impact # to array # 
+
   std::map<int,int> map_redimp_vec;
+  std::vector<std::unordered_map<long int, int> > vec_map_pair_pos;
   for (size_t i =0; i!= vec_impact.size(); i++){
     map_redimp_vec[vec_impact[i]] = int(i);
+    std::unordered_map<long int, int> map_pair_pos;
+    vec_map_pair_pos.push_back(map_pair_pos);
   }
 
   const auto rb = m_pimpos.region_binning();
@@ -248,7 +253,9 @@ void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std:
     }
   }
 
-  std::map<std::tuple<int,int,int>, int> map_tuple_pos;
+  //  std::unordered_map<stgsd::tuple<int,int,int>, int> map_tuple_pos;
+  
+  
   
   //  int min_redimp =  m_pimpos.wire_impacts(2).first - m_pimpos.wire_impact(2);
   //  int max_redimp =  m_pimpos.wire_impacts(2).second - 1 - m_pimpos.wire_impact(2);
@@ -304,20 +311,36 @@ void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std:
 	//}else{
 	//}
 
-	
-	if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
-	  map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).size();
+	long int index1 = map_imp_ch[abs_pbin]*100000 + abs_tbin;
+	auto it = vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]]).find(index1);
+	if (it == vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]]).end()){
+	  vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]])[index1] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).size();
 	  vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*weight));
 	}else{
-	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)])) += charge * weight;
+	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).at(vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]])[index1])) += charge * weight;
 	}
-	
-	if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
-	  map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).size();
+
+	auto it1 = vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).find(index1);
+	if (it1 == vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).end()){
+	  vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1])[index1] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).size();
 	  vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*(1-weight)));
 	}else{
-	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)]) ) += charge*(1-weight);
+	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1])[index1]) ) += charge*(1-weight);
 	}
+	
+	// if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
+	//   map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).size();
+	//   vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*weight));
+	// }else{
+	//   std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)])) += charge * weight;
+	// }
+	
+	// if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
+	//   map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).size();
+	//   vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*(1-weight)));
+	// }else{
+	//   std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)]) ) += charge*(1-weight);
+	// }
 	
 	
       }
@@ -333,7 +356,10 @@ void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std:
       // for (auto it = del_keys.begin(); it!=del_keys.end(); it++){
       // 	map_tuple_pos.erase(*it);
       // }
-      map_tuple_pos.clear();
+      // map_tuple_pos.clear();
+      for (auto it = vec_map_pair_pos.begin(); it != vec_map_pair_pos.end(); it++){
+	it->clear();
+      }
     }
 
     
