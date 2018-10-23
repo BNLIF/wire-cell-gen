@@ -131,14 +131,18 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
     for (size_t j=0;j!=m_vec_vec_charge.at(i).size();j++){
       c_data(std::get<0>(m_vec_vec_charge.at(i).at(j))+npad_wire-start_ch,std::get<1>(m_vec_vec_charge.at(i).at(j))-m_start_tick) +=  std::get<2>(m_vec_vec_charge.at(i).at(j));
     }
+    std::cout << i << " " << m_vec_vec_charge.at(i).size() << std::endl;
     m_vec_vec_charge.at(i).clear();
+    m_vec_vec_charge.at(i).shrink_to_fit();
     
     // fill reverse order
     int ii=num_double*2-i;
     for (size_t j=0;j!=m_vec_vec_charge.at(ii).size();j++){
       c_data(end_ch+npad_wire-1-std::get<0>(m_vec_vec_charge.at(ii).at(j)),std::get<1>(m_vec_vec_charge.at(ii).at(j))-m_start_tick) +=  std::complex<float>(0,std::get<2>(m_vec_vec_charge.at(ii).at(j)));
     }
+    std::cout << ii << " " << m_vec_vec_charge.at(ii).size() << std::endl;
     m_vec_vec_charge.at(ii).clear();
+    m_vec_vec_charge.at(ii).shrink_to_fit();
     
     // Do FFT on time
     c_data = Array::dft_cc(c_data,0);
@@ -221,8 +225,9 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
 	data_t_w(std::get<0>(m_vec_vec_charge.at(i).at(j))+npad_wire-start_ch,std::get<1>(m_vec_vec_charge.at(i).at(j))-m_start_tick) +=  std::get<2>(m_vec_vec_charge.at(i).at(j));
 	// std::cout << std::get<1>(m_vec_vec_charge.at(i).at(j)) << std::endl;
       }
+      std::cout << i << " " << m_vec_vec_charge.at(i).size() << std::endl;
       m_vec_vec_charge.at(i).clear();
-      
+      m_vec_vec_charge.at(i).shrink_to_fit();
       
       
       // Do FFT on time
