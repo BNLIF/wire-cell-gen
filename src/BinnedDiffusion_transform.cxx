@@ -123,6 +123,101 @@ bool Gen::BinnedDiffusion_transform::add(IDepo::pointer depo, double sigma_time,
 //     }
 // }
 
+
+void Gen::BinnedDiffusion_transform::get_charge_matrix(std::vector<Eigen::SparseMatrix<float>* >& vec_spmatrix, std::vector<int>& vec_impact){
+  const auto ib = m_pimpos.impact_binning();
+
+  // map between reduced impact # to array # 
+  std::map<int,int> map_redimp_vec;
+  for (size_t i =0; i!= vec_impact.size(); i++){
+    map_redimp_vec[vec_impact[i]] = int(i);
+  }
+
+  const auto rb = m_pimpos.region_binning();
+  // map between impact # to channel #
+  std::map<int, int> map_imp_ch;
+  // map between impact # to reduced impact # 
+  std::map<int, int> map_imp_redimp;
+
+  //std::cout << ib.nbins() << " " << rb.nbins() << std::endl;
+  for (int wireind=0;wireind!=rb.nbins();wireind++){
+    int wire_imp_no = m_pimpos.wire_impact(wireind);
+    std::pair<int,int> imps_range = m_pimpos.wire_impacts(wireind);
+    for (int imp_no = imps_range.first; imp_no != imps_range.second; imp_no ++){
+      map_imp_ch[imp_no] = wireind;
+      map_imp_redimp[imp_no] = imp_no - wire_imp_no;
+      
+      //  std::cout << imp_no << " " << wireind << " " << wire_imp_no << " " << ib.center(imp_no) << " " << rb.center(wireind) << " " <<  ib.center(imp_no) - rb.center(wireind) << std::endl;
+      // std::cout << imp_no << " " << map_imp_ch[imp_no] << " " << map_imp_redimp[imp_no] << std::endl;
+    }
+  }
+  
+  int min_imp = 0;
+  int max_imp = ib.nbins();
+
+
+   for (auto diff : m_diffs){
+    //    std::cout << diff->depo()->time() << std::endl
+    //diff->set_sampling(m_tbins, ib, m_nsigma, 0, m_calcstrat);
+    diff->set_sampling(m_tbins, ib, m_nsigma, m_fluctuate, m_calcstrat);
+    //counter ++;
+    
+    const auto patch = diff->patch();
+    const auto qweight = diff->weights();
+
+    const int poffset_bin = diff->poffset_bin();
+    const int toffset_bin = diff->toffset_bin();
+
+    const int np = patch.rows();
+    const int nt = patch.cols();
+    
+    for (int pbin = 0; pbin != np; pbin++){
+      int abs_pbin = pbin + poffset_bin;
+      if (abs_pbin < min_imp || abs_pbin >= max_imp) continue;
+      double weight = qweight[pbin];
+
+      for (int tbin = 0; tbin!= nt; tbin++){
+	int abs_tbin = tbin + toffset_bin;
+	double charge = patch(pbin, tbin);
+
+	// std::cout << map_redimp_vec[map_imp_redimp[abs_pbin] ] << " " << map_redimp_vec[map_imp_redimp[abs_pbin]+1] << " " << abs_tbin << " " << map_imp_ch[abs_pbin] << std::endl;
+	
+	vec_spmatrix.at(map_redimp_vec[map_imp_redimp[abs_pbin] ])->coeffRef(abs_tbin,map_imp_ch[abs_pbin]) += charge * weight; 
+	vec_spmatrix.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1])->coeffRef(abs_tbin,map_imp_ch[abs_pbin]) += charge*(1-weight);
+	
+	// if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
+	//   map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).size();
+	//   vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*weight));
+	// }else{
+	//   std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin)])) += charge * weight;
+	// }
+	
+	// if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
+	//   map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).size();
+	//   vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*(1-weight)));
+	// }else{
+	//   std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(map_tuple_pos[std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]+1],map_imp_ch[abs_pbin],abs_tbin)]) ) += charge*(1-weight);
+	// }
+	
+	
+      }
+    }
+
+    
+
+    
+    diff->clear_sampling();
+    // need to figure out wire #, time #, charge, and weight ...
+   }
+
+   for (auto it = vec_spmatrix.begin(); it!=vec_spmatrix.end(); it++){
+     (*it)->makeCompressed();
+   }
+   
+   
+  
+}
+
 // a new function to generate the result for the entire frame ... 
 void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std::tuple<int,int, double> > >& vec_vec_charge, std::vector<int>& vec_impact){
   const auto ib = m_pimpos.impact_binning();

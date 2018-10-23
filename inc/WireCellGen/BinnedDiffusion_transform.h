@@ -9,6 +9,7 @@
 #include "WireCellGen/ImpactData.h"
 
 #include <deque>
+#include <Eigen/Sparse>
 
 namespace WireCell {
     namespace Gen {
@@ -78,7 +79,8 @@ namespace WireCell {
 
 	    // test ... 
 	    void get_charge_vec(std::vector<std::vector<std::tuple<int,int, double> > >& vec_vec_charge, std::vector<int>& vec_impact);
-
+	    void get_charge_matrix(std::vector<Eigen::SparseMatrix<float>* >& vec_spmatrix, std::vector<int>& vec_impact);
+	    
 	    
             /// Return the range of pitch containing depos out to
             /// given nsigma and without bounds checking.

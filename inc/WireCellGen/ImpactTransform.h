@@ -5,6 +5,7 @@
 #include "WireCellGen/BinnedDiffusion_transform.h"
 #include "WireCellUtil/Array.h"
 
+#include <Eigen/Sparse>
 
 namespace WireCell {
     namespace Gen {
@@ -22,6 +23,9 @@ namespace WireCell {
 	    int m_num_pad_wire; // how many wires are needed to pad on each side
 	    std::vector<std::map<int, IImpactResponse::pointer> > m_vec_map_resp;
 	    std::vector<std::vector<std::tuple<int,int,double> > > m_vec_vec_charge; // ch, time, charge
+	    //std::vector<Eigen::SparseMatrix<float>* > m_vec_spmatrix;
+	    
+	    
 	    std::vector<int> m_vec_impact;
 	    Array::array_xxf m_decon_data;
 	    int m_start_ch;

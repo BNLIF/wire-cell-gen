@@ -238,6 +238,7 @@ void Gen::GaussianDiffusion::set_sampling(const Binning& tbin, // overall time t
 void Gen::GaussianDiffusion::clear_sampling(){
   m_patch.resize(0,0); 
   m_qweights.clear();
+  //  m_qweights.shrink_to_fit();
 }
 
 // patch = nimpacts rows X nticks columns
