@@ -31,7 +31,24 @@ bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
     cerr << "Gen::Frame: #" << frame->ident()
          << " @" << frame->time()/units::ms
          << " with " << ntraces << " traces" << endl;
-    
+    {
+        string comma = "";
+        cerr << "\tframe tags:[";
+        for (auto ftag : frame->frame_tags()) {
+            cerr << comma << ftag;
+            comma = ", ";
+        }
+        cerr << "]\n";
+    }
+    {
+        string comma = "";
+        cerr << "\ttrace tags:[";
+        for (auto ftag : frame->trace_tags()) {
+            cerr << comma << ftag;
+            comma = ", ";
+        }
+        cerr << "]\n";
+    }
     return true;
 }
 

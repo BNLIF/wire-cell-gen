@@ -3,6 +3,8 @@
 
 #include "WireCellIface/IFrameFanout.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellUtil/TagRules.h"
+
 
 namespace WireCell {
     namespace Gen {
@@ -25,7 +27,8 @@ namespace WireCell {
 
         private:
             size_t m_multiplicity;
-            
+
+            tagrules::Context m_ft;
         };
     }
 }

@@ -3,6 +3,7 @@
 
 #include "WireCellIface/IFrameFanin.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellUtil/TagRules.h"
 
 #include <vector>
 #include <string>
@@ -27,6 +28,7 @@ namespace WireCell {
         private:
             size_t m_multiplicity;
             std::vector<std::string> m_tags;
+            tagrules::Context m_ft;
         };
     }
 }
