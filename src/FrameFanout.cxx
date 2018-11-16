@@ -80,6 +80,7 @@ bool Gen::FrameFanout::operator()(const input_pointer& in, output_vector& outv)
 
         for (auto ftag : fouttags) {
             sfout->tag_frame(ftag);
+            std::cerr << "FrameFanout: tagging frame: " << ftag << std::endl;
         }
 
         for (auto inttag : in->trace_tags()) {
@@ -91,6 +92,7 @@ bool Gen::FrameFanout::operator()(const input_pointer& in, output_vector& outv)
             const auto& summary = in->trace_summary(inttag);
             for (auto otag : touttags) {
                 sfout->tag_traces(otag, traces, summary);
+                std::cerr << "FrameFanout: tagging trace set: " << inttag << " -> " << otag << std::endl;
             }
         };
 

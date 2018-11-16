@@ -12,6 +12,11 @@ local cmdline = {
 
 local src = g.pnode({
     type: "SilentNoise",
+    data: {
+        nchannels: 10,
+        noutputs: 1,
+        traces_tag: "orig",
+    },
 },nin=0, nout=1);
 
 local fanmult = 3;
@@ -23,8 +28,12 @@ local fanout = g.pnode({
         multiplicity: fanmult,
         tag_rules: [
             {
-                "frame": {
-                    ".*": "number%d"%n
+                frame: {
+                    ".*": "number%d"%n,
+                },
+                trace: {
+                    // fake doing Nmult SP pipelines
+                    "orig": ["wiener", "gauss"],
                 }
             } for n in fannums],
     }
@@ -36,13 +45,34 @@ local fanin = g.pnode({
         multiplicity: fanmult,
         tag_rules: [
             {
-                "frame": {
+                frame: {
                     ["number%d"%n]: ["output%d"%n, "output"],
-                }
+                },
+                trace: {
+                    gauss: "gauss%d"%n,
+                    wiener: "wiener%d"%n,
+                },
+                
             } for n in fannums],
-        tags: ["frame%d"%n for n in fannums],
+        tags: ["from-pipeline-%d"%n for n in fannums]
     }
 }, nin=fanmult, nout=1);
+
+
+local retagger = g.pnode({
+    type: "Retagger",
+    data: {
+        // Note: retagger keeps tag_rules an array to be like frame fanin/fanout.
+        tag_rules: [ {
+            // Retagger also handles "frame" and "trace" like fanin/fanout
+            // merge separately all traces like gaussN to gauss.
+            merge: {            
+                "gauss\\d": "gauss",
+                "wiener\\d": "wiener",
+            }
+        }],
+    }
+}, nin=1, nout=1);
 
 local sink = g.pnode({
     type:"DumpFrames",
@@ -53,7 +83,7 @@ local fanzip = g.intern(name="fanzip",
                         outnodes=[fanin],
                         edges=[g.edge(fanout, fanin, n, n) for n in fannums]);
 
-local graph = g.pipeline([src,fanzip,sink], name="fanpipe");
+local graph = g.pipeline([src,fanzip,retagger,sink], name="fanpipe");
 
 local app = {
     type: 'Pgrapher',

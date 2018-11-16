@@ -26,6 +26,8 @@ namespace WireCell {
 
         private:
             int m_count;
+            int m_noutputs, m_nchannels;
+            std::string m_traces_tag;
         };
     }
 }
