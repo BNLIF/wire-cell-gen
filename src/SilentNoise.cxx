@@ -51,7 +51,7 @@ bool Gen::SilentNoise::operator()(output_pointer& out)
     }
     //std::cerr << "SilentNoise: output #" << m_count << " / " << m_noutputs << std::endl;
     ITrace::vector traces(m_nchannels);
-    for (size_t ind=0; ind<m_nchannels; ++ind) {
+    for (int ind=0; ind<m_nchannels; ++ind) {
 	traces[ind] = std::make_shared<SimpleTrace>(ind, 0, 0); // boring traces
     }
     auto sfout = new SimpleFrame(m_count, m_count*5.0*units::ms, traces);
