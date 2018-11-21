@@ -79,7 +79,7 @@ bool Gen::Retagger::operator()(const input_pointer& inframe, output_pointer& out
         const auto& traces = inframe->tagged_traces(inttag);
         const auto& summary = inframe->trace_summary(inttag);
         for (auto otag : touttags) {
-            stashmap[otag].push_back({inttag, traces, summary});
+	  stashmap[otag].push_back(std::make_tuple(inttag, traces, summary));
         }
     }
     for (auto it : stashmap) {

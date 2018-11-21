@@ -129,7 +129,7 @@ bool Gen::FrameFanin::operator()(const input_vector& invec, output_pointer& out)
             }
             for (auto ot : touttags) {
                 // need to stash them until after creating the output frame.
-                stash.push_back({ot, outtrinds, summary});
+	      stash.push_back(std::make_tuple(ot, outtrinds, summary));
             }
         };
 
