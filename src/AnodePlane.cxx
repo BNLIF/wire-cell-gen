@@ -1,7 +1,6 @@
 #include "WireCellGen/AnodePlane.h"
 #include "WireCellGen/AnodeFace.h"
 #include "WireCellGen/WirePlane.h"
-#include "WireCellGen/SimpleChannel.h"
 
 #include "WireCellUtil/WireSchema.h"
 #include "WireCellUtil/BoundingBox.h"
@@ -10,6 +9,8 @@
 #include "WireCellIface/IFieldResponse.h"
 #include "WireCellIface/IWireSchema.h"
 #include "WireCellIface/SimpleWire.h"
+#include "WireCellIface/SimpleChannel.h"
+
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/String.h"
 
