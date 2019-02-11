@@ -9,6 +9,8 @@
 #include "WireCellIface/IRandom.h"
 #include "WireCellIface/IPlaneImpactResponse.h"
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellIface/WirePlaneId.h"
+#include "WireCellIface/IDepo.h"
 
 namespace WireCell {
     namespace Gen {
@@ -23,6 +25,15 @@ namespace WireCell {
 
             virtual void configure(const WireCell::Configuration& cfg);
             virtual WireCell::Configuration default_configuration() const;
+
+
+            /// dummy depo modifier 
+            /// used for the application of the charge scaling bases on dQdx calibration
+            /// see the detailed implementation in larwirecell or uboonecode 
+            virtual IDepo::pointer modify_depo(WirePlaneId wpid, IDepo::pointer depo){
+                return depo;
+            }
+
         private:
 
             IAnodePlane::pointer m_anode;

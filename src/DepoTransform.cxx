@@ -199,6 +199,7 @@ bool Gen::DepoTransform::operator()(const input_pointer& in, output_pointer& out
 
             Gen::BinnedDiffusion_transform bindiff(*pimpos, tbins, m_nsigma, m_rng);
             for (auto depo : face_depos) {
+                depo = modify_depo(plane->planeid(), depo);
                 bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
             }
 
