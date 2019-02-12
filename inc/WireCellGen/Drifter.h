@@ -123,6 +123,12 @@ namespace WireCell {
             void flush(output_queue& outq);
             void flush_ripe(output_queue& outq, double now);
 
+            // Reset lifetime e.g. based on a larsoft database.
+            // Detailed implementation in a subclass.
+            virtual void set_lifetime(double lifetime_to_set){
+                m_lifetime = lifetime_to_set;
+            };
+
         private:
 
             IRandom::pointer m_rng;
