@@ -220,6 +220,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
                     Point p2(cathode_x, v2.y(), std::max(v1.z(), v2.z()) + 0.5*mean_pitch);
                     sensvol(p2);
                 }
+                
                 m_faces[iface] = make_shared<AnodeFace>(ws_face.ident, planes, sensvol);
             }
         } // plane

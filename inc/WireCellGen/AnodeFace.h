@@ -24,10 +24,15 @@ namespace WireCell {
 
 
             virtual BoundingBox sensitive() const { return m_bb; }
+
+            virtual const RayGrid::Coordinates& raygrid() const { return m_coords; }
+
+
         private:
             int m_ident;
             IWirePlane::vector m_planes;
             BoundingBox m_bb;
+            RayGrid::Coordinates m_coords;
         };
     }
 }
