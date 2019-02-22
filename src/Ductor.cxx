@@ -134,6 +134,52 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
          << "\n";
 }
 
+ITrace::vector Gen::Ductor::process_face(IAnodeFace::pointer face,
+                                         const IDepo::vector& face_depos)
+{
+    ITrace::vector traces;
+
+    int iplane = -1;
+    for (auto plane : face->planes()) {
+        ++iplane;
+
+        const Pimpos* pimpos = plane->pimpos();
+
+        Binning tbins(m_readout_time/m_tick, m_start_time,
+                      m_start_time+m_readout_time);
+
+        Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_rng);
+        for (auto depo : face_depos) {
+            bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
+        }
+
+        auto& wires = plane->wires();
+
+        auto pir = m_pirs.at(iplane);
+        Gen::ImpactZipper zipper(pir, bindiff);
+
+        const int nwires = pimpos->region_binning().nbins();
+        for (int iwire=0; iwire<nwires; ++iwire) {
+            auto wave = zipper.waveform(iwire);
+                
+            auto mm = Waveform::edge(wave);
+            if (mm.first == (int)wave.size()) { // all zero
+                continue;
+            }
+                
+            int chid = wires[iwire]->channel();
+            int tbin = mm.first;
+
+            //std::cout << mm.first << " "<< mm.second << std::endl;
+		
+            ITrace::ChargeSequence charge(wave.begin()+mm.first, wave.begin()+mm.second);
+            auto trace = make_shared<SimpleTrace>(chid, tbin, charge);
+            traces.push_back(trace);
+        }
+    }
+    return traces;
+}
+
 void Gen::Ductor::process(output_queue& frames)
 {
     ITrace::vector traces;
@@ -176,44 +222,8 @@ void Gen::Ductor::process(output_queue& frames)
 
         }
 
-        int iplane = -1;
-        for (auto plane : face->planes()) {
-            ++iplane;
-
-            const Pimpos* pimpos = plane->pimpos();
-
-            Binning tbins(m_readout_time/m_tick, m_start_time,
-                          m_start_time+m_readout_time);
-
-            Gen::BinnedDiffusion bindiff(*pimpos, tbins, m_nsigma, m_rng);
-            for (auto depo : face_depos) {
-                bindiff.add(depo, depo->extent_long() / m_drift_speed, depo->extent_tran());
-            }
-
-            auto& wires = plane->wires();
-
-            auto pir = m_pirs.at(iplane);
-            Gen::ImpactZipper zipper(pir, bindiff);
-
-            const int nwires = pimpos->region_binning().nbins();
-            for (int iwire=0; iwire<nwires; ++iwire) {
-                auto wave = zipper.waveform(iwire);
-                
-                auto mm = Waveform::edge(wave);
-                if (mm.first == (int)wave.size()) { // all zero
-                    continue;
-                }
-                
-                int chid = wires[iwire]->channel();
-                int tbin = mm.first;
-
-		//std::cout << mm.first << " "<< mm.second << std::endl;
-		
-                ITrace::ChargeSequence charge(wave.begin()+mm.first, wave.begin()+mm.second);
-                auto trace = make_shared<SimpleTrace>(chid, tbin, charge);
-                traces.push_back(trace);
-            }
-        }
+        auto newtraces = process_face(face, face_depos);
+        traces.insert(traces.end(), newtraces.begin(), newtraces.end());
     }
 
     auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
