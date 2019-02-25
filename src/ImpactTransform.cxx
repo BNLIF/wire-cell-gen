@@ -433,7 +433,7 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
     
   // int nrows = resp_f_w.rows();
   // int ncols = resp_f_w.cols();
-  std::cout << "# of channels: " << m_decon_data.rows() << " # of ticks: " << m_decon_data.cols() << std::endl;
+  std::cout << "Gen::ImpactTransform: # of channels: " << m_decon_data.rows() << " # of ticks: " << m_decon_data.cols() << std::endl;
   
 }
 
