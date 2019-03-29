@@ -294,6 +294,16 @@ void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std:
       int abs_pbin = pbin + poffset_bin;
       if (abs_pbin < min_imp || abs_pbin >= max_imp) continue;
       double weight = qweight[pbin];
+      auto const channel = map_imp_ch[abs_pbin];
+      auto const redimp = map_imp_redimp[abs_pbin];
+      auto const array_num_redimp = map_redimp_vec[redimp];
+      auto const next_array_num_redimp = map_redimp_vec[redimp+1];
+
+      auto& map_pair_pos = vec_map_pair_pos.at(array_num_redimp);
+      auto& next_map_pair_pos = vec_map_pair_pos.at(next_array_num_redimp);
+
+      auto& vec_charge = vec_vec_charge.at(array_num_redimp);
+      auto& next_vec_charge = vec_vec_charge.at(next_array_num_redimp);
 
       for (int tbin = 0; tbin!= nt; tbin++){
 	int abs_tbin = tbin + toffset_bin;
@@ -311,21 +321,21 @@ void Gen::BinnedDiffusion_transform::get_charge_vec(std::vector<std::vector<std:
 	//}else{
 	//}
 
-	long int index1 = map_imp_ch[abs_pbin]*100000 + abs_tbin;
-	auto it = vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]]).find(index1);
-	if (it == vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]]).end()){
-	  vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]])[index1] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).size();
-	  vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*weight));
+       long int index1 = channel*100000 + abs_tbin;
+       auto it = map_pair_pos.find(index1);
+       if (it == map_pair_pos.end()){
+         map_pair_pos[index1] = vec_charge.size();
+         vec_charge.emplace_back(channel, abs_tbin, charge*weight);
 	}else{
-	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin] ]).at(vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]])[index1])) += charge * weight;
+         std::get<2>(vec_charge.at(it->second)) += charge * weight;
 	}
 
-	auto it1 = vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).find(index1);
-	if (it1 == vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).end()){
-	  vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1])[index1] = vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).size();
-	  vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).push_back(std::make_tuple(map_imp_ch[abs_pbin],abs_tbin,charge*(1-weight)));
+       auto it1 = next_map_pair_pos.find(index1);
+       if (it1 == next_map_pair_pos.end()){
+         next_map_pair_pos[index1] = next_vec_charge.size();
+         next_vec_charge.emplace_back(channel, abs_tbin, charge*(1-weight));
 	}else{
-	  std::get<2>(vec_vec_charge.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1]).at(vec_map_pair_pos.at(map_redimp_vec[map_imp_redimp[abs_pbin]+1])[index1]) ) += charge*(1-weight);
+         std::get<2>(next_vec_charge.at(it1->second)) += charge*(1-weight);
 	}
 	
 	// if (map_tuple_pos.find(std::make_tuple(map_redimp_vec[map_imp_redimp[abs_pbin]],map_imp_ch[abs_pbin],abs_tbin))==map_tuple_pos.end()){
@@ -449,4 +459,3 @@ std::pair<int,int> Gen::BinnedDiffusion_transform::time_bin_range(double nsigma)
     return std::make_pair(std::max(m_tbins.bin(mm.first),0),
                           std::min(m_tbins.bin(mm.second)+1, m_tbins.nbins()));
 }
-
