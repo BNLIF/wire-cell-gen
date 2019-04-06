@@ -12,6 +12,7 @@
 #include "WireCellGen/Random.h"
 
 #include "WireCellUtil/NamedFactory.h"
+#include "WireCellUtil/Logging.h"
 
 #include <random>
 
@@ -19,6 +20,7 @@ WIRECELL_FACTORY(Random, WireCell::Gen::Random,
                  WireCell::IRandom, WireCell::IConfigurable)
 
 using namespace WireCell;
+using spdlog::warn;
 
 Gen::Random::Random(const std::string& generator,
                     const std::vector<unsigned int> seeds)
@@ -87,7 +89,7 @@ void Gen::Random::configure(const WireCell::Configuration& cfg)
         m_pimpl = new RandomT<std::mt19937>(m_seeds);
     }
     else {
-        std::cerr << "Gen::Random::configure: warning: unknown random engine: \"" << gen << "\" using default\n";
+        warn("Gen::Random::configure: warning: unknown random engine: \"{}\" using default", gen);
         m_pimpl = new RandomT<std::default_random_engine>(m_seeds);
     }
 }
