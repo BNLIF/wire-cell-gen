@@ -4,6 +4,7 @@
 #include "WireCellIface/IDepoSource.h"
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/Logging.h"
 
 #include <tuple>
 #include <deque>
@@ -45,6 +46,7 @@ namespace WireCell {
             std::deque<WireCell::IDepo::pointer> m_depos;
             std::vector<track_t> m_tracks; // collect for posterity
             int m_count;
+            Log::logptr_t l;
         };
 
     }

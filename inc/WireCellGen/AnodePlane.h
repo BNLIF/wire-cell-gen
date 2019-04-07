@@ -9,6 +9,7 @@
 
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellIface/IConfigurable.h"
+#include "WireCellUtil/Logging.h"
 #include <unordered_map>
 
 namespace WireCell {
@@ -45,6 +46,7 @@ namespace WireCell {
             std::unordered_map<int, IWire::vector> m_c2wires;
             std::vector<int> m_channels;
             std::unordered_map<int, IChannel::pointer> m_ichannels;
+            Log::logptr_t l;
         };
     }
 

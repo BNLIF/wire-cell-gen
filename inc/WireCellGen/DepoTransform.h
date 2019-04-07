@@ -11,6 +11,7 @@
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellIface/WirePlaneId.h"
 #include "WireCellIface/IDepo.h"
+#include "WireCellUtil/Logging.h"
 
 namespace WireCell {
     namespace Gen {
@@ -46,6 +47,7 @@ namespace WireCell {
             double m_drift_speed;
             double m_nsigma;
             int m_frame_count;
+            Log::logptr_t l;
 
         };
     }

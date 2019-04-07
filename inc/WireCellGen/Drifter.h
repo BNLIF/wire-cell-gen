@@ -5,6 +5,7 @@
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IRandom.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/Logging.h"
 
 
 #include <set>
@@ -179,7 +180,8 @@ namespace WireCell {
                 bool operator()(const Xregion& xr) const { return xr.inside_response(depo->pos().x()); }
             };
 
-        };
+            Log::logptr_t l;
+        };                      // Drifter
 
     }
 

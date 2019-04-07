@@ -27,6 +27,7 @@ Gen::Ductor::Ductor()
     , m_fluctuate(true)
     , m_mode("continuous")
     , m_frame_count(0)
+    , l(Log::logger("sim"))
 {
 }
 
@@ -84,10 +85,6 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 {
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
-    if (!m_anode) {
-        cerr << "Gen::Ductor["<<(void*)this <<"]: failed to get anode: \"" << m_anode_tn << "\"\n";
-        return;                 // fixme: should throw something!
-    }
 
     m_nsigma = get<double>(cfg, "nsigma", m_nsigma);
     bool continuous = get<bool>(cfg, "continuous", true);
@@ -116,6 +113,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 
     auto jpirs = cfg["pirs"];
     if (jpirs.isNull() or jpirs.empty()) {
+        l->error("must configure with some plane impace response components");
         THROW(ValueError() << errmsg{"Gen::Ductor: must configure with some plane impact response components"});
     }
     m_pirs.clear();
@@ -125,13 +123,8 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
         m_pirs.push_back(pir);
     }
 
-    cerr << "Gen::Ductor: AnodePlane:" << m_anode_tn
-         << " mode:" << m_mode
-         << " fluctuate:" << (m_fluctuate ? "on" : "off")
-         << " time start: " << m_start_time/units::ms << "ms"
-         << " readout time: " << m_readout_time/units::ms << "ms"
-         << " frame start: " << m_frame_count
-         << "\n";
+    l->debug("AnodePlane: {}, mode: {}, fluctuate: {}, time start: {} ms, readout time: {} ms, frame start: {}", m_anode_tn, m_mode, (m_fluctuate ? "on" : "off"), m_start_time/units::ms, m_readout_time/units::ms, m_frame_count);
+
 }
 
 ITrace::vector Gen::Ductor::process_face(IAnodeFace::pointer face,
@@ -170,8 +163,6 @@ ITrace::vector Gen::Ductor::process_face(IAnodeFace::pointer face,
             int chid = wires[iwire]->channel();
             int tbin = mm.first;
 
-            //std::cout << mm.first << " "<< mm.second << std::endl;
-		
             ITrace::ChargeSequence charge(wave.begin()+mm.first, wave.begin()+mm.second);
             auto trace = make_shared<SimpleTrace>(chid, tbin, charge);
             traces.push_back(trace);
@@ -190,8 +181,8 @@ void Gen::Ductor::process(output_queue& frames)
         IDepo::vector face_depos, dropped_depos;
         auto bb = face->sensitive();
         if (bb.empty()) {
-            cerr << "Gen::Ductor anode:" << m_anode->ident() << " face:" << face->ident()
-                 << " is marked insensitive, skipping\n";
+            l->debug("anode: {} face: {} is marked insensitive, skipping",
+                     m_anode->ident(), face->ident());
             continue;
         }
 
@@ -206,19 +197,22 @@ void Gen::Ductor::process(output_queue& frames)
 
         if (face_depos.size()) {
             auto ray = bb.bounds();
-            cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
-                 << ": processing " << face_depos.size() << " depos spanning: t:["
-                 << face_depos.front()->time()/units::ms << ", "
-                 << face_depos.back()->time()/units::ms << "]ms, bb: "
-                 << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
+            l->debug("anode: {}, face: {}, processing {} depos spanning "
+                     "t:[{},{}]ms, bb:[{}-->{}]cm",
+                     m_anode->ident(), face->ident(), face_depos.size(),
+                     face_depos.front()->time()/units::ms,
+                     face_depos.back()->time()/units::ms,
+                     ray.first/units::cm,ray.second/units::cm);
         }
         if (dropped_depos.size()) {
             auto ray = bb.bounds();
-            cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
-                 << ": dropped " << dropped_depos.size()<<" depos spanning: t:["
-                 << dropped_depos.front()->time()/units::ms << ", "
-                 << dropped_depos.back()->time()/units::ms << "]ms, outside bb: "
-                 << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
+            l->debug("anode: {}, face: {}, dropped {} depos spanning "
+                     "t:[{},{}]ms, outside bb:[{}-->{}]cm",
+                     m_anode->ident(), face->ident(),
+                     dropped_depos.size(),
+                     dropped_depos.front()->time()/units::ms,
+                     dropped_depos.back()->time()/units::ms,
+                     ray.first/units::cm, ray.second/units::cm);
 
         }
 
@@ -228,8 +222,8 @@ void Gen::Ductor::process(output_queue& frames)
 
     auto frame = make_shared<SimpleFrame>(m_frame_count, m_start_time, traces, m_tick);
     frames.push_back(frame);
-    cerr << "Gen::Ductor made frame: " << m_frame_count
-         << " with " << traces.size() << " traces @" << m_start_time/units::ms <<"ms\n";
+    l->debug("made frame: {} with {} traces @ {}ms",
+             m_frame_count, traces.size(), m_start_time/units::ms);
 
     // fixme: what about frame overflow here?  If the depos extend
     // beyond the readout where does their info go?  2nd order,

@@ -5,8 +5,6 @@
 #include "WireCellUtil/NamedFactory.h"
 #include "WireCellUtil/FFTBestLength.h"
 
-#include <iostream>             // debugging
-
 WIRECELL_FACTORY(PlaneImpactResponse, WireCell::Gen::PlaneImpactResponse,
                  WireCell::IPlaneImpactResponse, WireCell::IConfigurable)
 
@@ -38,6 +36,7 @@ Gen::PlaneImpactResponse::PlaneImpactResponse(int plane_ident, size_t nbins, dou
     , m_plane_ident(plane_ident)
     , m_nbins(nbins)
     , m_tick(tick)
+    , l(Log::logger("geom"))
 {
 }
 
@@ -91,8 +90,6 @@ void Gen::PlaneImpactResponse::configure(const WireCell::Configuration& cfg)
     m_nbins = (size_t) get(cfg, "nticks", (int)m_nbins);
     m_tick = get(cfg, "tick", m_tick);
 
-    // std::cout << m_long.size() << " " << m_long_padding << " " << m_overall_short_padding << std::endl;
-    
     build_responses();
 }
 
@@ -102,7 +99,6 @@ void Gen::PlaneImpactResponse::build_responses()
     auto ifr = Factory::find_tn<IFieldResponse>(m_frname);
 
     const size_t n_short_length = fft_best_length(m_overall_short_padding/m_tick);
-    //    std::cout << n_short_length << std::endl;
     
     // build "short" response spectra
     WireCell::Waveform::compseq_t short_spec(n_short_length, Waveform::complex_t(1.0, 0.0));
@@ -111,17 +107,13 @@ void Gen::PlaneImpactResponse::build_responses()
         const auto& name = m_short[ind];
         auto iw = Factory::find_tn<IWaveform>(name);
         if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
-            cerr << "Gen::PlaneImpactResponse: from " << name
-                 << " got " << iw->waveform_period()/units::us << "us sample period "
-                 << " expected " << m_tick/units::us << "us\n";
+            l->error("from {} got {} us sample period expected {} us",
+                     name, iw->waveform_period()/units::us, m_tick/units::us);
             THROW(ValueError() << errmsg{"Tick mismatch in " + name});
         }
         auto wave = iw->waveform_samples(); // copy
         if (wave.size() != n_short_length) {
-            cerr << "Gen::PlaneImpactResponse: warning: "
-                 << "short response " <<name<<"  has different number of samples ("
-                 << wave.size()
-                 << ") than expected ("<< n_short_length<<"), resizing\n";
+            l->debug("PIR: short response {} has different number of samples ({}) than expected ({})", name, wave.size(), n_short_length);
             wave.resize(n_short_length, 0);
         }
         // note: we are ignoring waveform_start which will introduce
@@ -130,7 +122,6 @@ void Gen::PlaneImpactResponse::build_responses()
         for (size_t ibin=0; ibin < n_short_length; ++ibin) {
             short_spec[ibin] *= spec[ibin];
         }
-	//std::cout << ind << std::endl;
     }
 
     
@@ -142,17 +133,13 @@ void Gen::PlaneImpactResponse::build_responses()
         const auto& name = m_long[ind];
         auto iw = Factory::find_tn<IWaveform>(name);
         if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
-            cerr << "Gen::PlaneImpactResponse: from " << name
-                 << " got " << iw->waveform_period()/units::us << "us sample period "
-                 << " expected " << m_tick/units::us << "us\n";
+            l->error("from {} got {} us sample period expected {} us",
+                     name,  iw->waveform_period()/units::us, m_tick/units::us);
             THROW(ValueError() << errmsg{"Tick mismatch in " + name});
         }
         auto wave = iw->waveform_samples(); // copy
         if (wave.size() != n_long_length) {
-            cerr << "Gen::PlaneImpactResponse: warning: "
-                 << "long response " <<name<<"  has different number of samples ("
-                 << wave.size()
-                 << ") than expected ("<< n_long_length<<"), resizing\n";
+            l->debug("PIR: long response {} has different number of samples ({}) than expected ({})", name, wave.size(), n_long_length);
             wave.resize(n_long_length, 0);
         }
         // note: we are ignoring waveform_start which will introduce
@@ -161,7 +148,7 @@ void Gen::PlaneImpactResponse::build_responses()
         for (size_t ibin=0; ibin < n_long_length; ++ibin) {
             long_spec[ibin] *= spec[ibin];
         }
-	//std::cout << ind << std::endl;
+
     }
     WireCell::Waveform::realseq_t long_wf;
     if (nlong >0)
@@ -201,9 +188,6 @@ void Gen::PlaneImpactResponse::build_responses()
     const double rawresp_tick = fr.period;
     const double rawresp_max = rawresp_min + rawresp_size*rawresp_tick;
     Binning rawresp_bins(rawresp_size, rawresp_min, rawresp_max);
-    //std::cerr << "PlaneImpactResponse: field responses: " << rawresp_size
-    //          << "bins covering ["<<rawresp_min/units::us<<","<<rawresp_max/units::us<<"]/"<<rawresp_tick/units::us << " us\n";
-
 
     // collect paths and index by wire and impact position.
     std::map<int, region_indices_t> wire_to_ind;
@@ -221,12 +205,7 @@ void Gen::PlaneImpactResponse::build_responses()
             const size_t bin = time/m_tick; 
 
             if (bin>= n_short_length) {
-                std::cerr << "PIR: out of bounds field response bin: " << bin
-                          << " ntbins=" << n_short_length
-                          << " time=" << time/units::us << "us"
-                          << " tick=" << m_tick/units::us << "us"
-                          << std::endl;
-		//     THROW(ValueError() << errmsg{"PIR: out of bounds field response bin"});
+                l->warn("PIR: out of bounds field response bin={}, ntbins={}, time={} us, tick={} us", bin, n_short_length, time/units::us, m_tick/units::us);
             }
 
 
@@ -253,8 +232,6 @@ void Gen::PlaneImpactResponse::build_responses()
 	Waveform::realseq_t wf = Waveform::idft(spec);
 	wf.resize(m_nbins,0);
 
-	//	std::cout << m_long_padding/m_tick << std::endl;
-	
 	IImpactResponse::pointer ir = std::make_shared<Gen::ImpactResponse>(ipath, wf, m_overall_short_padding/m_tick, long_wf, m_long_padding/m_tick);
 	m_ir.push_back(ir);
     }
@@ -292,9 +269,6 @@ std::pair<int,int> Gen::PlaneImpactResponse::closest_wire_impact(double relpitch
     const double remainder_pitch = relpitch - relwire*m_pitch;
     const int impact_index = int(round(remainder_pitch / m_impact)) + nimp_per_wire()/2;
 
-    //std::cerr << "relpitch:" << relpitch << ", relwire:"<<relwire<<", wi:" << wire_index
-    //          << ", rempitch=" << remainder_pitch << ", impactind=" << impact_index
-    //          <<std::endl;
     return std::make_pair(wire_index, impact_index);
 }
 
@@ -305,29 +279,22 @@ IImpactResponse::pointer Gen::PlaneImpactResponse::closest(double relpitch) cons
     }
     std::pair<int,int> wi = closest_wire_impact(relpitch);
     if (wi.first < 0 || wi.first >= (int)m_bywire.size()) {
-        std::cerr << "PlaneImpactResponse::closest(): relative pitch: "
-                  << relpitch
-                  << " outside of wire range: " << wi.first
-                  << std::endl;
+        l->debug("PIR: closest relative pitch:{} outside of wire range: {}",
+                 relpitch,  wi.first);
         return nullptr;
     }
     const std::vector<int>& region = m_bywire[wi.first];
     if (wi.second < 0 || wi.second >= (int)region.size()) {
-        std::cerr << "PlaneImpactResponse::closest(): relative pitch: "
-                  << relpitch
-                  << " outside of impact range: " << wi.second
-                  << std::endl;
+        l->debug("PIR: relative pitch:{} outside of impact range: {}",
+                 relpitch,  wi.second);
         return nullptr;
     }
     int irind = region[wi.second];
     if (irind < 0 || irind > (int)m_ir.size()) {
-        std::cerr << "PlaneImpactResponse::closest(): relative pitch: "
-                  << relpitch
-                  << " no impact response for region: " << irind
-                  << std::endl;
+        l->debug("PIR: relative pitch:{} no impact response for region: {}",
+                 relpitch, irind);
         return nullptr;
     }
-    // std::cout << relpitch << " " << wi.first << " " << wi.second << " " << irind << std::endl;
     
     return m_ir[irind];
 }
@@ -342,11 +309,9 @@ TwoImpactResponses Gen::PlaneImpactResponse::bounded(double relpitch) const
 
     auto region = m_bywire[wi.first];
     if (wi.second == 0) {
-      //std::cout << relpitch << " " << 0 << " A " << 1 << " " << region[0] << " " << region[1] << std::endl;
         return std::make_pair(m_ir[region[0]], m_ir[region[1]]);
     }
     if (wi.second == (int)region.size()-1) {
-      // std::cout << relpitch << " " << wi.second-1 << " B " << wi.second << " " << region[wi.second-1] << " "<< region[wi.second] << std::endl;
         return std::make_pair(m_ir[region[wi.second-1]], m_ir[region[wi.second]]);
     }
 
@@ -354,10 +319,8 @@ TwoImpactResponses Gen::PlaneImpactResponse::bounded(double relpitch) const
     const double sign = absimpact - wi.second*m_impact;
 
     if (sign > 0) {
-      //   std::cout << relpitch << " " << wi.second << " C " << wi.second+1 << " " << region[wi.second] << " " << region[wi.second+1] << std::endl;
         return TwoImpactResponses(m_ir[region[wi.second]], m_ir[region[wi.second+1]]);
     }
-    //    std::cout << relpitch << " " << wi.second-1 << " D " << wi.second << " " << region[wi.second-1] << " " << region[wi.second] << std::endl;
     return TwoImpactResponses(m_ir[region[wi.second-1]], m_ir[region[wi.second]]);
 }
 

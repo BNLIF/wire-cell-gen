@@ -6,6 +6,7 @@
 
 #include "WireCellUtil/Waveform.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/Logging.h"
 
 namespace WireCell {
 
@@ -116,6 +117,8 @@ namespace WireCell {
 
 	std::vector<IImpactResponse::pointer> m_ir;
 	double m_half_extent, m_pitch, m_impact;
+
+        Log::logptr_t l;
 
         void build_responses();
 

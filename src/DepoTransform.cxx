@@ -61,6 +61,7 @@ Gen::DepoTransform::DepoTransform()
     , m_drift_speed(1.0*units::mm/units::us)
     , m_nsigma(3.0)
     , m_frame_count(0)
+    , l(Log::logger("sim"))
 {
 }
 
@@ -89,7 +90,9 @@ void Gen::DepoTransform::configure(const WireCell::Configuration& cfg)
 
     auto jpirs = cfg["pirs"];
     if (jpirs.isNull() or jpirs.empty()) {
-        THROW(ValueError() << errmsg{"Gen::Ductor: must configure with some plane impact response components"});
+        std::string msg = "must configure with some plane impact response components";
+        l->error(msg);
+        THROW(ValueError() << errmsg{"Gen::Ductor: " + msg});
     }
     m_pirs.clear();
     for (auto jpir : jpirs) {
@@ -156,8 +159,8 @@ bool Gen::DepoTransform::operator()(const input_pointer& in, output_pointer& out
         IDepo::vector face_depos, dropped_depos;
         auto bb = face->sensitive();
         if (bb.empty()) {
-            cerr << "Gen::Ductor anode:" << m_anode->ident() << " face:" << face->ident()
-                 << " is marked insensitive, skipping\n";
+            l->debug("anode {} face {} is marked insensitive, skipping",
+                     m_anode->ident(), face->ident());
             continue;
         }
 
@@ -172,19 +175,22 @@ bool Gen::DepoTransform::operator()(const input_pointer& in, output_pointer& out
 
         if (face_depos.size()) {
             auto ray = bb.bounds();
-            cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
-                 << ": processing " << face_depos.size() << " depos spanning: t:["
-                 << face_depos.front()->time()/units::ms << ", "
-                 << face_depos.back()->time()/units::ms << "]ms, bb: "
-                 << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
+            l->debug("anode: {}, face: {}, processing {} depos spanning "
+                     "t:[{},{}]ms, bb:[{}-->{}]cm",
+                     m_anode->ident(), face->ident(), face_depos.size(),
+                     face_depos.front()->time()/units::ms,
+                     face_depos.back()->time()/units::ms,
+                     ray.first/units::cm,ray.second/units::cm);
         }
         if (dropped_depos.size()) {
             auto ray = bb.bounds();
-            cerr << "Gen::Ductor: anode:" << m_anode->ident() << " face:" << face->ident()
-                 << ": dropped " << dropped_depos.size()<<" depos spanning: t:["
-                 << dropped_depos.front()->time()/units::ms << ", "
-                 << dropped_depos.back()->time()/units::ms << "]ms, outside bb: "
-                 << ray.first/units::cm << " --> " << ray.second/units::cm <<"cm\n";
+            l->debug("anode: {}, face: {}, dropped {} depos spanning "
+                     "t:[{},{}]ms, outside bb:[{}-->{}]cm",
+                     m_anode->ident(), face->ident(),
+                     dropped_depos.size(),
+                     dropped_depos.front()->time()/units::ms,
+                     dropped_depos.back()->time()/units::ms,
+                     ray.first/units::cm, ray.second/units::cm);
 
         }
 
@@ -220,8 +226,6 @@ bool Gen::DepoTransform::operator()(const input_pointer& in, output_pointer& out
                 int chid = wires[iwire]->channel();
                 int tbin = mm.first;
 
-                //std::cout << mm.first << " "<< mm.second << std::endl;
-		
                 ITrace::ChargeSequence charge(wave.begin()+mm.first, wave.begin()+mm.second);
                 auto trace = make_shared<SimpleTrace>(chid, tbin, charge);
                 traces.push_back(trace);

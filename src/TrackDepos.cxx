@@ -7,7 +7,6 @@
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/Persist.h"
 
-#include <iostream>		// debug
 #include <sstream>
 
 WIRECELL_FACTORY(TrackDepos, WireCell::Gen::TrackDepos,
@@ -20,6 +19,7 @@ Gen::TrackDepos::TrackDepos(double stepsize, double clight)
     : m_stepsize(stepsize)
     , m_clight(clight)
     , m_count(0)
+    , l(Log::logger("sim"))
 {
 }
 
@@ -84,7 +84,8 @@ static std::string dump(IDepo::pointer d)
 
 void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double charge)
 {
-    cerr << "Gen::TrackDepos::add_track(" << time/units::us << "us, (" << ray.first/units::cm << " -> " << ray.second/units::cm << ")cm, " << charge << ")\n";
+    l->debug("add_track({} us, ({} -> {})cm, {})",
+             time/units::us, ray.first/units::cm, ray.second/units::cm, charge);
     m_tracks.push_back(track_t(time, ray, charge));
 
     const WireCell::Vector dir = WireCell::ray_unit(ray);
@@ -111,9 +112,7 @@ void Gen::TrackDepos::add_track(double time, const WireCell::Ray& ray, double ch
 
     // earliest first
     std::sort(m_depos.begin(), m_depos.end(), ascending_time);
-    cerr << "Gen::TrackDepos: " << m_depos.size() << " depos over " << length/units::mm << "mm\n";
-    // cerr << "\treverse first:" << dump(m_depos[0]) << endl;
-    // cerr << "\t reverse last:" << dump(m_depos[m_depos.size()-1]) << endl;
+    l->debug("depos: {} over {}mm", m_depos.size(), length/units::mm);
 }
 
 
@@ -126,7 +125,7 @@ bool Gen::TrackDepos::operator()(output_pointer& out)
     m_depos.pop_front();
 
     if (!out) {                 // chirp
-        std::cerr << "TrackDepos: sends EOS at call " << m_count << "\n";
+        l->debug("EOS at call {}", m_count);
     }
 
     ++m_count;

@@ -11,6 +11,7 @@
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellIface/IPlaneImpactResponse.h"
 #include "WireCellIface/IRandom.h"
+#include "WireCellUtil/Logging.h"
 
 #include <vector>
 
@@ -60,6 +61,7 @@ namespace WireCell {
             virtual ITrace::vector process_face(IAnodeFace::pointer face,
                                                 const IDepo::vector& face_depos);
             bool start_processing(const input_pointer& depo);
+            Log::logptr_t l;
 
         };
     }
