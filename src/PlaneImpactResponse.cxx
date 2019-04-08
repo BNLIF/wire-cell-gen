@@ -107,7 +107,7 @@ void Gen::PlaneImpactResponse::build_responses()
         const auto& name = m_short[ind];
         auto iw = Factory::find_tn<IWaveform>(name);
         if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
-            l->error("from {} got {} us sample period expected {} us",
+            l->critical("from {} got {} us sample period expected {} us",
                      name, iw->waveform_period()/units::us, m_tick/units::us);
             THROW(ValueError() << errmsg{"Tick mismatch in " + name});
         }
@@ -133,7 +133,7 @@ void Gen::PlaneImpactResponse::build_responses()
         const auto& name = m_long[ind];
         auto iw = Factory::find_tn<IWaveform>(name);
         if (std::abs(iw->waveform_period() - m_tick) > 1*units::ns) {
-            l->error("from {} got {} us sample period expected {} us",
+            l->critical("from {} got {} us sample period expected {} us",
                      name,  iw->waveform_period()/units::us, m_tick/units::us);
             THROW(ValueError() << errmsg{"Tick mismatch in " + name});
         }

@@ -113,7 +113,7 @@ void Gen::Ductor::configure(const WireCell::Configuration& cfg)
 
     auto jpirs = cfg["pirs"];
     if (jpirs.isNull() or jpirs.empty()) {
-        l->error("must configure with some plane impace response components");
+        l->critical("must configure with some plane impace response components");
         THROW(ValueError() << errmsg{"Gen::Ductor: must configure with some plane impact response components"});
     }
     m_pirs.clear();

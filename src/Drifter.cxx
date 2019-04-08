@@ -106,7 +106,7 @@ void Gen::Drifter::configure(const WireCell::Configuration& cfg)
 
     auto jxregions = cfg["xregions"];
     if (jxregions.empty()) {
-        l->error("no xregions given so I can do nothing");
+        l->critical("no xregions given so I can do nothing");
         THROW(ValueError() << errmsg{"no xregions given"});
     }
     for (auto jone : jxregions) {

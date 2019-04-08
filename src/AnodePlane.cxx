@@ -125,7 +125,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
     auto jfaces = cfg["faces"];
     if (jfaces.isNull() or jfaces.empty() or (jfaces[0].isNull() and jfaces[1].isNull())) {
-        l->error("at least two faces need to be defined, got:\n{}", jfaces);
+        l->critical("at least two faces need to be defined, got:\n{}", jfaces);
         THROW(ValueError() << errmsg{"AnodePlane: error in configuration"});        
     }
 
@@ -136,7 +136,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
     // get wire schema
     const string ws_name = get<string>(cfg, "wire_schema");
     if (ws_name.empty()) {
-        l->error("\"wire_schema\" parameter must specify an IWireSchema component");
+        l->critical("\"wire_schema\" parameter must specify an IWireSchema component");
         THROW(ValueError() << errmsg{"\"wire_schema\" parameter must specify an IWireSchema component"});
     }
     auto iws = Factory::find_tn<IWireSchema>(ws_name); // throws if not found
@@ -179,7 +179,7 @@ void Gen::AnodePlane::configure(const WireCell::Configuration& cfg)
 
             WirePlaneId wire_plane_id(iplane2layer[iplane], iface, m_ident);
             if (wire_plane_id.index() < 0) {
-                l->error("Bad wire plane id: {}", wire_plane_id.ident());
+                l->critical("Bad wire plane id: {}", wire_plane_id.ident());
                 THROW(ValueError() << errmsg{format("bad wire plane id: %d", wire_plane_id.ident())});
             }
 
