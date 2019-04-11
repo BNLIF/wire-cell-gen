@@ -12,6 +12,7 @@
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IAnodePlane.h"
 #include "WireCellUtil/Units.h"
+#include "WireCellUtil/Logging.h"
 #include <deque>
 
 namespace WireCell {
@@ -46,6 +47,7 @@ namespace WireCell {
             double m_gain;
             std::vector<double> m_fullscale, m_baselines;
             std::string m_frame_tag;
+            Log::logptr_t log;
         };
 
     }

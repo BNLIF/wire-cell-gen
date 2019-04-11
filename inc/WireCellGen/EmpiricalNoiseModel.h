@@ -19,6 +19,7 @@
 
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/Waveform.h"
+#include "WireCellUtil/Logging.h"
 
 #include <string>
 #include <vector>
@@ -109,6 +110,8 @@ namespace WireCell {
 	    Waveform::realseq_t m_elec_resp_freq;
 	    mutable std::unordered_map<int, Waveform::realseq_t> m_elec_resp_cache;
 	    mutable amplitude_t comb_amp;
+
+            Log::logptr_t log;
         };
 
     }

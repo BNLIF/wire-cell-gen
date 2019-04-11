@@ -8,6 +8,7 @@ using namespace std;
 using namespace WireCell;
 Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedDiffusion_transform& bd)
   :m_pir(pir), m_bd(bd)
+  , log(Log::logger("sim"))
 {
 
   // for (int i=0;i!=210;i++){
@@ -433,9 +434,10 @@ Gen::ImpactTransform::ImpactTransform(IPlaneImpactResponse::pointer pir, BinnedD
     
   // int nrows = resp_f_w.rows();
   // int ncols = resp_f_w.cols();
-  std::cout << "Gen::ImpactTransform: # of channels: " << m_decon_data.rows() << " # of ticks: " << m_decon_data.cols() << std::endl;
+  log->debug("ImpactTransform: # of channels: {} # of ticks: {}",
+             m_decon_data.rows(), m_decon_data.cols());
   
-}
+} // constructor
 
 
 

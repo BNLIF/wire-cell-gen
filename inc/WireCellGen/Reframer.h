@@ -33,6 +33,7 @@
 #include "WireCellIface/IFrameFilter.h"
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellIface/IAnodePlane.h"
+#include "WireCellUtil/Logging.h"
 
 #include <vector>
 #include <string>
@@ -59,7 +60,7 @@ namespace WireCell {
 
             double m_toffset, m_fill;
             int m_tbin, m_nticks;
-
+            Log::logptr_t log;
         };
     }
 }

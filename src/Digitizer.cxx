@@ -7,6 +7,7 @@
 
 #include "WireCellUtil/Testing.h"
 #include "WireCellUtil/NamedFactory.h"
+#include <sstream>
 
 WIRECELL_FACTORY(Digitizer, WireCell::Gen::Digitizer,
                  WireCell::IFrameFilter, WireCell::IConfigurable)
@@ -24,6 +25,7 @@ Gen::Digitizer::Digitizer(const std::string& anode,
     , m_fullscale(fullscale)
     , m_baselines(baselines)
     , m_frame_tag("")
+    , log(Log::logger("sim"))
 {
 }
 
@@ -58,11 +60,6 @@ void Gen::Digitizer::configure(const Configuration& cfg)
 {
     m_anode_tn = get<string>(cfg, "anode", m_anode_tn);
     m_anode = Factory::find_tn<IAnodePlane>(m_anode_tn);
-    if (!m_anode) {
-        cerr << "Gen::Digitizer: failed to get anode: \"" << m_anode_tn << "\"\n";
-        Assert(m_anode);        // fixme, should instead throw something
-    }
-    //Assert(m_anode->resolve(1104).valid());  // test for microboone setup
 
     m_resolution = get(cfg, "resolution", m_resolution);
     m_gain = get(cfg, "gain", m_gain);
@@ -70,13 +67,15 @@ void Gen::Digitizer::configure(const Configuration& cfg)
     m_baselines = get(cfg, "baselines", m_baselines);
     m_frame_tag = get(cfg, "frame_tag", m_frame_tag);
 
-    cerr << "Gen::Digitizer: "
-         << "tag=\""<<m_frame_tag << "\", "
-         << "resolution="<<m_resolution<<" bits, "
-         << "maxvalue=" << (1<<m_resolution) << " counts, "
-         << "gain=" << m_gain << ", "
-         << "fullscale=[" << m_fullscale[0]/units::mV << "," << m_fullscale[1]/units::mV << "] mV, "
-         << "baselines=[" << m_baselines[0]/units::mV << "," << m_baselines[1]/units::mV << "," << m_baselines[2]/units::mV << "] mV\n";
+    std::stringstream ss;
+    ss << "Gen::Digitizer: "
+       << "tag=\""<<m_frame_tag << "\", "
+       << "resolution="<<m_resolution<<" bits, "
+       << "maxvalue=" << (1<<m_resolution) << " counts, "
+       << "gain=" << m_gain << ", "
+       << "fullscale=[" << m_fullscale[0]/units::mV << "," << m_fullscale[1]/units::mV << "] mV, "
+       << "baselines=[" << m_baselines[0]/units::mV << "," << m_baselines[1]/units::mV << "," << m_baselines[2]/units::mV << "] mV";
+    log->debug(ss.str());
 
 }
 
@@ -98,7 +97,7 @@ double Gen::Digitizer::digitize(double voltage)
 bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adcframe)
 {
     if (!vframe) {              // EOS
-        //cerr << "Gen::Digitizer: EOS\n";
+        log->debug("Gen::Digitizer: EOS");
         adcframe = nullptr;
         return true;
     }
@@ -107,7 +106,7 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
     // fixme: maybe make this honor a tag 
     auto vtraces = FrameTools::untagged_traces(vframe);
     if (vtraces.empty()) {
-        cerr << "Gen::Digitizer: no traces in input frame " << vframe->ident() << "\n";
+        log->error("Gen::Digitizer: no traces in input frame {}", vframe->ident());
         return false;
     }
 
@@ -132,7 +131,8 @@ bool Gen::Digitizer::operator()(const input_pointer& vframe, output_pointer& adc
         int ch = channels[irow];
         WirePlaneId wpid = m_anode->resolve(ch);
         if (!wpid.valid()) {
-            cerr << "Got invalid WPID for channel " << ch << ": " << wpid << endl;
+            log->warn("Gen::Digitizer, got invalid WPID for channel {}: {}, skipping", ch, wpid);
+            continue;
         }
         const float baseline = m_baselines[wpid.index()];
 

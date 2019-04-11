@@ -15,6 +15,7 @@ using namespace std;
 
 Gen::DepoSetFanout::DepoSetFanout(size_t multiplicity)
     : m_multiplicity(multiplicity)
+    , log(Log::logger("glue"))
 {
 }
 
@@ -34,6 +35,7 @@ void Gen::DepoSetFanout::configure(const WireCell::Configuration& cfg)
 {
     int m = get<int>(cfg, "multiplicity", (int)m_multiplicity);
     if (m<=0) {
+        log->critical("DepoSetFanout multiplicity must be positive");
         THROW(ValueError() << errmsg{"DepoSetFanout multiplicity must be positive"});
     }
     m_multiplicity = m;
@@ -52,10 +54,10 @@ bool Gen::DepoSetFanout::operator()(const input_pointer& in, output_vector& outv
 {
     // Note: if "in" indicates EOS, just pass it on
     if (in) {
-        std::cerr << "DepoSetFanout (" << m_multiplicity << ") fanout data\n";
+        log->debug("DepoSetFanout (x{}) fanout data");
     }
     else {
-        std::cerr << "DepoSetFanout (" << m_multiplicity << ") fanout EOS\n";
+        log->debug("DepoSetFanout (x{}) fanout EOS");
     }
 
     outv.resize(m_multiplicity);
