@@ -4,7 +4,7 @@
 #include "WireCellIface/IFrameFanout.h"
 #include "WireCellIface/IConfigurable.h"
 #include "WireCellUtil/TagRules.h"
-
+#include "WireCellUtil/Logging.h"
 
 namespace WireCell {
     namespace Gen {
@@ -29,6 +29,7 @@ namespace WireCell {
             size_t m_multiplicity;
 
             tagrules::Context m_ft;
+            Log::logptr_t log;
         };
     }
 }

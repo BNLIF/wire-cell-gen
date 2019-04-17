@@ -2,14 +2,12 @@
 #include "WireCellUtil/Units.h"
 #include "WireCellUtil/NamedFactory.h"
 
-#include <iostream>
-
 WIRECELL_FACTORY(DumpFrames, WireCell::Gen::DumpFrames, WireCell::IFrameSink)
 
-using namespace std;
 using namespace WireCell;
 
 Gen::DumpFrames::DumpFrames()
+    : log(Log::logger("glue"))
 {
 }
 
@@ -22,33 +20,35 @@ Gen::DumpFrames::~DumpFrames()
 bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
 {
     if (!frame) {
-        cerr << "Gen::DumpFrames sees EOS\n";
+        log.debug("frame sink sees EOS");
         return true;
     }
     auto traces = frame->traces();
     const int ntraces = traces->size();
     
-    cerr << "Gen::Frame: #" << frame->ident()
-         << " @" << frame->time()/units::ms
-         << " with " << ntraces << " traces" << endl;
+    std::stringstream ss;
+    ss << "sink frame: #" << frame->ident()
+       << " @" << frame->time()/units::ms
+       << " with " << ntraces << " traces";
     {
         string comma = "";
-        cerr << "\tframe tags:[";
+        ss << ", frame tags:[";
         for (auto ftag : frame->frame_tags()) {
-            cerr << comma << ftag;
+            ss << comma << ftag;
             comma = ", ";
         }
-        cerr << "]\n";
+        ss << "]";
     }
     {
         string comma = "";
-        cerr << "\ttrace tags:[";
+        ss << ", trace tags:[";
         for (auto ftag : frame->trace_tags()) {
-            cerr << comma << ftag;
+            ss << comma << ftag;
             comma = ", ";
         }
-        cerr << "]\n";
+        ss << "]";
     }
+    log->debug(ss.str());
     return true;
 }
 

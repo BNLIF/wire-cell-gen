@@ -14,6 +14,7 @@ using namespace WireCell;
 
 Gen::FrameFanout::FrameFanout(size_t multiplicity)
     : m_multiplicity(multiplicity)
+    , log(Log::logger("glue"))
 {
 }
 Gen::FrameFanout::~FrameFanout()
@@ -61,6 +62,7 @@ bool Gen::FrameFanout::operator()(const input_pointer& in, output_vector& outv)
         for (size_t ind=0; ind<m_multiplicity; ++ind) {
             outv[ind] = in;
         }
+        log->debug("FrameFanout: see EOS");
         return true;
     }
 
@@ -69,6 +71,8 @@ bool Gen::FrameFanout::operator()(const input_pointer& in, output_vector& outv)
     // No equivalent should be made for trace tags.
     fintags.push_back("");
 
+
+    std::stringstream taginfo;
 
     for (size_t ind=0; ind<m_multiplicity; ++ind) {
 
@@ -80,7 +84,7 @@ bool Gen::FrameFanout::operator()(const input_pointer& in, output_vector& outv)
 
         for (auto ftag : fouttags) {
             sfout->tag_frame(ftag);
-            //std::cerr << "FrameFanout: tagging frame: " << ftag << std::endl;
+            taginfo << " ftag:" << ftag;
         }
 
         for (auto inttag : in->trace_tags()) {
@@ -92,13 +96,17 @@ bool Gen::FrameFanout::operator()(const input_pointer& in, output_vector& outv)
             const auto& summary = in->trace_summary(inttag);
             for (auto otag : touttags) {
                 sfout->tag_traces(otag, traces, summary);
-                // std::cerr << "FrameFanout: tagging trace set: " << inttag << " -> " << otag << std::endl;
+                taginfo << " " << inttag << "->" << otag;
             }
         };
 
         outv[ind] = IFrame::pointer(sfout);
     }
 
+    std::string tagmsg = taginfo.str();
+    if (!tagmsg.empty()) {
+        log->debug("FrameFanout: tagnifo:{}", taginfo.str());
+    }
     return true;
 }
 
