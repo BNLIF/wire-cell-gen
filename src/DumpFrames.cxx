@@ -20,7 +20,7 @@ Gen::DumpFrames::~DumpFrames()
 bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
 {
     if (!frame) {
-        log.debug("frame sink sees EOS");
+        log->debug("frame sink sees EOS");
         return true;
     }
     auto traces = frame->traces();
@@ -31,7 +31,7 @@ bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
        << " @" << frame->time()/units::ms
        << " with " << ntraces << " traces";
     {
-        string comma = "";
+        std::string comma = "";
         ss << ", frame tags:[";
         for (auto ftag : frame->frame_tags()) {
             ss << comma << ftag;
@@ -40,7 +40,7 @@ bool Gen::DumpFrames::operator()(const IFrame::pointer& frame)
         ss << "]";
     }
     {
-        string comma = "";
+        std::string comma = "";
         ss << ", trace tags:[";
         for (auto ftag : frame->trace_tags()) {
             ss << comma << ftag;
