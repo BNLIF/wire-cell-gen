@@ -29,19 +29,28 @@ double Gen::DepoPlaneX::freezeout_time() const
 
 void Gen::DepoPlaneX::drain(double time)
 {
+    IDepo::vector doomed;
     for (auto depo : m_queue) {
 	if (depo->time() < time) {
 	    m_frozen.push_back(depo);
-	    m_queue.erase(depo);
+            doomed.push_back(depo);
 	}
+    }
+    for (auto depo : doomed) {
+        m_queue.erase(depo);
     }
 }
 
 void Gen::DepoPlaneX::freezeout()
 {
+    IDepo::vector doomed;
     for (auto depo : m_queue) {
 	m_frozen.push_back(depo);
-	m_queue.erase(depo);
+        doomed.push_back(depo);
+
+    }
+    for (auto depo : doomed) {
+        m_queue.erase(depo);
     }
 }
 
