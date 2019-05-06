@@ -4,8 +4,6 @@
 #include "WireCellUtil/Exceptions.h"
 #include "WireCellIface/SimpleFrame.h"
 
-#include <iostream>
-
 WIRECELL_FACTORY(FrameFanout, WireCell::Gen::FrameFanout,
                  WireCell::IFrameFanout, WireCell::IConfigurable)
 
