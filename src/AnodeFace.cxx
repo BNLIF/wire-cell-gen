@@ -43,13 +43,17 @@ ray_pair_vector_t get_raypairs(const BoundingBox& bb, const IWirePlane::vector& 
         Ray r1(wray0.first - 0.5*pitvec, wray0.second - 0.5*pitvec);
         Ray r2(wray0.first + 0.5*pitvec, wray0.second + 0.5*pitvec);
 
-        // std::cerr << "L" << raypairs.size() << " " << plane->planeid() << "\n"
-        //           << "\twray0=" << wray0 << " ind=" << wires[0]->index() << " id=" << wires[0]->ident() << " seg=" << wires[0]->segment() << "\n"
-        //           << "\twray1=" << wray1 << " ind=" << wires[1]->index() << " id=" << wires[1]->ident() << " seg=" << wires[1]->segment() << "\n";
-
         raypairs.push_back(ray_pair_t(r1,r2));
 
     }
+
+    // for (size_t layer =0; layer<raypairs.size(); ++layer) {
+    //     const auto& rp = raypairs[layer];
+    //     std::cerr << "L" << layer << " " << planes[0]->planeid() << "\n"
+    //               << "\twray0=" << rp.first << "\n"
+    //               << "\twray1=" << rp.second << "\n";
+    // }
+
     return raypairs;
 }
 

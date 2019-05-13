@@ -54,10 +54,10 @@ bool Gen::DepoSetFanout::operator()(const input_pointer& in, output_vector& outv
 {
     // Note: if "in" indicates EOS, just pass it on
     if (in) {
-        log->debug("DepoSetFanout (x{}) fanout data");
+        log->debug("DepoSetFanout ({}) fanout data", in->ident());
     }
     else {
-        log->debug("DepoSetFanout (x{}) fanout EOS");
+        log->debug("DepoSetFanout fanout EOS");
     }
 
     outv.resize(m_multiplicity);
