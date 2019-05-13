@@ -120,8 +120,14 @@ bool Gen::FrameFanin::operator()(const input_vector& invec, output_pointer& out)
         for (auto inttag : fr->trace_tags()) {
             tagrules::tagset_t touttags = m_ft.transform(iport, "trace", inttag);
             if (touttags.empty()) {
+                // std::cerr << "FrameFanin: no port trace tag for " << inttag << "\n";
                 continue;
             }
+            // std::cerr << "FrameFanin: port trace tags for " << inttag << ":\n";
+            // for (const auto& t : touttags) {
+            //     std::cerr << "\t" << t << "\n";
+            // }
+
             const auto& summary = fr->trace_summary(inttag);
             IFrame::trace_list_t outtrinds;
             for (size_t trind : fr->tagged_traces(inttag)) {
@@ -147,7 +153,7 @@ bool Gen::FrameFanin::operator()(const input_vector& invec, output_pointer& out)
     auto sf = new SimpleFrame(one->ident(), one->time(), out_traces, one->tick());
     for (size_t iport=0; iport < m_multiplicity; ++iport) {
         if (m_tags[iport].size()) {
-            //std::cerr << "FrameFanin: tagging trace set: " << by_port[iport].size() << " traces from port "
+            // std::cerr << "FrameFanin: tagging trace set: " << by_port[iport].size() << " traces from port "
             //          << iport << " with " << m_tags[iport] << std::endl;
             sf->tag_traces(m_tags[iport], by_port[iport]);
         }

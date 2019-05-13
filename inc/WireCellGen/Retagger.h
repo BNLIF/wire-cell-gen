@@ -49,7 +49,6 @@ namespace WireCell {
 
         private:
             tagrules::Context m_trctx;
-            
         };
     }
 }

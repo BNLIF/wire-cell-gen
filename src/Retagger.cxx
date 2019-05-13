@@ -72,7 +72,7 @@ bool Gen::Retagger::operator()(const input_pointer& inframe, output_pointer& out
     ttls_stash_map_t stashmap;
     for (auto inttag : inframe->trace_tags()) {
         tagrules::tagset_t touttags = m_trctx.transform(0, "merge", inttag);
-        //std::cerr << "Retagger: " << inttag << " -> " << touttags.size() << std::endl;
+        // std::cerr << "Retagger: " << inttag << " -> " << touttags.size() << " outtags\n";
         if (touttags.empty()) {
             continue;
         }
@@ -104,7 +104,7 @@ bool Gen::Retagger::operator()(const input_pointer& inframe, output_pointer& out
             auto& traces = get<1>(ttls);
             otraces.insert(otraces.end(), traces.begin(), traces.end());
 
-            //std::cerr << "Retagger: merge: " << get<0>(ttls) << " -> " << otag
+            // std::cerr << "Retagger: merge: " << get<0>(ttls) << " -> " << otag
             //          << " with " << otraces.size() << " / " << ntraces << std::endl;
             if (!nsummary) {
                 continue;
@@ -119,8 +119,8 @@ bool Gen::Retagger::operator()(const input_pointer& inframe, output_pointer& out
                 osummary.insert(osummary.end(), summary.begin(), summary.end());
             }
         }
-        //std::cerr << "Retagger: tagging trace set: " << otag
-        //          << " with " << otraces.size() << " traces, " << osummary.size() << " summary\n";
+        std::cerr << "Retagger: tagging trace set: " << otag
+                 << " with " << otraces.size() << " traces, " << osummary.size() << " summary\n";
                  
         sfout->tag_traces(otag, otraces, osummary);
     }
